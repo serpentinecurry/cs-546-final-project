@@ -18,5 +18,12 @@
   "bugs": {
     "url": "https://github.com/serpentinecurry/cs-546-final-project/issues"
   },
-  "homepage": "https://github.com/serpentinecurry/cs-546-final-project#readme"
+  "homepage": "https://github.com/serpentinecurry/cs-546-final-project#readme",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "express": "^5.1.0",
+    "express-handlebars": "^8.0.1",
+    "express-session": "^1.18.1",
+    "mongodb": "^6.16.0"
+  }
 }

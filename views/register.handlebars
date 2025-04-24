@@ -1,0 +1,30 @@
+<h1>Register for Scholario</h1>
+
+{{#if error}}<p style="color:red">{{error}}</p>{{/if}}
+
+<form method="POST" action="/register">
+  <label>First Name: <input name="firstName" id="firstName" value="{{formData.firstName}}" required></label><br>
+  <label>Last Name: <input name="lastName" id="lastName" value="{{formData.lastName}}" required></label><br>
+  <label>Email: <input type="email" name="email" id="email" value="{{formData.email}}" required></label><br>
+  <label>Password: <input type="password" name="password" id="password" required></label><br>
+  <label>Confirm Password: <input type="password" name="confirmPassword" id="confirmPassword" required></label><br>
+  <label>Role:
+    <select id="role" name="role" required>
+      <option value="student" {{#if (eq formData.user_role 'student')}}selected{{/if}}>Student</option>
+      <option value="ta" {{#if (eq formData.user_role 'ta')}}selected{{/if}}>TA</option>
+      <option value="professor" {{#if (eq formData.user_role 'professor')}}selected{{/if}}>Professor</option>
+    </select>
+  </label><br>
+  <label>Date of Birth: <input type="date" name="dateOfBirth" id="dateOfBirth" value="{{formData.dateOfBirth}}" required></label><br>
+  <label>Age: <input type="number" name="age" min="0" id="age" value="{{formData.age}}" required></label><br>
+  <label>Gender:
+    <select name="gender" id="gender" required>
+      <option value="male" {{#if (eq formData.gender 'male')}}selected{{/if}}>Male</option>
+      <option value="female" {{#if (eq formData.gender 'female')}}selected{{/if}}>Female</option>
+      <option value="other" {{#if (eq formData.gender 'other')}}selected{{/if}}>Other</option>
+    </select>
+  </label><br>
+  <label>Major (Students only): <input name="major" id="major" value="{{formData.major}}"></label><br>
+
+  <button type="submit" id="submitButton" name="submitButton">Register</button>
+</form>
