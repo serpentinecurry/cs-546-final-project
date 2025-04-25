@@ -1,0 +1,24 @@
+<h1>👑 Admin Dashboard</h1>
+
+<h2>Pending User Approvals</h2>
+{{#if error}}
+  <p style="color:red;">⚠️ {{error}}</p>
+{{/if}}
+{{#if pendingUsers.length}}
+  <ul>
+    {{#each pendingUsers}}
+      <li>
+        <strong>{{this.firstName}} {{this.lastName}}</strong> ({{this.email}})
+        — Role: {{this.role}} | DOB: {{this.dateOfBirth}}
+        <form method="POST" action="/admin/approve/{{this._id}}" style="display:inline;">
+          <button type="submit">✅ Approve</button>
+        </form>
+      </li>
+    {{/each}}
+  </ul>
+{{else}}
+  <p>No pending users right now 🎉</p>
+{{/if}}
+<a href="/logout">
+  <button style="margin-top: 1rem;">🚪 Logout</button>
+</a>

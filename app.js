@@ -5,7 +5,7 @@ import session from "express-session";
 import exphbs from "express-handlebars";
 
 import configRoutes from "./routes/index.js";
-import { alreadyLoggedIn, alreadyRegistered } from "./middleware.js";
+import { alreadyLoggedIn, alreadyRegistered, isAdmin } from "./middleware.js";
 
 app.use("/public", express.static("public"));
 app.use(express.json());
@@ -32,13 +32,14 @@ app.use(
   })
 );
 
-app.use("/", alreadyLoggedIn);
-app.use("/register", alreadyRegistered);
 app.use((req, res, next) => {
   res.locals.successMessage = req.session.successMessage || null;
   delete req.session.successMessage;
   next();
 });
+app.use("/", alreadyLoggedIn);
+app.use("/register", alreadyRegistered);
+app.use("/admin", isAdmin)
 
 configRoutes(app);
 

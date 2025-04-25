@@ -10,9 +10,9 @@
   <label>Confirm Password: <input type="password" name="confirmPassword" id="confirmPassword" required></label><br>
   <label>Role:
     <select id="role" name="role" required>
-      <option value="student" {{#if (eq formData.user_role 'student')}}selected{{/if}}>Student</option>
-      <option value="ta" {{#if (eq formData.user_role 'ta')}}selected{{/if}}>TA</option>
-      <option value="professor" {{#if (eq formData.user_role 'professor')}}selected{{/if}}>Professor</option>
+      <option value="student" {{#if (eq formData.role 'student')}}selected{{/if}}>Student</option>
+      <option value="ta" {{#if (eq formData.role 'ta')}}selected{{/if}}>TA</option>
+      <option value="professor" {{#if (eq formData.role 'professor')}}selected{{/if}}>Professor</option>
     </select>
   </label><br>
   <label>Date of Birth: <input type="date" name="dateOfBirth" id="dateOfBirth" value="{{formData.dateOfBirth}}" required></label><br>
@@ -28,3 +28,6 @@
 
   <button type="submit" id="submitButton" name="submitButton">Register</button>
 </form>
+
+<br />
+<a href="/">Already have an account? Click here to return to Home</a>

@@ -2,12 +2,19 @@ import { Router } from "express";
 const router = Router();
 
 import { userData } from "../data/index.js";
-import { stringValidate,validateEmail, passwordValidate, azAZLenValidate, isValidDateString } from "../validation.js";
+import {
+  stringValidate,
+  validateEmail,
+  passwordValidate,
+  azAZLenValidate,
+  isValidDateString,
+} from "../validation.js";
 
 router
   .route("/")
   .get(async (req, res) => {
-    res.render("home", { error: false });
+    const logout = req.query.loggedOut ? "Successfully logged out!" : null;
+    res.render("home", { error: false, logout });
   })
   .post(async (req, res) => {
     let { email, password } = req.body;
@@ -21,7 +28,7 @@ router
         age: user.age,
         gender: user.gender,
         email: user.email,
-        user_role: user.role,
+        role: user.role,
         dateOfBirth: user.dateOfBirth,
         accessStatus: user.accessStatus,
         userCreatedAt: user.userCreatedAt,
@@ -65,7 +72,7 @@ router
       lastName = stringValidate(lastName);
       azAZLenValidate(lastName, 2, 20);
       age = stringValidate(age);
-      age = parseInt(age)
+      age = parseInt(age);
       if (!Number.isInteger(age) || age <= 0)
         throw "Age must be a positive integer";
       if (!["male", "female", "other"].includes(gender)) throw "Invalid gender";
@@ -101,18 +108,24 @@ router
         return res.redirect("/");
       }
     } catch (error) {
-      res
-        .status(400)
-        .render("register", {
-          error:
-            typeof error === "string"
-              ? error
-              : error.message || "Invalid input!",
-          formData: req.body,
-        });
+      res.status(400).render("register", {
+        error:
+          typeof error === "string" ? error : error.message || "Invalid input!",
+        formData: req.body,
+      });
     }
   });
 
+router.route("/logout").get(async (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).render("error", {
+        error: "There was a problem signing you out. Please try again.",
+      });
+    }
+    res.clearCookie("Scholario");
+    return res.redirect("/?loggedOut=true");
+  });
+});
 
-
-export default router
+export default router;
