@@ -1,0 +1,69 @@
+<h1>👑 Admin Dashboard</h1>
+
+<h2>Pending User Approvals</h2>
+{{#if error}}
+  <p style="color:red;">⚠️ {{error}}</p>
+{{/if}}
+{{#if pendingUsers.length}}
+  <ul>
+    {{#each pendingUsers}}
+      <li>
+        <a href="/admin/user/{{this._id}}">
+          <strong>{{this.firstName}} {{this.lastName}}</strong>
+        </a>
+
+        ({{this.email}}) — Role:
+        {{this.role}}
+        | DOB:
+        {{this.dateOfBirth}}
+        <form
+          method="POST"
+          action="/admin/approve/{{this._id}}"
+          style="display:inline;"
+        >
+          <button type="submit">✅ Approve</button>
+        </form>
+        <form
+          method="POST"
+          action="/admin/reject/{{this._id}}"
+          style="display:inline;"
+        >
+          <button type="submit" style="margin-left:5px;">❌ Reject</button>
+        </form>
+      </li>
+    {{/each}}
+  </ul>
+{{else}}
+  <p>No pending users right now 🎉</p>
+{{/if}}
+<h2>✅ Approved Users</h2>
+{{#if approvedUsers.length}}
+  <ul>
+    {{#each approvedUsers}}
+      <li><a href="/admin/user/{{this._id}}">
+          <strong>{{this.firstName}} {{this.lastName}}</strong>
+        </a>
+        — Role:
+        {{this.role}}</li>
+    {{/each}}
+  </ul>
+{{else}}
+  <p>No approved users yet!</p>
+{{/if}}
+<h2>❌ Rejected Users</h2>
+{{#if rejectedUsers.length}}
+  <ul>
+    {{#each rejectedUsers}}
+      <li><a href="/admin/user/{{this._id}}">
+          <strong>{{this.firstName}} {{this.lastName}}</strong>
+        </a>
+        — Role:
+        {{this.role}}</li>
+    {{/each}}
+  </ul>
+{{else}}
+  <p>No rejected users.</p>
+{{/if}}
+<a href="/logout">
+  <button> Logout</button>
+</a>

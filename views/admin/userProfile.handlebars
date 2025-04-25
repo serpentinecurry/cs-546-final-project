@@ -1,0 +1,34 @@
+<h1>User Profile</h1>
+
+<p>Name: {{user.firstName}} {{user.lastName}}</p>
+<p>Email: {{user.email}}</p>
+<p>Role: {{user.role}}</p>
+<p>Status: {{user.accessStatus}}</p>
+
+{{#if (eq user.accessStatus "Pending")}}
+  <form method="POST" action="/admin/approve/{{user._id}}" style="display:inline;">
+    <button type="submit">✅ Approve</button>
+  </form>
+  <form method="POST" action="/admin/reject/{{user._id}}" style="display:inline;">
+    <button type="submit">❌ Reject</button>
+  </form>
+{{/if}}
+
+{{#if (eq user.accessStatus "Rejected")}}
+  <form method="POST" action="/admin/approve/{{user._id}}" style="display:inline;">
+    <button type="submit">✅ Approve</button>
+  </form>
+  <form method="POST" action="/admin/delete/{{user._id}}" style="display:inline;">
+  <button type="submit" >🗑️ Delete User</button>
+</form>
+
+{{/if}}
+
+{{#if (eq user.accessStatus "approved")}}
+  <form method="POST" action="/admin/reject/{{user._id}}" style="display:inline;">
+    <button type="submit">❌ Reject</button>
+  </form>
+{{/if}}
+
+<br><br>
+<a href="/admin">⬅️ Back to Admin Dashboard</a>
