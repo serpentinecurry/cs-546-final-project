@@ -9,10 +9,11 @@ import {
   azAZLenValidate,
   isValidDateString,
 } from "../validation.js";
+import { preventDoubleLogin } from "../middleware.js";
 
 router
   .route("/")
-  .get(async (req, res) => {
+  .get(preventDoubleLogin, async (req, res) => {
     const logout = req.query.loggedOut ? "Successfully logged out!" : null;
     res.render("home", { error: false, logout });
   })

@@ -5,7 +5,7 @@ import session from "express-session";
 import exphbs from "express-handlebars";
 
 import configRoutes from "./routes/index.js";
-import { alreadyLoggedIn, alreadyRegistered, isAdmin } from "./middleware.js";
+import { preventDoubleLogin, isAdmin } from "./middleware.js";
 
 app.use("/public", express.static("public"));
 app.use(express.json());
@@ -37,8 +37,8 @@ app.use((req, res, next) => {
   delete req.session.successMessage;
   next();
 });
-app.use("/", alreadyLoggedIn);
-app.use("/register", alreadyRegistered);
+
+app.use("/register", preventDoubleLogin);
 app.use("/admin", isAdmin)
 
 configRoutes(app);
