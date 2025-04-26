@@ -1,0 +1,33 @@
+<h1>🔎 Search Users</h1>
+
+<form method="GET" action="/admin/searchUsers">
+  <input type="text" name="searchTerm" placeholder="Search by name or email" value="{{searchTerm}}" />
+
+  <select name="role">
+    <option value="all" {{#if (eq role 'all')}}selected{{/if}}>All Roles</option>
+    <option value="student" {{#if (eq role 'student')}}selected{{/if}}>Student</option>
+    <option value="ta" {{#if (eq role 'ta')}}selected{{/if}}>TA</option>
+    <option value="professor" {{#if (eq role 'professor')}}selected{{/if}}>Professor</option>
+  </select>
+
+  <button type="submit">🔍 Search</button>
+</form>
+
+<br />
+
+{{#if users.length}}
+  <ul>
+    {{#each users}}
+      <li>
+        <a href="/admin/user/{{this._id}}">
+          <strong>{{this.firstName}} {{this.lastName}}</strong>
+        </a> — {{this.role}} — {{this.email}}
+      </li>
+    {{/each}}
+  </ul>
+{{else}}
+  <p>No users found matching your search.</p>
+{{/if}}
+
+<br />
+<a href="/admin">⬅️ Back to Admin Dashboard</a>

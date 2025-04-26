@@ -40,6 +40,7 @@ app.use((req, res, next) => {
 
 app.use("/register", preventDoubleLogin);
 app.use("/admin", isAdmin)
+app.use("/admin/courses", isAdmin)
 
 configRoutes(app);
 

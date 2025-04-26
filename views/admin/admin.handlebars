@@ -4,6 +4,13 @@
 {{#if error}}
   <p style="color:red;">⚠️ {{error}}</p>
 {{/if}}
+<a href="/admin/searchUsers">
+  <button>🔎 Search all active users</button>
+</a>
+<a href="/admin/courses">
+  <button>📚 Manage Courses</button>
+</a>
+
 {{#if pendingUsers.length}}
   <ul>
     {{#each pendingUsers}}
