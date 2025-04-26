@@ -5,7 +5,6 @@ export const isAdmin = (req, res, next) => {
   next();
 };
 
-// Just prevents logged-in users from accessing login/register again
 export const preventDoubleLogin = (req, res, next) => {
   if (req.session.user) {
     return res.redirect(`/${req.session.user.role}`);

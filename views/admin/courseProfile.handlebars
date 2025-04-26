@@ -1,0 +1,28 @@
+<h1>📚 Course Profile</h1>
+
+<p><strong>Course Name:</strong> {{course.courseName}}</p>
+<p><strong>Course Code:</strong> {{course.courseCode}}</p>
+<p><strong>Assigned Professor ID:</strong> {{course.professorId}}</p>
+
+<h2>Change Assigned Professor</h2>
+<form method="POST" action="/admin/courses/edit/{{course._id}}">
+  <select name="newProfessorId" required>
+    {{#each professors}}
+      <option value="{{this._id}}" {{#if (eq this._id ../course.professorId)}}selected{{/if}}>
+        {{this.firstName}} {{this.lastName}} ({{this.email}})
+      </option>
+    {{/each}}
+  </select>
+  <br><br>
+  <button type="submit">✅ Update Professor</button>
+</form>
+
+<br><hr><br>
+
+<h2>⚠️ Danger Zone: Delete Course</h2>
+<form method="POST" action="/admin/courses/delete/{{course._id}}">
+  <button type="submit" style="background-color:red;color:white;">🗑️ Delete Course</button>
+</form>
+
+<br>
+<a href="/admin/courses">⬅️ Back to Courses List</a>

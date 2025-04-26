@@ -8,7 +8,10 @@
   <ul>
     {{#each courses}}
       <li>
-        <strong>{{this.courseName}}</strong> ({{this.courseCode}})
+        <a href="/admin/courses/{{this._id}}">
+          <strong>{{this.courseName}}</strong>
+        </a>
+        ({{this.courseCode}})
       </li>
     {{/each}}
   </ul>
@@ -16,5 +19,5 @@
   <p>No courses available yet.</p>
 {{/if}}
 
-<br>
+<br />
 <a href="/admin">⬅️ Back to Admin Dashboard</a>

@@ -48,17 +48,93 @@ router
     } catch (error) {
       try {
         const usersCollection = await users();
-        const professors = await usersCollection.find({ role: "professor", accessStatus: "approved" }).toArray();
-  
+        const professors = await usersCollection
+          .find({ role: "professor", accessStatus: "approved" })
+          .toArray();
+
         return res.status(400).render("admin/createCourse", {
           professors,
-          error: typeof error === "string" ? error : error.message || "Error creating course.",
-          formData: {courseName, courseCode}
+          error:
+            typeof error === "string"
+              ? error
+              : error.message || "Error creating course.",
+          formData: { courseName, courseCode },
         });
       } catch (innerError) {
-        return res.status(500).render("error", { error: "Critical error loading create course page." });
+        return res.status(500).render("error", {
+          error: "Critical error loading create course page.",
+        });
       }
     }
   });
+
+router.route("/:id").get(async (req, res) => {
+  try {
+    let courseId = req.params.id;
+    courseId = stringValidate(courseId);
+    if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
+
+    const courseDetails = await courseData.getCourseById(courseId);
+
+    const usersCollection = await users();
+    const professors = await usersCollection
+      .find({ role: "professor", accessStatus: "approved" })
+      .toArray();
+
+    res.render("admin/courseProfile", { course: courseDetails, professors });
+  } catch (error) {
+    return res.status(400).render("error", {
+      error:
+        typeof error === "string"
+          ? error
+          : error.message || "Error loading course details.",
+    });
+  }
+});
+
+router.route("/edit/:id").post(async (req, res) => {
+  try {
+    let courseId = req.params.id;
+    const { newProfessorId } = req.body;
+
+    courseId = stringValidate(courseId);
+    newProfessorId = stringValidate(newProfessorId);
+
+    if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
+    if (!ObjectId.isValid(newProfessorId)) throw "Invalid professor ID.";
+
+    await courseData.updateCourseProfessor(courseId, newProfessorId);
+
+    return res.redirect(`/admin/courses/${courseId}`);
+  } catch (error) {
+    return res.status(400).render("error", {
+      error:
+        typeof error === "string"
+          ? error
+          : error.message || "Error updating course.",
+    });
+  }
+});
+
+router.route("/delete/:id").post(async (req, res) => {
+  try {
+    let courseId = req.params.id;
+    courseId = stringValidate(courseId);
+    if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
+
+    await courseData.deleteCourse(courseId);
+
+    return res.redirect("/admin/courses");
+  } catch (error) {
+    return res
+      .status(400)
+      .render("error", {
+        error:
+          typeof error === "string"
+            ? error
+            : error.message || "Error deleting course.",
+      });
+  }
+});
 
 export default router;
