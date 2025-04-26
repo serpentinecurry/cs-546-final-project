@@ -1,14 +1,32 @@
 import { Router } from "express";
 import { ObjectId } from "mongodb";
+import { sendApprovalEmail } from "../utils/mailer.js";
 const router = Router();
 
-import { users,courses } from "../config/mongoCollections.js";
+import { users, courses } from "../config/mongoCollections.js";
 
 router.route("/").get(async (req, res) => {
   const usersCollection = await users();
+  const coursesCollection = await courses();
   const pendingUsers = await usersCollection
     .find({ accessStatus: "Pending" })
     .toArray();
+
+  // Fetch dashboard stats
+  const studentCount = await usersCollection.countDocuments({
+    role: "student",
+    accessStatus: "approved",
+  });
+  const professorCount = await usersCollection.countDocuments({
+    role: "professor",
+    accessStatus: "approved",
+  });
+  const taCount = await usersCollection.countDocuments({
+    role: "ta",
+    accessStatus: "approved",
+  });
+  const courseCount = await coursesCollection.countDocuments({});
+
   const approvedUsers = await usersCollection
     .find({
       accessStatus: "approved",
@@ -20,7 +38,15 @@ router.route("/").get(async (req, res) => {
     .find({ accessStatus: "Rejected" })
     .toArray();
 
-   return res.render("admin/admin", { pendingUsers, approvedUsers, rejectedUsers });
+  return res.render("admin/admin", {
+    pendingUsers,
+    approvedUsers,
+    rejectedUsers,
+    studentCount,
+    professorCount,
+    taCount,
+    courseCount,
+  });
 });
 
 router.route("/approve/:id").post(async (req, res) => {
@@ -29,12 +55,17 @@ router.route("/approve/:id").post(async (req, res) => {
     if (!ObjectId.isValid(userId)) throw "Invalid user ID";
 
     const usersCollection = await users();
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+    if (!user) throw "User not found.";
+
     const updateRes = await usersCollection.updateOne(
       { _id: new ObjectId(userId) },
       { $set: { accessStatus: "approved" } }
     );
 
     if (updateRes.modifiedCount === 0) throw "User approval failed";
+
+    await sendApprovalEmail(user.email, user.firstName, user.role);
 
     return res.redirect("/admin");
   } catch (error) {
@@ -62,8 +93,11 @@ router.route("/reject/:id").post(async (req, res) => {
     const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
     if (!user) throw "User not found.";
 
-    const assignedCourse = await coursesCollection.findOne({ professorId: new ObjectId(userId) });
-    if (assignedCourse) throw "Cannot reject a user assigned as a professor to a course.";
+    const assignedCourse = await coursesCollection.findOne({
+      professorId: new ObjectId(userId),
+    });
+    if (assignedCourse)
+      throw "Cannot reject a user assigned as a professor to a course.";
 
     const updateRes = await usersCollection.updateOne(
       { _id: new ObjectId(userId) },
@@ -97,7 +131,8 @@ router.route("/user/:id").get(async (req, res) => {
     res.render("admin/userProfile", { user });
   } catch (error) {
     return res.status(400).render("error", {
-      error: typeof error === "string" ? error : error.message || "User not found",
+      error:
+        typeof error === "string" ? error : error.message || "User not found",
     });
   }
 });
@@ -108,13 +143,18 @@ router.route("/delete/:id").post(async (req, res) => {
     if (!ObjectId.isValid(userId)) throw "Invalid user ID";
 
     const usersCollection = await users();
-    const deleteRes = await usersCollection.deleteOne({ _id: new ObjectId(userId) });
+    const deleteRes = await usersCollection.deleteOne({
+      _id: new ObjectId(userId),
+    });
     if (deleteRes.deletedCount === 0) throw "User deletion failed";
 
     return res.redirect("/admin");
   } catch (error) {
     return res.status(500).render("error", {
-      error: typeof error === "string" ? error : error.message || "Something went wrong while deleting the user.",
+      error:
+        typeof error === "string"
+          ? error
+          : error.message || "Something went wrong while deleting the user.",
     });
   }
 });
@@ -141,9 +181,15 @@ router.route("/searchUsers").get(async (req, res) => {
 
     const matchingUsers = await usersCollection.find(query).toArray();
 
-     return res.render("admin/searchUsers", { users: matchingUsers, searchTerm, role });
+    return res.render("admin/searchUsers", {
+      users: matchingUsers,
+      searchTerm,
+      role,
+    });
   } catch (error) {
-    return res.status(500).render("error", { error: "Failed to search users." });
+    return res
+      .status(500)
+      .render("error", { error: "Failed to search users." });
   }
 });
 
@@ -170,7 +216,10 @@ router.route("/promote/:id").post(async (req, res) => {
     return res.redirect(`/admin/user/${userId}`); // after promoting, stay on profile page
   } catch (error) {
     return res.status(400).render("error", {
-      error: typeof error === "string" ? error : error.message || "Error promoting user.",
+      error:
+        typeof error === "string"
+          ? error
+          : error.message || "Error promoting user.",
     });
   }
 });
@@ -198,10 +247,12 @@ router.route("/demote/:id").post(async (req, res) => {
     return res.redirect(`/admin/user/${userId}`); // stay on user profile after demote
   } catch (error) {
     return res.status(400).render("error", {
-      error: typeof error === "string" ? error : error.message || "Error demoting user.",
+      error:
+        typeof error === "string"
+          ? error
+          : error.message || "Error demoting user.",
     });
   }
 });
-
 
 export default router;
