@@ -1,28 +1,36 @@
-<h1>📚 Course Profile</h1>
+<h1 class="text-center mb-4">📚 Course Profile</h1>
 
-<p><strong>Course Name:</strong> {{course.courseName}}</p>
-<p><strong>Course Code:</strong> {{course.courseCode}}</p>
-<p><strong>Assigned Professor ID:</strong> {{course.professorId}}</p>
+<div class="card p-4 mb-4">
+  <p><strong>Course Name:</strong> {{course.courseName}}</p>
+  <p><strong>Course Code:</strong> {{course.courseCode}}</p>
+  <p><strong>Assigned Professor ID:</strong> {{course.professorId}}</p>
+</div>
 
-<h2>Change Assigned Professor</h2>
-<form method="POST" action="/admin/courses/edit/{{course._id}}">
-  <select name="newProfessorId" required>
-    {{#each professors}}
-      <option value="{{this._id}}" {{#if (eq this._id ../course.professorId)}}selected{{/if}}>
-        {{this.firstName}} {{this.lastName}} ({{this.email}})
-      </option>
-    {{/each}}
-  </select>
-  <br><br>
-  <button type="submit">✅ Update Professor</button>
+<h2 class="mt-4">Change Assigned Professor</h2>
+
+<form method="POST" action="/admin/courses/edit/{{course._id}}" class="mb-4">
+  <div class="mb-3">
+    <label for="newProfessorId" class="form-label">Select New Professor</label>
+    <select name="newProfessorId" id="newProfessorId" class="form-select" required>
+      {{#each professors}}
+        <option value="{{this._id}}" {{#if (eq this._id ../course.professorId)}}selected{{/if}}>
+          {{this.firstName}} {{this.lastName}} ({{this.email}})
+        </option>
+      {{/each}}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary">✅ Update Professor</button>
 </form>
 
-<br><hr><br>
+<hr class="my-5">
 
-<h2>⚠️ Danger Zone: Delete Course</h2>
-<form method="POST" action="/admin/courses/delete/{{course._id}}">
-  <button type="submit" style="background-color:red;color:white;">🗑️ Delete Course</button>
+<h2 class="text-danger">⚠️ Danger Zone</h2>
+
+<form method="POST" action="/admin/courses/delete/{{course._id}}" onsubmit="return confirm('⚠️ Are you sure you want to delete this course? This action cannot be undone!');">
+  <button type="submit" class="btn btn-danger">🗑️ Delete Course</button>
 </form>
 
 <br>
-<a href="/admin/courses">⬅️ Back to Courses List</a>
+<div class="text-center mt-4">
+  <a href="/admin/courses" class="btn btn-secondary">⬅️ Back to Courses List</a>
+</div>

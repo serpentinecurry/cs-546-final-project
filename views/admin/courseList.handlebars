@@ -1,23 +1,22 @@
-<h1>📚 Courses</h1>
+<h1 class="text-center mb-4">📚 Courses</h1>
 
-<a href="/admin/courses/create">
-  <button style="margin-bottom: 1rem;">➕ Create New Course</button>
-</a>
+<div class="d-flex justify-content-center mb-4">
+  <a href="/admin/courses/create" class="btn btn-success">➕ Create New Course</a>
+</div>
 
 {{#if courses.length}}
-  <ul>
+  <div class="list-group">
     {{#each courses}}
-      <li>
-        <a href="/admin/courses/{{this._id}}">
-          <strong>{{this.courseName}}</strong>
-        </a>
-        ({{this.courseCode}})
-      </li>
+      <a href="/admin/courses/{{this._id}}" class="list-group-item list-group-item-action">
+        <strong>{{this.courseName}}</strong> ({{this.courseCode}})
+      </a>
     {{/each}}
-  </ul>
+  </div>
 {{else}}
-  <p>No courses available yet.</p>
+  <p class="text-center">No courses available yet.</p>
 {{/if}}
 
 <br />
-<a href="/admin">⬅️ Back to Admin Dashboard</a>
+<div class="text-center">
+  <a href="/admin" class="btn btn-secondary">⬅️ Back to Admin Dashboard</a>
+</div>

@@ -1,0 +1,56 @@
+body {
+  background-color: #f8f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn {
+  min-width: 120px;
+}
+
+.list-group-item-action:hover {
+  background-color: #e2e6ea;
+  color: #000;
+}
+
+.d-flex.justify-content-center.flex-wrap.gap-2 > form {
+  margin-bottom: 10px;
+}
+
+.row.mb-4.text-center .col {
+  font-size: 1.1rem;
+}
+
+hr.my-5 {
+  border-top: 2px solid #dc3545;
+}
+
+h2.text-danger {
+  font-weight: bold;
+}
+
+form.card.p-4 {
+  background: white;
+  border-radius: 10px;
+}
+
+.list-group a {
+  text-decoration: none;
+}
+
+.list-group a:hover {
+  font-weight: bold;
+}
+
+.alert {
+  font-weight: bold;
+}
+
+h1,
+h2 {
+  font-weight: 700;
+}
