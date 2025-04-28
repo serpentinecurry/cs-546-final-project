@@ -1,0 +1,46 @@
+<header>
+  <h1>📚 Scholario</h1>
+  <p>Your all-in-one virtual classroom toolkit.</p>
+</header>
+
+{{#if error}}
+  <p style="color:red;">⚠️ {{error}}</p>
+{{/if}}
+{{#if logout}}
+  <p style="color: green;">✅ {{logout}}</p>
+{{/if}}
+{{#if successMessage}}
+  <p style="color: green;">✅ {{successMessage}}</p>
+{{/if}}
+<main>
+  <section>
+    <h2>Login</h2>
+    <form method="POST" action="/">
+      <label for="email">Email:</label><br />
+      <input type="email" id="email" name="email" value="{{formData.email}}" required /><br />
+
+      <label for="password">Password:</label><br />
+      <input type="password" id="password" name="password" required /><br /><br
+      />
+
+      <button type="submit">Login</button>
+    </form>
+  </section>
+
+  <section>
+    <p>Don't have an account?</p>
+    <a href="/register">
+      <button>Sign Up</button>
+    </a>
+  </section>
+
+  <section>
+    <h3>What can Scholario do?</h3>
+    <ul>
+      <li>✅ Track & visualize attendance</li>
+      <li>✅ Request absences and submit notes</li>
+      <li>✅ Manage TA office hours</li>
+      <li>✅ Engage in lecture discussions</li>
+    </ul>
+  </section>
+</main>

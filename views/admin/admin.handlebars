@@ -1,0 +1,90 @@
+<h1 class="mb-4 text-center">👑 Admin Dashboard</h1>
+
+<div class="row mb-4 text-center">
+  <div class="col">
+    <strong>👥 Students:</strong> {{studentCount}}
+  </div>
+  <div class="col">
+    <strong>🧑‍🏫 Professors:</strong> {{professorCount}}
+  </div>
+  <div class="col">
+    <strong>🎓 TAs:</strong> {{taCount}}
+  </div>
+  <div class="col">
+    <strong>📚 Courses:</strong> {{courseCount}}
+  </div>
+</div>
+
+{{#if error}}
+  <div class="alert alert-danger" role="alert">
+    ⚠️ {{error}}
+  </div>
+{{/if}}
+
+<div class="d-flex justify-content-center mb-4">
+  <a href="/admin/searchUsers" class="btn btn-primary me-2">🔎 Search Users</a>
+  <a href="/admin/courses" class="btn btn-success">📚 Manage Courses</a>
+</div>
+
+<h2 class="mt-4">Pending User Approvals</h2>
+{{#if pendingUsers.length}}
+  <p>Number of pending user requests: {{pendingUsers.length}}</p>
+  <ul class="list-group mb-4">
+    {{#each pendingUsers}}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <a href="/admin/user/{{this._id}}">
+            <strong>{{this.firstName}} {{this.lastName}}</strong>
+          </a>
+          ({{this.email}}) — Role: {{this.role}} | DOB: {{this.dateOfBirth}}
+        </div>
+        <div>
+          <form method="POST" action="/admin/approve/{{this._id}}" class="d-inline">
+            <button type="submit" class="btn btn-success btn-sm">✅ Approve</button>
+          </form>
+          <form method="POST" action="/admin/reject/{{this._id}}" class="d-inline">
+            <button type="submit" class="btn btn-danger btn-sm ms-2">❌ Reject</button>
+          </form>
+        </div>
+      </li>
+    {{/each}}
+  </ul>
+{{else}}
+  <p>No pending users right now 🎉</p>
+{{/if}}
+
+<h2 class="mt-4">✅ Approved Users</h2>
+{{#if approvedUsers.length}}
+  <p>Number of Active users: {{approvedUsers.length}}</p>
+  <ul class="list-group mb-4">
+    {{#each approvedUsers}}
+      <li class="list-group-item">
+        <a href="/admin/user/{{this._id}}">
+          <strong>{{this.firstName}} {{this.lastName}}</strong>
+        </a> — Role: {{this.role}}
+      </li>
+    {{/each}}
+  </ul>
+{{else}}
+  <p>No approved users yet!</p>
+{{/if}}
+
+<h2 class="mt-4">❌ Rejected Users</h2>
+{{#if rejectedUsers.length}}
+  <p>Number of Inactive users: {{rejectedUsers.length}}</p>
+  <ul class="list-group mb-4">
+    {{#each rejectedUsers}}
+      <li class="list-group-item">
+        <a href="/admin/user/{{this._id}}">
+          <strong>{{this.firstName}} {{this.lastName}}</strong>
+        </a> — Role: {{this.role}}
+      </li>
+    {{/each}}
+  </ul>
+{{else}}
+  <p>No rejected users.</p>
+{{/if}}
+
+<div class="text-center mt-5">
+  <a href="/logout" class="btn btn-danger">Logout</a>
+</div>
