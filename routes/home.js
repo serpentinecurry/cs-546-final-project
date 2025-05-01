@@ -30,6 +30,7 @@ router
         gender: user.gender,
         email: user.email,
         role: user.role,
+        major: user.major,
         dateOfBirth: user.dateOfBirth,
         accessStatus: user.accessStatus,
         userCreatedAt: user.userCreatedAt,

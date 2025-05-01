@@ -6,6 +6,7 @@ const router = Router();
 import { users, courses } from "../config/mongoCollections.js";
 
 router.route("/").get(async (req, res) => {
+  console.log(req.session.user)
   const usersCollection = await users();
   const coursesCollection = await courses();
   const pendingUsers = await usersCollection
