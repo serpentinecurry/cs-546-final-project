@@ -85,6 +85,7 @@ const login = async (email, password) => {
   const match = await bcrypt.compare(password, user.password);
   if (!match) throw "Either the emailId or password is invalid";
   const {
+    _id,
     firstName,
     lastName,
     age,
@@ -97,6 +98,7 @@ const login = async (email, password) => {
     userCreatedAt,
   } = user;
   return {
+    _id,
     firstName,
     lastName,
     age,

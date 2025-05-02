@@ -42,7 +42,7 @@ const passwordValidate = (password) => {
     throw `Password must be a string, not ${password}`;
   if (password.trim().length === 0)
     throw `Password cannot be an empty string or string with just spaces, hence "${password}" is invalid`;
-  if (password.length < 8) throw "Password length must be atleast 8";
+  if (password.length < 8) throw "Password length must be at least 8 Characters";
   let upperCaseCount = 0;
   let numberCount = 0;
   let specialCharCount = 0;
@@ -53,10 +53,10 @@ const passwordValidate = (password) => {
     if (char === " ") throw "Spaces are not allowed in Password";
   }
   if (upperCaseCount === 0)
-    throw "Password must contain atleast one uppercase letter";
-  if (numberCount === 0) throw "Password must contain atleast one number";
+    throw "Password must contain at least one uppercase letter";
+  if (numberCount === 0) throw "Password must contain at least one number";
   if (specialCharCount === 0)
-    throw "Password must contain atleast one special character";
+    throw "Password must contain at least one special character";
 };
 
 function isValidDateString(dateStr) {

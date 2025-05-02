@@ -24,6 +24,7 @@ router
       passwordValidate(password);
       const user = await userData.login(email, password);
       req.session.user = {
+        _id : user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         age: user.age,
@@ -77,7 +78,7 @@ router
       age = parseInt(age);
       if (!Number.isInteger(age) || age <= 0)
         throw "Age must be a positive integer";
-      if (!["male", "female", "other"].includes(gender)) throw "Invalid gender";
+      if (!["male", "female", "other"].includes(gender)) throw "Invalid Gender";
       email = validateEmail(email);
       passwordValidate(password);
       if (!confirmPassword || typeof confirmPassword !== "string")
