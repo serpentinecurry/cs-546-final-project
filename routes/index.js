@@ -2,6 +2,7 @@ import homeRoutes from "./home.js";
 import adminRoutes from "./admin.js";
 import courseRoutes from "./courses.js";
 import studentRoutes from "./student.js";
+import professorRoutes from "./professor.js";
 
 const constructorMethod = (app) => {
   // Public routes
@@ -13,6 +14,7 @@ const constructorMethod = (app) => {
 
   // Student routes
   app.use("/student", studentRoutes);
+  app.use("/professor", professorRoutes)
 
   // 404 handler for unmatched routes
   app.use(/(.*)/, (req, res) => {

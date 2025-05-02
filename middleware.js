@@ -26,6 +26,13 @@ export const preventDoubleLogin = (req, res, next) => {
   next();
 };
 
+export const isProfessor = (req, res, next) => {
+  if (!req.session.user || req.session.user.role !== 'professor') {
+    return res.status(403).render('error', { error: 'Unauthorized: Professors only' });
+  }
+  next();
+};
+
 // Multer middleware for uploading proof to Cloudinary
 export const absenceProofUpload = multer({ storage });
 

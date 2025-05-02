@@ -1,0 +1,21 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{{!-- this will be filled in later with the classes attendance and analytics and graphs --}}
+
+<div>
+  <h1>Data Analytics of your class: {{course.courseCode}} {{course.courseName}}</h1>
+</div>
+
+<div class="Classanalytics"> 
+  <h2> Class analytics</h2>
+  <p>Total Students: {{totalStudents}}</p>
+  <p>Total Lectures: {{totalLectures}}</p>
+  <p>Average Attendance: {{averageAttendance}}%</p>
+  <p>Recent lecture attendance:
+  
+    <canvas id="attendanceChart" width="400" height="200"></canvas>
+
+  </p>
+
+  <a href="/professor" class="backToDashboard">Back to Dashboard</a>
+</div>

@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import configRoutes from "./routes/index.js";
-import {preventDoubleLogin, isAdmin, isStudent} from "./middleware.js";
+import {preventDoubleLogin, isAdmin, isStudent, isProfessor} from "./middleware.js";
 
 // View engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -20,7 +20,11 @@ app.engine(
     exphbs.engine({
         defaultLayout: "main",
         layoutsDir: path.join(__dirname, "views/layouts"),
-        partialsDir: [path.join(__dirname, "views/student/partials")],
+
+        partialsDir: [path.join(__dirname, "views/student/partials"),
+            //added for professor directory
+            path.join(__dirname, "views/professorDasboard.handlebars"),
+        ],
         helpers: {
             ifEquals: function (arg1, arg2, options) {
                 return arg1 === arg2 ? options.fn(this) : options.inverse(this);
@@ -60,6 +64,7 @@ app.use("/register", preventDoubleLogin);
 app.use("/admin", isAdmin);
 app.use("/admin/courses", isAdmin);
 app.use("/student", isStudent);
+app.use("/professor", isProfessor);
 
 // Routes
 configRoutes(app);
