@@ -137,6 +137,116 @@
     font-weight: 700;
     font-size: 2rem;
   }
+
+  .change-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 500px;
+  margin-top: 1.5rem;
+}
+
+.change-form .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.change-form label {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.change-form select,
+.change-form input {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  background-color: #fff;
+}
+
+.submit-btn {
+  background: var(--primary);
+  color: var(--white);
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.submit-btn:hover {
+  background: var(--secondary);
+}
+
+.view-btn {
+  background: transparent;
+  color: var(--primary);
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.view-btn:hover {
+  background: var(--primary);
+  color: white;
+}
+
+.form-error {
+  color: red;
+  font-weight: bold;
+  margin-top: 0.75rem;
+}
+
+/* Request Status Table */
+.status-table-wrapper {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.status-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--white);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.status-table th,
+.status-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.status-tag {
+  padding: 0.4rem 0.75rem;
+  border-radius: 50px;
+  font-weight: 600;
+  text-transform: capitalize;
+  font-size: 0.9rem;
+}
+
+.status-tag.pending {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.status-tag.approved {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-tag.rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
 </style>
 
 <header class="header d-flex justify-content-between align-items-center px-4 py-3">
@@ -210,8 +320,8 @@
         </a>
       </li>
       <li class="nav-item">
-        <a href="/student/settings" class="nav-link {{#ifEquals currentPage 'settings'}}active{{/ifEquals}}">
-          <i class="bi bi-gear"></i> Settings
+        <a href="/student/request-change" class="nav-link {{#ifEquals currentPage 'requestChangeForm'}}active{{/ifEquals}}">
+          <i class="bi bi-gear"></i> Request Profile Change
         </a>
       </li>
     </ul>

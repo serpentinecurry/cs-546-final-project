@@ -1,0 +1,29 @@
+<h2 class="mb-4">Submit Profile Change Request</h2>
+
+<form action="/student/request-change" method="POST" class="change-form">
+  <div class="form-group">
+    <label for="field">Select Field to Change:</label>
+    <select name="field" id="field" required>
+      <option value="">-- Choose a field --</option>
+      <option value="major">Major</option>
+      <option value="email">Email</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="newValue">New Value:</label>
+    <input type="text" name="newValue" id="newValue" required />
+  </div>
+
+  <button type="submit" class="submit-btn">📤 Submit Request</button>
+</form>
+
+{{#if error}}
+  <p class="form-error">{{error}}</p>
+{{/if}}
+
+<div class="text-end mt-4">
+  <a href="/student/request-status" class="view-btn">
+    <i class="bi bi-eye me-2"></i> View Previous Requests
+  </a>
+</div>

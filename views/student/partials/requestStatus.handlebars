@@ -1,0 +1,36 @@
+<h2 class="mb-4">Your Profile Change Requests</h2>
+
+{{#if requests.length}}
+  <div class="status-table-wrapper">
+    <table class="status-table">
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Old</th>
+          <th>New</th>
+          <th>Status</th>
+          <th>Reviewed At</th>
+          <th>Admin Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each requests}}
+          <tr>
+            <td>{{this.field}}</td>
+            <td>{{this.oldValue}}</td>
+            <td>{{this.newValue}}</td>
+            <td>
+              <span class="status-tag {{this.status}}">
+                {{this.status}}
+              </span>
+            </td>
+            <td>{{this.reviewedAt}}</td>
+            <td>{{this.adminNote}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+{{else}}
+  <p>No change requests submitted yet.</p>
+{{/if}}

@@ -1,3 +1,4 @@
+/* 🌐 Base styles already in place */
 body {
   background-color: #f8f9fa;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -6,10 +7,40 @@ body {
 .card {
   border: none;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white;
+  border-radius: 10px;
 }
 
 .btn {
   min-width: 120px;
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-weight: 500;
+}
+
+.btn-success {
+  background-color: #28a745;
+  color: white;
+  border: none;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  text-decoration: none;
+  border: none;
+}
+
+.btn-secondary:hover,
+.btn-success:hover,
+.btn-danger:hover {
+  opacity: 0.9;
 }
 
 .list-group-item-action:hover {
@@ -48,9 +79,50 @@ form.card.p-4 {
 
 .alert {
   font-weight: bold;
+  padding: 12px 18px;
+  border-radius: 6px;
 }
 
-h1,
-h2 {
-  font-weight: 700;
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-secondary {
+  background-color: #f1f1f1;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.table {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  border: 1px solid #ddd;
+}
+
+.thead-light th {
+  background-color: #f8f9fa;
+}
+
+input.form-control {
+  min-width: 150px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #0069d9;
+  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
 }

@@ -42,7 +42,8 @@ const passwordValidate = (password) => {
     throw `Password must be a string, not ${password}`;
   if (password.trim().length === 0)
     throw `Password cannot be an empty string or string with just spaces, hence "${password}" is invalid`;
-  if (password.length < 8) throw "Password length must be at least 8 Characters";
+  if (password.length < 8)
+    throw "Password length must be at least 8 Characters";
   let upperCaseCount = 0;
   let numberCount = 0;
   let specialCharCount = 0;
@@ -60,9 +61,30 @@ const passwordValidate = (password) => {
 };
 
 function isValidDateString(dateStr) {
-    const date = new Date(dateStr);
-    return !isNaN(date.getTime()); // true if valid date
-  }
-  
+  const date = new Date(dateStr);
+  return !isNaN(date.getTime()); // true if valid date
+}
 
-export { stringValidate, azAZLenValidate, validateEmail, passwordValidate, isValidDateString };
+const calculateAge = (dateOfBirth) => {
+  const dob = new Date(dateOfBirth); // e.g., "1998-05-15"
+  const today = new Date();
+
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+
+  // If birth month hasn't occurred yet this year, or it's this month but birthday hasn't passed
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      age--;
+  }
+
+  return age;
+}
+
+export {
+  stringValidate,
+  azAZLenValidate,
+  validateEmail,
+  passwordValidate,
+  isValidDateString,
+  calculateAge
+};

@@ -8,6 +8,7 @@ import {
   passwordValidate,
   azAZLenValidate,
   isValidDateString,
+  calculateAge,
 } from "../validation.js";
 import { preventDoubleLogin } from "../middleware.js";
 
@@ -65,7 +66,6 @@ router
       confirmPassword,
       role,
       dateOfBirth,
-      age,
       gender,
       major,
     } = req.body;
@@ -74,10 +74,6 @@ router
       azAZLenValidate(firstName, 2, 20);
       lastName = stringValidate(lastName);
       azAZLenValidate(lastName, 2, 20);
-      age = stringValidate(age);
-      age = parseInt(age);
-      if (!Number.isInteger(age) || age <= 0)
-        throw "Age must be a positive integer";
       if (!["male", "female", "other"].includes(gender)) throw "Invalid Gender";
       email = validateEmail(email);
       passwordValidate(password);
@@ -97,7 +93,6 @@ router
       const result = await userData.createUser(
         firstName,
         lastName,
-        age,
         gender,
         email,
         password,

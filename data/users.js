@@ -1,18 +1,20 @@
-import { users } from "../config/mongoCollections.js";
+import { users, changeRequests } from "../config/mongoCollections.js";
+import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
+import { sendChangeApprovalEmail } from "../utils/mailer.js";
 import {
   stringValidate,
   azAZLenValidate,
   validateEmail,
   passwordValidate,
   isValidDateString,
+  calculateAge,
 } from "../validation.js";
 const SALT_ROUNDS = 10;
 
 const createUser = async (
   firstName,
   lastName,
-  age,
   gender,
   email,
   password,
@@ -24,9 +26,7 @@ const createUser = async (
   azAZLenValidate(firstName, 2, 20);
   lastName = stringValidate(lastName);
   azAZLenValidate(lastName, 2, 20);
-  age = parseInt(age);
-  if (!Number.isInteger(age) || age <= 0)
-    throw "Age must be a positive integer";
+  let age = calculateAge(dateOfBirth);
   if (!["male", "female", "other"].includes(gender)) throw "Invalid gender";
   email = validateEmail(email);
   passwordValidate(password);
@@ -112,4 +112,101 @@ const login = async (email, password) => {
   };
 };
 
-export default { createUser, login };
+const createRequest = async (userId, field, newValue) => {
+  userId = stringValidate(userId);
+  if (!ObjectId.isValid(userId)) throw "Invalid userId";
+  if (!["major", "email"].includes(field)) throw "Invalid field to change";
+
+  const requestCollection = await changeRequests();
+  const userCollection = await users();
+
+  const user = await userCollection.findOne({ _id: new ObjectId(userId) });
+  if (!user) throw "User not found";
+
+  const existing = await requestCollection.findOne({
+    userId: new ObjectId(userId),
+    field,
+    status: "pending",
+  });
+  if (existing)
+    throw `You already have a pending request to change your ${field}`;
+
+  const newRequest = {
+    userId: new ObjectId(userId),
+    field,
+    oldValue: user[field],
+    newValue,
+    status: "pending",
+    requestedAt: new Date(),
+    reviewedAt: null,
+    adminNote: "",
+  };
+  const insertResult = await requestCollection.insertOne(newRequest);
+  if (!insertResult.acknowledged) throw "Failed to submit change request";
+
+  return { requestSuccessfull: true };
+};
+
+const approveRequest = async (requestId) => {
+  requestId = stringValidate(requestId);
+  if (!ObjectId.isValid(requestId)) throw "Invalid request ID";
+
+  const requestCollection = await changeRequests();
+  const userCollection = await users();
+
+  const req = await requestCollection.findOne({ _id: new ObjectId(requestId) });
+  if (!req) throw "Change request not found";
+  if (req.status !== "pending") throw "Request already resolved";
+
+  // Update user field
+  const updateResult = await userCollection.updateOne(
+    { _id: new ObjectId(req.userId) },
+    { $set: { [req.field]: req.newValue } }
+  );
+
+  if (!updateResult.modifiedCount) throw "Failed to update user data";
+
+  // Mark request as approved
+  await requestCollection.updateOne(
+    { _id: new ObjectId(requestId) },
+    { $set: { status: "approved", reviewedAt: new Date() } }
+  );
+
+  const user = await userCollection.findOne({ _id: req.userId });
+  if (user && user.email) {
+    const fullName = `${user.firstName} ${user.lastName}`;
+    await sendChangeApprovalEmail(
+      user.email,
+      fullName,
+      req.field,
+      req.newValue
+    );
+  }
+  return true;
+};
+
+const rejectRequest = async (requestId, adminNote = "") => {
+  requestId = stringValidate(requestId);
+  if (!ObjectId.isValid(requestId)) throw "Invalid request ID";
+
+  const requestCollection = await changeRequests();
+
+  const req = await requestCollection.findOne({ _id: new ObjectId(requestId) });
+  if (!req) throw "Change request not found";
+  if (req.status !== "pending") throw "Request already resolved";
+
+  await requestCollection.updateOne(
+    { _id: new ObjectId(requestId) },
+    { $set: { status: "rejected", reviewedAt: new Date(), adminNote } }
+  );
+
+  return true;
+};
+
+export default {
+  createUser,
+  login,
+  createRequest,
+  approveRequest,
+  rejectRequest,
+};
