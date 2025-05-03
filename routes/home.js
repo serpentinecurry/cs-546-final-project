@@ -16,7 +16,8 @@ router
   .route("/")
   .get(preventDoubleLogin, async (req, res) => {
     const logout = req.query.loggedOut ? "Successfully logged out!" : null;
-    res.render("home", { error: false, logout });
+    const { success } = req.query;
+    res.render("home", { error: false, logout, successMessage: success || null });
   })
   .post(async (req, res) => {
     let { email, password } = req.body;

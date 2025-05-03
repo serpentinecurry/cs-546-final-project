@@ -5,7 +5,14 @@ import { users, courses, changeRequests } from "../config/mongoCollections.js";
 import { absenceProofUpload } from "../middleware.js";
 import { ObjectId } from "mongodb";
 import { userData } from "../data/index.js";
-import { stringValidate, validateEmail } from "../validation.js";
+import bcrypt from "bcrypt";
+import {
+  stringValidate,
+  validateEmail,
+  isValidDateString,
+  passwordValidate,
+} from "../validation.js";
+
 
 const router = Router();
 
@@ -144,29 +151,33 @@ router.route("/profile").get(async (req, res) => {
 
 // GET /student/profile/edit
 router.route("/profile/edit").get((req, res) => {
-  res.render("student/student", {
-    layout: "main",
-    partialToRender: "editProfile",
-    user: withUser(req),
-    currentPage: "editProfile",
-  });
+  try {
+    res.render("student/student", {
+      layout: "main",
+      partialToRender: "editProfile",
+      user: withUser(req),
+      currentPage: "editProfile",
+    });
+  } catch (error) {
+    return res.status(500).render("error", { error: error.toString() });
+  }
 });
 
 // POST /student/profile/edit
 router.route("/profile/edit").post(async (req, res) => {
-  const { firstName, lastName, dateOfBirth } = req.body;
-
-  // TODO: Add full validation logic here
-
+  let { firstName, lastName, dateOfBirth } = req.body;
   try {
-    // Update DB
-    const userCollection = await users(); // assume MongoDB helper
+    firstName = stringValidate(firstName);
+    lastName = stringValidate(lastName);
+    if (!isValidDateString(dateOfBirth)) {
+      throw "Invalid date of birth";
+    }
+    const userCollection = await users();
     await userCollection.updateOne(
       { _id: new ObjectId(req.session.user._id) },
       { $set: { firstName, lastName, dateOfBirth } }
     );
 
-    // Update session too
     req.session.user.firstName = firstName;
     req.session.user.lastName = lastName;
     req.session.user.dateOfBirth = dateOfBirth;
@@ -178,10 +189,65 @@ router.route("/profile/edit").post(async (req, res) => {
       layout: "main",
       partialToRender: "editProfile",
       user: withUser(req),
-      error: "Something went wrong. Please try again.",
+      error: error || "Something went wrong. Please try again.",
     });
   }
 });
+
+router
+  .route("/profile/change-password")
+  .get(async (req, res) => {
+    try {
+      const { success } = req.query;
+      return res.render("student/student", {
+        layout: "main",
+        partialToRender: "changePasswordForm",
+        user: withUser(req),
+        currentPage: "editProfile",
+        successMessage: success === "password-updated" ? "Password updated successfully ✅" : null
+      });
+    } catch (error) {
+      return res.status(500).render("error", { error: error.toString() });
+    }
+  })
+  .post(async (req, res) => {
+    let { currentPassword, newPassword, confirmPassword } = req.body;
+    let userId = req.session.user._id;
+    try {
+      userId = stringValidate(userId);
+      if (!ObjectId.isValid(userId)) throw "Invalid userId";
+      passwordValidate(newPassword);
+      passwordValidate(confirmPassword);
+      if (newPassword !== confirmPassword) throw "New passwords do not match.";
+      const userCollection = await users();
+      const user = await userCollection.findOne({ _id: new ObjectId(userId) });
+      if (!user) throw "User not found.";
+
+      const match = await bcrypt.compare(currentPassword, user.password);
+      if (!match) throw "Incorrect current password.";
+
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await userCollection.updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { password: hashed } }
+      );
+      req.session.destroy((err) => {
+        if (err) {
+          return res.status(500).render("error", { error: "Password updated, but logout failed." });
+        }
+        res.redirect("/?success=Password updated. Please log in again.");
+      });
+      
+    } catch (error) {
+      return res.status(400).render("student/student", {
+        layout: "main",
+        partialToRender: "changePasswordForm",
+        user: req.session.user,
+        currentPage: "editProfile",
+        error: error.toString()
+      });
+    }
+  });
 
 router
   .route("/request-change")

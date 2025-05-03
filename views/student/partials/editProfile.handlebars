@@ -4,14 +4,27 @@
     <span>Edit Profile</span>
   </h2>
 
-  <form action="/student/profile/edit" method="POST" class="card p-5 shadow rounded-4 border-0 bg-white">
+  <form
+    action="/student/profile/edit"
+    method="POST"
+    class="card p-5 shadow rounded-4 border-0 bg-white"
+  >
     <div class="row g-4">
       <!-- First Name -->
       <div class="col-md-6">
         <label for="firstName" class="form-label fw-semibold">First Name</label>
         <div class="input-group">
-          <span class="input-group-text bg-light text-secondary"><i class="bi bi-person"></i></span>
-          <input type="text" class="form-control" id="firstName" name="firstName" value="{{user.firstName}}" required>
+          <span class="input-group-text bg-light text-secondary"><i
+              class="bi bi-person"
+            ></i></span>
+          <input
+            type="text"
+            class="form-control"
+            id="firstName"
+            name="firstName"
+            value="{{user.firstName}}"
+            required
+          />
         </div>
       </div>
 
@@ -19,8 +32,17 @@
       <div class="col-md-6">
         <label for="lastName" class="form-label fw-semibold">Last Name</label>
         <div class="input-group">
-          <span class="input-group-text bg-light text-secondary"><i class="bi bi-person-badge"></i></span>
-          <input type="text" class="form-control" id="lastName" name="lastName" value="{{user.lastName}}" required>
+          <span class="input-group-text bg-light text-secondary"><i
+              class="bi bi-person-badge"
+            ></i></span>
+          <input
+            type="text"
+            class="form-control"
+            id="lastName"
+            name="lastName"
+            value="{{user.lastName}}"
+            required
+          />
         </div>
       </div>
 
@@ -28,8 +50,17 @@
       <div class="col-md-6">
         <label for="dateOfBirth" class="form-label fw-semibold">Date of Birth</label>
         <div class="input-group">
-          <span class="input-group-text bg-light text-secondary"><i class="bi bi-calendar-event"></i></span>
-          <input type="date" class="form-control" id="dateOfBirth" name="dateOfBirth" value="{{user.dateOfBirth}}" required>
+          <span class="input-group-text bg-light text-secondary"><i
+              class="bi bi-calendar-event"
+            ></i></span>
+          <input
+            type="date"
+            class="form-control"
+            id="dateOfBirth"
+            name="dateOfBirth"
+            value="{{user.dateOfBirth}}"
+            required
+          />
         </div>
       </div>
     </div>
@@ -37,11 +68,19 @@
     <!-- Buttons -->
     <div class="text-end mt-4">
       <button type="submit" class="btn btn-primary px-4 me-2">
-        <i class="bi bi-save me-1"></i> Save Changes
+        <i class="bi bi-save me-1"></i>
+        Save Changes
       </button>
       <a href="/student/profile" class="btn btn-outline-secondary px-4">
-        <i class="bi bi-x-circle me-1"></i> Cancel
+        <i class="bi bi-x-circle me-1"></i>
+        Cancel
       </a>
     </div>
+    {{#if error}}
+      <div class="alert alert-danger" role="alert">
+        ⚠️
+        {{error}}
+      </div>
+    {{/if}}
   </form>
 </div>

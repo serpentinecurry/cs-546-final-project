@@ -1,6 +1,7 @@
 import { courses } from "../config/mongoCollections.js";
 import { ObjectId } from "mongodb";
 import { stringValidate } from "../validation.js";
+import { users } from "../config/mongoCollections.js";
 
 const createCourse = async (courseName, courseCode, professorId) => {
   courseName = stringValidate(courseName);
@@ -38,12 +39,13 @@ const getCourseById = async (courseId) => {
   if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
 
   const coursesCollection = await courses();
+  const usersCollection = await users();
   const course = await coursesCollection.findOne({
     _id: new ObjectId(courseId),
   });
-
+  const professor = await usersCollection.findOne({_id: course.professorId})
   if (!course) throw "Course not found.";
-  return course;
+  return {course,professor};
 };
 
 const updateCourseProfessor = async (courseId, newProfessorId) => {
