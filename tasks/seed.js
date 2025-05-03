@@ -1,7 +1,8 @@
 import { dbConnection, closeConnection } from "../config/mongoConnection.js";
-import {userData, courseData} from "../data/index.js"
-import  lectureData  from "../data/lectures.js";
+import { userData, courseData } from "../data/index.js"
+import lectureData from "../data/lectures.js";
 import { users } from "../config/mongoCollections.js";
+import { ObjectId } from "mongodb";
 
 const db = await dbConnection();
 await db.dropDatabase();
@@ -25,7 +26,7 @@ await usersCollection.updateOne({ email: "phill@stevens.edu" }, { $set: { access
 
 
 const user4 = await userData.createUser(
-    "Archiit", "Rajanala", "20", "male", "arajanal@stevens.edu", "Hash@123", "student", "2003-07-18", "Computer Science"
+    "Archiit", "Rajanala", "male", "arajanal@stevens.edu", "Hash@123", "student", "2003-07-18", "Computer Science"
 )
 
 const professor = await usersCollection.findOne({ email: "phill@stevens.edu" });
@@ -68,7 +69,82 @@ const lecture1 = await lectureData.createLecture(
     "https://drive.google.com/slides/dom-basics"
   );
 
+// Adding students with pending enrollment requests
+const pendingStudent1 = await userData.createUser(
+  "John", "Doe", "male", "jdoe@stevens.edu", "Password@123", "student", "2002-09-15", "Computer Science"
+);
+await usersCollection.updateOne({ email: "jdoe@stevens.edu" }, { $set: { accessStatus: "approved" } });
 
+const pendingStudent2 = await userData.createUser(
+  "Jane", "Smith", "female", "jsmith@stevens.edu", "Password@123", "student", "2001-05-22", "Computer Science"
+);
+await usersCollection.updateOne({ email: "jsmith@stevens.edu" }, { $set: { accessStatus: "approved" } });
+
+const pendingStudent3 = await userData.createUser(
+  "Michael", "Johnson", "male", "mjohnson@stevens.edu", "Password@123", "student", "2003-11-08", "Computer Engineering"
+);
+await usersCollection.updateOne({ email: "mjohnson@stevens.edu" }, { $set: { accessStatus: "approved" } });
+
+// Get student IDs
+const student1 = await usersCollection.findOne({ email: "jdoe@stevens.edu" });
+const student2 = await usersCollection.findOne({ email: "jsmith@stevens.edu" });
+const student3 = await usersCollection.findOne({ email: "mjohnson@stevens.edu" });
+
+// Add pending enrollment requests to students
+await usersCollection.updateOne(
+  { _id: student1._id },
+  { 
+    $push: { 
+      studentEnrollmentRequests: {
+        courseId: new ObjectId(webDevCourseId),
+        status: "pending",
+        requestedAt: new Date()
+      }
+    } 
+  }
+);
+
+await usersCollection.updateOne(
+  { _id: student2._id },
+  { 
+    $push: { 
+      studentEnrollmentRequests: {
+        courseId: new ObjectId(webDevCourseId),
+        status: "pending",
+        requestedAt: new Date()
+      }
+    } 
+  }
+);
+
+await usersCollection.updateOne(
+  { _id: student3._id },
+  { 
+    $push: { 
+      studentEnrollmentRequests: {
+        courseId: new ObjectId(webDevCourseId),
+        status: "pending",
+        requestedAt: new Date()
+      }
+    } 
+  }
+);
+
+// Add a second request for student3 for the database course
+await usersCollection.updateOne(
+  { _id: student3._id },
+  { 
+    $push: { 
+      studentEnrollmentRequests: {
+        courseId: new ObjectId(dbCourseId),
+        status: "pending",
+        requestedAt: new Date()
+      }
+    } 
+  }
+);
+
+console.log("Done seeding database with pending enrollment requests");
 
 console.log("Done seeding database");  
 

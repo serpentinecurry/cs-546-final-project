@@ -1,21 +1,126 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-{{!-- this will be filled in later with the classes attendance and analytics and graphs --}}
-
 <div>
   <h1>Data Analytics of your class: {{course.courseCode}} {{course.courseName}}</h1>
 </div>
 
-<div class="Classanalytics"> 
-  <h2> Class analytics</h2>
-  <p>Total Students: {{totalStudents}}</p>
-  <p>Total Lectures: {{totalLectures}}</p>
-  <p>Average Attendance: {{averageAttendance}}%</p>
-  <p>Recent lecture attendance:
-  
-    <canvas id="attendanceChart" width="400" height="200"></canvas>
-
-  </p>
-
-  <a href="/professor" class="backToDashboard">Back to Dashboard</a>
+{{#if successMessage}}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+  {{successMessage}}
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
+{{/if}}
+
+<h1>Data Analytics Dashboard</h1>
+
+{{!-- Pending Enrollment Requests Section --}}
+{{#if pendingStudents.length}}
+<div class="pending-requests-section">
+  <h2>Pending Enrollment Requests</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Major</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each pendingStudents}}
+        <tr>
+          <td>{{this.firstName}} {{this.lastName}}</td>
+          <td>{{this.email}}</td>
+          <td>{{this.major}}</td>
+          <td>
+            <div class="action-buttons">
+              <form action="/professor/enrollment/approve" method="POST">
+                <input type="hidden" name="studentId" value="{{this._id}}">
+                <input type="hidden" name="courseId" value="{{../course._id}}">
+                <button type="submit" class="btn btn-success">Approve</button>
+              </form>
+              
+              <form action="/professor/enrollment/reject" method="POST">
+                <input type="hidden" name="studentId" value="{{this._id}}">
+                <input type="hidden" name="courseId" value="{{../course._id}}">
+                <button type="submit" class="btn btn-danger">Reject</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+{{else}}
+<div class="no-pending-requests">
+  <p>No pending enrollment requests for this course.</p>
+</div>
+{{/if}}
+
+<div class="Classanalytics">
+  <h2>Class analytics</h2>
+  
+  <div class="analytics-grid">
+    <div class="analytics-card">
+      <h3>Total Students:</h3>
+      <div class="analytics-value" id="total-students">{{totalStudents}}</div>
+    </div>
+
+    <div class="analytics-card">
+      <h3>Total Lectures:</h3>
+      <div class="analytics-value">{{totalLectures}}</div>
+    </div>
+
+    <div class="analytics-card">
+      <h3>Average Attendance:</h3>
+      <div class="analytics-value">{{averageAttendance}}%</div>
+    </div>
+  </div>
+</div>
+
+{{!-- Enrolled Students Section --}}
+<div class="enrolled-students-section mt-4">
+  <h2>Enrolled Students</h2>
+  {{#if enrolledStudents.length}}
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Major</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each enrolledStudents}}
+          <tr>
+            <td>{{this.firstName}} {{this.lastName}}</td>
+            <td>{{this.email}}</td>
+            <td>{{this.major}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  {{else}}
+    <p>No students enrolled in this course yet.</p>
+  {{/if}}
+</div>
+
+{{!-- Recent lecture attendance section --}}
+<div class="recent-attendance mt-4">
+  <h2>Recent lecture attendance:</h2>
+  {{#if lectures.length}}
+    <div class="lecture-list">
+      {{#each lectures}}
+        <div class="lecture-item">
+          <h6>{{this.lectureTitle}} ({{this.lectureDate}})</h6>
+          {{!-- Show attendance data if available --}}
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <p>No lectures found for this course.</p>
+  {{/if}}
+</div>
+
+<a href="/professor" class="btn btn-primary mt-4">Back to Dashboard</a>

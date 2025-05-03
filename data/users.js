@@ -63,6 +63,7 @@ const createUser = async (
     newUser.enrolledCourses = [];
     newUser.absenceRequests = [];
     newUser.lectureNotes = [];
+    newUser.studentEnrollmentRequests = [];
   }
   if (role === "ta") {
     newUser.taForCourses = [];
@@ -166,7 +167,7 @@ const approveRequest = async (requestId) => {
 
   if (!updateResult.modifiedCount) throw "Failed to update user data";
 
-  // Mark request as approved
+  // approve requests
   await requestCollection.updateOne(
     { _id: new ObjectId(requestId) },
     { $set: { status: "approved", reviewedAt: new Date() } }
@@ -203,10 +204,97 @@ const rejectRequest = async (requestId, adminNote = "") => {
   return true;
 };
 
+const getPendingEnrollmentRequests = async (courseId) => {
+  courseId = stringValidate(courseId);
+  if (!ObjectId.isValid(courseId)) throw "Invalid courseId";
+
+  const usersCollection = await users();
+
+  // Log the query parameters
+  console.log("Looking for pending enrollments for course:", courseId);
+ 
+  const pendingStudents = await usersCollection
+    .find({
+      "studentEnrollmentRequests": {
+        $elemMatch: {
+          "courseId": new ObjectId(courseId),
+          "status": "pending"
+        }
+      }
+    })
+    .toArray();
+
+  console.log(`Found ${pendingStudents.length} pending enrollment requests`);
+  return pendingStudents;
+};
+
+const approveEnrollmentRequest = async (studentId, courseId) => {
+  // Check if the values are defined before calling stringValidate
+  if (!studentId) throw "Student ID is required";
+  if (!courseId) throw "Course ID is required";
+  
+  studentId = stringValidate(studentId);
+  courseId = stringValidate(courseId);
+
+  if (!ObjectId.isValid(studentId)) throw "Invalid studentId";
+  if (!ObjectId.isValid(courseId)) throw "Invalid courseId";
+
+  const userCollection = await users();
+
+  // Debug logging
+  console.log("Approving enrollment for:", { 
+    studentId: new ObjectId(studentId),
+    courseId: new ObjectId(courseId)
+  });
+
+  const updateResult = await userCollection.updateOne(
+    { 
+      _id: new ObjectId(studentId),
+      "studentEnrollmentRequests.courseId": new ObjectId(courseId)
+    },
+    { 
+      $set: { "studentEnrollmentRequests.$.status": "approved" },
+      $push: { enrolledCourses: new ObjectId(courseId) }
+    }
+  );
+
+  if (updateResult.modifiedCount === 0) throw "Failed to approve enrollment request";
+
+  return { enrollmentApproved: true };
+};
+
+const rejectEnrollmentRequest = async (studentId, courseId) => {
+  studentId = stringValidate(studentId);
+  courseId = stringValidate(courseId);
+
+  if (!ObjectId.isValid(studentId)) throw "Invalid studentId";
+  if (!ObjectId.isValid(courseId)) throw "Invalid courseId";
+
+  const userCollection = await users();
+
+
+  const updateResult = await userCollection.updateOne(
+    { 
+      _id: new ObjectId(studentId),
+      "studentEnrollmentRequests.courseId": new ObjectId(courseId)
+    },
+    { 
+      $set: { "studentEnrollmentRequests.$.status": "rejected" }
+    }
+  );
+
+  if (updateResult.modifiedCount === 0) throw "Failed to reject enrollment request";
+
+  return { enrollmentRejected: true };
+};
+
 export default {
   createUser,
   login,
   createRequest,
   approveRequest,
   rejectRequest,
+  getPendingEnrollmentRequests,
+  approveEnrollmentRequest,
+  rejectEnrollmentRequest,
 };

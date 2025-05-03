@@ -75,10 +75,49 @@ const deleteCourse = async (courseId) => {
   if (deleteInfo.deletedCount === 0) throw "Failed to delete course.";
 };
 
+
+
+
+
+const getEnrolledStudents = async (courseId) => {
+  courseId = stringValidate(courseId);
+  if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
+
+  const coursesCollection = await courses();
+  const usersCollection = await users();
+
+  const course = await coursesCollection.findOne({ _id: new ObjectId(courseId) });
+  if (!course) throw "Course not found.";
+
+  const approvedRequests = course.studentEnrollmentRequests?.filter(
+    (req) => req.status === "approved"
+  ) || [];
+
+  const studentIds = approvedRequests.map((req) => new ObjectId(req.studentId));
+
+  const enrolledStudents = await usersCollection.find({
+    _id: { $in: studentIds },
+    user_role: "student",
+    $or: [
+      { enrolledCourses: { $elemMatch: { course: new ObjectId(courseId), status: "active" } } },
+      { enrolledCourses: new ObjectId(courseId) }
+    ]
+  }).toArray();
+
+  return enrolledStudents;
+};
+
+const NumOfStudentsInCourse = async (courseId) => {
+  return this.getEntolledStudents(courseId).length
+};
+
+
 export default {
   createCourse,
   getAllCourses,
   getCourseById,
   updateCourseProfessor,
   deleteCourse,
+  getEnrolledStudents,
+  NumOfStudentsInCourse
 };
