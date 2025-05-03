@@ -1,4 +1,4 @@
-import { lectures } from "../config/mongoCollections.js";
+import { lectures, courses } from "../config/mongoCollections.js";
 import { ObjectId } from "mongodb";
 import { stringValidate } from "../validation.js";
 
@@ -22,43 +22,55 @@ import { stringValidate } from "../validation.js";
 //functions include creating, updating, inserting a rating, 
 
 
-let createLecture = async (courseId, professorId, lectureTitle, lectureDate, description, materialsLink) => {
-
-
+let createLecture = async (courseId, lectureTitle, lectureDate, description, materialsLink) => {
+    
+    if (!courseId || !lectureTitle || !lectureDate || !description || !materialsLink) {
+        throw "All fields are required.";
+    }
+    
     courseId = stringValidate(courseId);
-    professorId = stringValidate(professorId);
     lectureTitle = stringValidate(lectureTitle);
     lectureDate = stringValidate(lectureDate);
     description = stringValidate(description);
     materialsLink = stringValidate(materialsLink);
+
     if (!ObjectId.isValid(courseId)) {
         throw "Invalid course ID.";
     }
+    
+    // Get course first
+    let courseList = await courses();
+    let courseIDExists = await courseList.findOne({ _id: new ObjectId(courseId) });
+    if (!courseIDExists) {
+        throw "Course ID does not exist.";
+    }
+    
+    // Now get the professor ID from the course
+    let professorId = courseIDExists.professorId.toString();
+    
     if (!ObjectId.isValid(professorId)) {
         throw "Invalid professor ID.";
     }
+    
     if (!/^\d{4}-\d{2}-\d{2}$/.test(lectureDate)) {
         throw "Lecture date must be in YYYY-MM-DD format.";
     }
 
-    const PrevLecture = await lectures()
+    const PrevLecture = await lectures();
     const existingLecture = await PrevLecture.findOne({
         courseId: new ObjectId(courseId),
         lectureTitle: { $regex: `^${lectureTitle}$`, $options: "i" }
     });
 
+    const lectureCollection = await lectures();
 
     if (existingLecture) {
         throw "Lecture title already exists for this course. Please choose a different title.";
     }
-
-
-
-
-    const lectureCollection = await lectures();
+    
     const newLecture = {
-        courseId: courseId, 
-        professorId: professorId, 
+        courseId: new ObjectId(courseId), 
+        professorId: new ObjectId(professorId), 
         lectureTitle: lectureTitle,
         lectureDate: lectureDate,
         description: description,
@@ -73,10 +85,7 @@ let createLecture = async (courseId, professorId, lectureTitle, lectureDate, des
     }
 
     return { isLectureCreated: true, lectureId: insertion.insertedId.toString() };
-
 }
-
-
 
 let updateLecture = async (lectureId, updates) => {
 
@@ -113,13 +122,9 @@ let updateLecture = async (lectureId, updates) => {
     } catch (error) {
         throw error;
     }
-
 }
 
-
 let insertRating = async (lectureId, studentId, rating) => {
-
-
     lectureId = stringValidate(lectureId);
     studentId = stringValidate(studentId);
     rating = parseInt(rating);
@@ -133,7 +138,7 @@ let insertRating = async (lectureId, studentId, rating) => {
         throw "Invalid student ID.";
     }
     const lectureCollection = await lectures();
-    const lecture = await lectureCollection.updateInfo({
+    const lecture = await lectureCollection.updateOne({
         _id: new ObjectId(lectureId),
         ratings: { $not: { $elemMatch: { studentId: new ObjectId(studentId) } } }
     }, {
@@ -142,14 +147,11 @@ let insertRating = async (lectureId, studentId, rating) => {
                 studentId: new ObjectId(studentId),
                 rating: rating
             }
-        },
-        
-    })
-
+        }
+    });
+    
+    return { isRatingAdded: true };
 }
-
-
-
 
 export default {
     createLecture,
