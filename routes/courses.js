@@ -74,14 +74,14 @@ router.route("/:id").get(async (req, res) => {
     courseId = stringValidate(courseId);
     if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
 
-    const courseDetails = await courseData.getCourseById(courseId);
+    const { course, professor } = await courseData.getCourseById(courseId);
 
     const usersCollection = await users();
     const professors = await usersCollection
       .find({ role: "professor", accessStatus: "approved" })
       .toArray();
 
-    res.render("admin/courseProfile", { course: courseDetails, professors });
+    res.render("admin/courseProfile", { course, professor, professors });
   } catch (error) {
     return res.status(400).render("error", {
       error:

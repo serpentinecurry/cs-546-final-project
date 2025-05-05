@@ -3,9 +3,11 @@ import { ObjectId } from "mongodb";
 import { sendApprovalEmail } from "../utils/mailer.js";
 const router = Router();
 
-import { users, courses } from "../config/mongoCollections.js";
+import { users, courses, changeRequests } from "../config/mongoCollections.js";
+import { userData } from "../data/index.js";
 
 router.route("/").get(async (req, res) => {
+  console.log(req.session.user);
   const usersCollection = await users();
   const coursesCollection = await courses();
   const pendingUsers = await usersCollection
@@ -252,6 +254,62 @@ router.route("/demote/:id").post(async (req, res) => {
           ? error
           : error.message || "Error demoting user.",
     });
+  }
+});
+
+router.route("/change-requests").get(async (req, res) => {
+  try {
+    const requestCollection = await changeRequests();
+    const userCollection = await users()
+    const rawRequests = await requestCollection
+      .find({ status: "pending" })
+      .toArray();
+      const requests = [];
+
+      for (const req of rawRequests) {
+        const user = await userCollection.findOne(
+          { _id: req.userId },
+          { projection: { firstName: 1, lastName: 1 } }
+        );
+  
+        requests.push({
+          ...req,
+          fullName: user ? `${user.firstName} ${user.lastName}` : "Unknown User"
+        });
+      }
+
+
+    const { success } = req.query;
+
+    return res.render("admin/changeRequests", {
+      requests,
+      user: req.session.user,
+      successMessage:
+        success === "request-resolved"
+          ? "Request resolved successfully."
+          : null,
+    });
+  } catch (error) {
+    return res.status(500).render("error", { error: error.toString() });
+  }
+});
+
+router.route("/change-requests/:id/approve").post(async (req, res) => {
+  try {
+    await userData.approveRequest(req.params.id);
+    return res.redirect("/admin/change-requests?success=request-resolved");
+  } catch (error) {
+    return res.status(400).render("error", { error: error.toString() });
+  }
+});
+
+router.route("/change-requests/:id/reject").post(async (req, res) => {
+  try {
+    const { adminNote } = req.body;
+    await userData.rejectRequest(req.params.id, adminNote || "");
+    return res.redirect("/admin/change-requests?success=request-resolved");
+  } catch (error) {
+    res.status(400).render("error", { error: error.toString() });
   }
 });
 

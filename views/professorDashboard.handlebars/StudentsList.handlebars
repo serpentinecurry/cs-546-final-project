@@ -1,0 +1,16 @@
+ <div class="studentsEnrolled">
+        <h2>Students Enrolled</h2>
+        {{#if students.length}}
+          <ul class="studentList">
+            {{#each students}}
+              <li class="studentItem">
+                <span class="studentName">{{this.name}}</span>
+                <span class="studentEmail">{{this.email}}</span>
+              </li>
+            {{/each}}
+          </ul>
+        {{else}}
+          <p>No students enrolled in this course.</p>
+        {{/if}}
+
+</div>

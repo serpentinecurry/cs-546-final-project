@@ -8,6 +8,7 @@ import {
   passwordValidate,
   azAZLenValidate,
   isValidDateString,
+  calculateAge,
 } from "../validation.js";
 import { preventDoubleLogin } from "../middleware.js";
 
@@ -15,7 +16,8 @@ router
   .route("/")
   .get(preventDoubleLogin, async (req, res) => {
     const logout = req.query.loggedOut ? "Successfully logged out!" : null;
-    res.render("home", { error: false, logout });
+    const { success } = req.query;
+    res.render("home", { error: false, logout, successMessage: success || null });
   })
   .post(async (req, res) => {
     let { email, password } = req.body;
@@ -24,12 +26,14 @@ router
       passwordValidate(password);
       const user = await userData.login(email, password);
       req.session.user = {
+        _id : user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         age: user.age,
         gender: user.gender,
         email: user.email,
         role: user.role,
+        major: user.major,
         dateOfBirth: user.dateOfBirth,
         accessStatus: user.accessStatus,
         userCreatedAt: user.userCreatedAt,
@@ -63,7 +67,6 @@ router
       confirmPassword,
       role,
       dateOfBirth,
-      age,
       gender,
       major,
     } = req.body;
@@ -72,11 +75,7 @@ router
       azAZLenValidate(firstName, 2, 20);
       lastName = stringValidate(lastName);
       azAZLenValidate(lastName, 2, 20);
-      age = stringValidate(age);
-      age = parseInt(age);
-      if (!Number.isInteger(age) || age <= 0)
-        throw "Age must be a positive integer";
-      if (!["male", "female", "other"].includes(gender)) throw "Invalid gender";
+      if (!["male", "female", "other"].includes(gender)) throw "Invalid Gender";
       email = validateEmail(email);
       passwordValidate(password);
       if (!confirmPassword || typeof confirmPassword !== "string")
@@ -95,7 +94,6 @@ router
       const result = await userData.createUser(
         firstName,
         lastName,
-        age,
         gender,
         email,
         password,

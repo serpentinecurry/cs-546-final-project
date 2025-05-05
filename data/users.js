@@ -1,18 +1,20 @@
-import { users } from "../config/mongoCollections.js";
+import { users, changeRequests } from "../config/mongoCollections.js";
+import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
+import { sendChangeApprovalEmail } from "../utils/mailer.js";
 import {
   stringValidate,
   azAZLenValidate,
   validateEmail,
   passwordValidate,
   isValidDateString,
+  calculateAge,
 } from "../validation.js";
 const SALT_ROUNDS = 10;
 
 const createUser = async (
   firstName,
   lastName,
-  age,
   gender,
   email,
   password,
@@ -24,9 +26,7 @@ const createUser = async (
   azAZLenValidate(firstName, 2, 20);
   lastName = stringValidate(lastName);
   azAZLenValidate(lastName, 2, 20);
-  age = parseInt(age);
-  if (!Number.isInteger(age) || age <= 0)
-    throw "Age must be a positive integer";
+  let age = calculateAge(dateOfBirth);
   if (!["male", "female", "other"].includes(gender)) throw "Invalid gender";
   email = validateEmail(email);
   passwordValidate(password);
@@ -63,6 +63,7 @@ const createUser = async (
     newUser.enrolledCourses = [];
     newUser.absenceRequests = [];
     newUser.lectureNotes = [];
+    newUser.studentEnrollmentRequests = [];
   }
   if (role === "ta") {
     newUser.taForCourses = [];
@@ -85,27 +86,215 @@ const login = async (email, password) => {
   const match = await bcrypt.compare(password, user.password);
   if (!match) throw "Either the emailId or password is invalid";
   const {
+    _id,
     firstName,
     lastName,
     age,
     gender,
     email: storedEmail,
     role,
+    major,
     dateOfBirth,
     accessStatus,
     userCreatedAt,
   } = user;
   return {
+    _id,
     firstName,
     lastName,
     age,
     gender,
     email: storedEmail,
     role,
+    major,
     dateOfBirth,
     accessStatus,
     userCreatedAt,
   };
 };
 
-export default { createUser, login };
+const createRequest = async (userId, field, newValue) => {
+  userId = stringValidate(userId);
+  if (!ObjectId.isValid(userId)) throw "Invalid userId";
+  if (!["major", "email"].includes(field)) throw "Invalid field to change";
+
+  const requestCollection = await changeRequests();
+  const userCollection = await users();
+
+  const user = await userCollection.findOne({ _id: new ObjectId(userId) });
+  if (!user) throw "User not found";
+
+  const existing = await requestCollection.findOne({
+    userId: new ObjectId(userId),
+    field,
+    status: "pending",
+  });
+  if (existing)
+    throw `You already have a pending request to change your ${field}`;
+
+  const newRequest = {
+    userId: new ObjectId(userId),
+    field,
+    oldValue: user[field],
+    newValue,
+    status: "pending",
+    requestedAt: new Date(),
+    reviewedAt: null,
+    adminNote: "",
+  };
+  const insertResult = await requestCollection.insertOne(newRequest);
+  if (!insertResult.acknowledged) throw "Failed to submit change request";
+
+  return { requestSuccessfull: true };
+};
+
+const approveRequest = async (requestId) => {
+  requestId = stringValidate(requestId);
+  if (!ObjectId.isValid(requestId)) throw "Invalid request ID";
+
+  const requestCollection = await changeRequests();
+  const userCollection = await users();
+
+  const req = await requestCollection.findOne({ _id: new ObjectId(requestId) });
+  if (!req) throw "Change request not found";
+  if (req.status !== "pending") throw "Request already resolved";
+
+  // Update user field
+  const updateResult = await userCollection.updateOne(
+    { _id: new ObjectId(req.userId) },
+    { $set: { [req.field]: req.newValue } }
+  );
+
+  if (!updateResult.modifiedCount) throw "Failed to update user data";
+
+  // approve requests
+  await requestCollection.updateOne(
+    { _id: new ObjectId(requestId) },
+    { $set: { status: "approved", reviewedAt: new Date() } }
+  );
+
+  const user = await userCollection.findOne({ _id: req.userId });
+  if (user && user.email) {
+    const fullName = `${user.firstName} ${user.lastName}`;
+    await sendChangeApprovalEmail(
+      user.email,
+      fullName,
+      req.field,
+      req.newValue
+    );
+  }
+  return true;
+};
+
+const rejectRequest = async (requestId, adminNote = "") => {
+  requestId = stringValidate(requestId);
+  if (!ObjectId.isValid(requestId)) throw "Invalid request ID";
+
+  const requestCollection = await changeRequests();
+
+  const req = await requestCollection.findOne({ _id: new ObjectId(requestId) });
+  if (!req) throw "Change request not found";
+  if (req.status !== "pending") throw "Request already resolved";
+
+  await requestCollection.updateOne(
+    { _id: new ObjectId(requestId) },
+    { $set: { status: "rejected", reviewedAt: new Date(), adminNote } }
+  );
+
+  return true;
+};
+
+const getPendingEnrollmentRequests = async (courseId) => {
+  courseId = stringValidate(courseId);
+  if (!ObjectId.isValid(courseId)) throw "Invalid courseId";
+
+  const usersCollection = await users();
+
+  // Log the query parameters
+  console.log("Looking for pending enrollments for course:", courseId);
+ 
+  const pendingStudents = await usersCollection
+    .find({
+      "studentEnrollmentRequests": {
+        $elemMatch: {
+          "courseId": new ObjectId(courseId),
+          "status": "pending"
+        }
+      }
+    })
+    .toArray();
+
+  console.log(`Found ${pendingStudents.length} pending enrollment requests`);
+  return pendingStudents;
+};
+
+const approveEnrollmentRequest = async (studentId, courseId) => {
+  // Check if the values are defined before calling stringValidate
+  if (!studentId) throw "Student ID is required";
+  if (!courseId) throw "Course ID is required";
+  
+  studentId = stringValidate(studentId);
+  courseId = stringValidate(courseId);
+
+  if (!ObjectId.isValid(studentId)) throw "Invalid studentId";
+  if (!ObjectId.isValid(courseId)) throw "Invalid courseId";
+
+  const userCollection = await users();
+
+  // Debug logging
+  console.log("Approving enrollment for:", { 
+    studentId: new ObjectId(studentId),
+    courseId: new ObjectId(courseId)
+  });
+
+  const updateResult = await userCollection.updateOne(
+    { 
+      _id: new ObjectId(studentId),
+      "studentEnrollmentRequests.courseId": new ObjectId(courseId)
+    },
+    { 
+      $set: { "studentEnrollmentRequests.$.status": "approved" },
+      $push: { enrolledCourses: new ObjectId(courseId) }
+    }
+  );
+
+  if (updateResult.modifiedCount === 0) throw "Failed to approve enrollment request";
+
+  return { enrollmentApproved: true };
+};
+
+const rejectEnrollmentRequest = async (studentId, courseId) => {
+  studentId = stringValidate(studentId);
+  courseId = stringValidate(courseId);
+
+  if (!ObjectId.isValid(studentId)) throw "Invalid studentId";
+  if (!ObjectId.isValid(courseId)) throw "Invalid courseId";
+
+  const userCollection = await users();
+
+
+  const updateResult = await userCollection.updateOne(
+    { 
+      _id: new ObjectId(studentId),
+      "studentEnrollmentRequests.courseId": new ObjectId(courseId)
+    },
+    { 
+      $set: { "studentEnrollmentRequests.$.status": "rejected" }
+    }
+  );
+
+  if (updateResult.modifiedCount === 0) throw "Failed to reject enrollment request";
+
+  return { enrollmentRejected: true };
+};
+
+export default {
+  createUser,
+  login,
+  createRequest,
+  approveRequest,
+  rejectRequest,
+  getPendingEnrollmentRequests,
+  approveEnrollmentRequest,
+  rejectEnrollmentRequest,
+};

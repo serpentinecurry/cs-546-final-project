@@ -1,0 +1,58 @@
+<main class="container mt-5">
+  <h2 class="text-danger mb-4">Pending Profile Change Requests</h2>
+
+  {{#if successMessage}}
+    <div class="alert alert-success mb-4">
+      {{successMessage}}
+    </div>
+  {{/if}}
+
+  {{#if requests.length}}
+    <div class="card p-4">
+      <table class="table table-bordered">
+        <thead class="thead-light">
+          <tr>
+            <th>User Name</th>
+            <th>Field</th>
+            <th>Old → New</th>
+            <th>Requested At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each requests}}
+            <tr>
+              <td>{{this.fullName}}</td>
+              <td>{{this.field}}</td>
+              <td><strong>{{this.oldValue}}</strong> → <strong>{{this.newValue}}</strong></td>
+              <td>{{this.requestedAt}}</td>
+              <td>
+                <div class="d-flex justify-content-start flex-wrap gap-2">
+                  <form action="/admin/change-requests/{{this._id}}/approve" method="POST">
+                    <button type="submit" class="btn btn-success">✔ Approve</button>
+                  </form>
+                  <form action="/admin/change-requests/{{this._id}}/reject" method="POST" class="d-flex align-items-center gap-2">
+                    <input
+                      type="text"
+                      name="adminNote"
+                      placeholder="Reason..."
+                      class="form-control"
+                      required
+                    />
+                    <button type="submit" class="btn btn-danger">✖ Reject</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="alert alert-secondary text-center">No pending change requests.</div>
+  {{/if}}
+
+  <div class="text-center mt-4">
+    <a href="/admin" class="btn btn-secondary">⬅️ Back to Admin Dashboard</a>
+  </div>
+</main>

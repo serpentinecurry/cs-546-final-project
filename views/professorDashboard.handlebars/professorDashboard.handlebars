@@ -1,0 +1,25 @@
+{{!-- show courses Listed to check on --}}
+
+<div>
+    <h1>Professor Dashboard</h1>
+    <h2>Welcome, {{professorName}}</h2>
+    <h3>Your Courses</h3>
+
+    {{#if courses.length}}
+        <ul class="courseList">
+            {{#each courses}}
+                <li class="courseName">
+                    {{this.courseName}} - 
+                    <a href="/professor/course/{{this._id}}/analytics">View Course</a>
+                    <span class="courseCode">({{this.courseCode}})</span>
+                </li>
+            {{/each}}
+        </ul>
+    {{else}}
+        <p>You don't have any courses assigned yet.</p>
+    {{/if}}
+
+    <div class="dashboard-actions">
+        <a href="/logout" class="btn logout-btn">Logout</a>
+    </div>
+</div>

@@ -1,33 +1,292 @@
-<h1>Register for Scholario</h1>
+<style>
+  body {
+    background: #f1f5f9;
+    font-family: "Segoe UI", sans-serif;
+  }
 
-{{#if error}}<p style="color:red">{{error}}</p>{{/if}}
+  .register-wrapper {
+    max-width: 850px;
+    margin: 4rem auto;
+    background-color: white;
+    padding: 3rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+    position: relative;
+    animation: fadeInUp 0.6s ease;
+  }
 
-<form method="POST" action="/register">
-  <label>First Name: <input name="firstName" id="firstName" value="{{formData.firstName}}" required></label><br>
-  <label>Last Name: <input name="lastName" id="lastName" value="{{formData.lastName}}" required></label><br>
-  <label>Email: <input type="email" name="email" id="email" value="{{formData.email}}" required></label><br>
-  <label>Password: <input type="password" name="password" id="password" required></label><br>
-  <label>Confirm Password: <input type="password" name="confirmPassword" id="confirmPassword" required></label><br>
-  <label>Role:
-    <select id="role" name="role" required>
-      <option value="student" {{#if (eq formData.role 'student')}}selected{{/if}}>Student</option>
-      <option value="ta" {{#if (eq formData.role 'ta')}}selected{{/if}}>TA</option>
-      <option value="professor" {{#if (eq formData.role 'professor')}}selected{{/if}}>Professor</option>
-    </select>
-  </label><br>
-  <label>Date of Birth: <input type="date" name="dateOfBirth" id="dateOfBirth" value="{{formData.dateOfBirth}}" required></label><br>
-  <label>Age: <input type="number" name="age" min="0" id="age" value="{{formData.age}}" required></label><br>
-  <label>Gender:
-    <select name="gender" id="gender" required>
-      <option value="male" {{#if (eq formData.gender 'male')}}selected{{/if}}>Male</option>
-      <option value="female" {{#if (eq formData.gender 'female')}}selected{{/if}}>Female</option>
-      <option value="other" {{#if (eq formData.gender 'other')}}selected{{/if}}>Other</option>
-    </select>
-  </label><br>
-  <label>Major (Students only): <input name="major" id="major" value="{{formData.major}}"></label><br>
+  @keyframes fadeInUp {
+    0% {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 
-  <button type="submit" id="submitButton" name="submitButton">Register</button>
-</form>
+  .register-logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
 
-<br />
-<a href="/">Already have an account? Click here to return to Home</a>
+  .register-logo img {
+    height: 90px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+  }
+
+  .register-logo img:hover {
+    transform: scale(1.05);
+  }
+
+  .register-title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .register-title h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #4f46e5;
+  }
+
+  .form-label {
+    font-weight: 500;
+    color: #1f2937;
+  }
+
+  .form-control,
+  .form-select {
+    border-radius: 10px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .form-control:focus,
+  .form-select:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+  }
+
+  .error-message {
+    color: #dc3545;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 1.25rem;
+  }
+
+  .btn-primary {
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+    font-weight: 600;
+    border-radius: 10px;
+  }
+
+  .btn-primary:hover {
+    background-color: #4338ca;
+  }
+
+  .bottom-link {
+    text-align: center;
+    margin-top: 2rem;
+  }
+
+  .bottom-link a {
+    text-decoration: none;
+    color: #4f46e5;
+    font-weight: 500;
+  }
+
+  .bottom-link a:hover {
+    text-decoration: underline;
+  }
+
+  .spinner-wrapper {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.6);
+    justify-content: center;
+    align-items: center;
+    border-radius: 20px;
+  }
+
+  .spinner-wrapper.active {
+    display: flex;
+  }
+
+  .password-toggle-btn {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 0;
+    z-index: 5;
+  }
+
+  .password-toggle-btn:focus {
+    outline: none;
+  }
+
+  .toggle-btn {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+  }
+  .link-hover {
+    color: #4f46e5;
+    transition: all 0.2s ease;
+  }
+
+  .link-hover:hover {
+    text-decoration: underline;
+    color: #4338ca;
+  }
+</style>
+
+<div class="register-wrapper position-relative">
+  <!-- Spinner Overlay -->
+  <div id="spinner" class="spinner-wrapper">
+    <div class="spinner-border text-primary" role="status"></div>
+  </div>
+
+  <!-- Logo -->
+  <div class="register-logo">
+    <img src="/public/images/scholario_logo.png" alt="Scholario Logo" />
+  </div>
+
+  <!-- Title -->
+  <div class="register-title">
+    <h1><i class="bi bi-person-plus-fill me-2"></i> Register for Scholario</h1>
+    <p class="text-muted">Create your Scholario account and join the future of learning</p>
+  </div>
+
+  <!-- Error Message -->
+  {{#if error}}
+    <div class="error-message">⚠️ {{error}}</div>
+  {{/if}}
+
+  <!-- Form -->
+  <form id="registerForm" method="POST" action="/register">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label" for="firstName">First Name</label>
+        <input class="form-control" name="firstName" id="firstName" value="{{formData.firstName}}" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="lastName">Last Name</label>
+        <input class="form-control" name="lastName" id="lastName" value="{{formData.lastName}}" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="email">Email</label>
+        <input type="email" class="form-control" name="email" id="email" value="{{formData.email}}" required />
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="dateOfBirth">Date of Birth</label>
+        <input type="date" class="form-control" name="dateOfBirth" id="dateOfBirth" value="{{formData.dateOfBirth}}" required />
+      </div>
+
+      <div class="col-md-6">
+  <label class="form-label" for="password">Password</label>
+  <div class="position-relative">
+    <input type="password" class="form-control pe-5" name="password" id="password" required />
+    <button type="button" class="password-toggle-btn" onclick="togglePassword('password', this)">
+      <i class="bi bi-eye-slash"></i>
+    </button>
+  </div>
+</div>
+
+<div class="col-md-6">
+  <label class="form-label" for="confirmPassword">Confirm Password</label>
+  <div class="position-relative">
+    <input type="password" class="form-control pe-5" name="confirmPassword" id="confirmPassword" required />
+    <button type="button" class="password-toggle-btn" onclick="togglePassword('confirmPassword', this)">
+      <i class="bi bi-eye-slash"></i>
+    </button>
+  </div>
+</div>
+
+
+      <div class="col-md-6">
+        <label class="form-label" for="role">Role</label>
+        <select class="form-select" name="role" id="role" required>
+          <option value="student" {{#if (eq formData.role 'student')}}selected{{/if}}>Student</option>
+          <option value="ta" {{#if (eq formData.role 'ta')}}selected{{/if}}>TA</option>
+          <option value="professor" {{#if (eq formData.role 'professor')}}selected{{/if}}>Professor</option>
+        </select>
+      </div>
+
+      {{!-- <div class="col-md-3">
+        <label class="form-label" for="age">Age</label>
+        <input type="number" class="form-control" name="age" id="age" min="0" value="{{formData.age}}" required />
+      </div> --}}
+
+      <div class="col-md-3">
+        <label class="form-label" for="gender">Gender</label>
+        <select class="form-select" name="gender" id="gender" required>
+          <option value="male" {{#if (eq formData.gender 'male')}}selected{{/if}}>Male</option>
+          <option value="female" {{#if (eq formData.gender 'female')}}selected{{/if}}>Female</option>
+          <option value="other" {{#if (eq formData.gender 'other')}}selected{{/if}}>Other</option>
+        </select>
+      </div>
+
+      <div class="col-md-12">
+        <label class="form-label" for="major">Major (Students only)</label>
+        <input class="form-control" name="major" id="major" value="{{formData.major}}" />
+      </div>
+    </div>
+
+    <div class="d-grid mt-4">
+      <button type="submit" class="btn btn-primary btn-lg">
+        <i class="bi bi-check-circle me-2"></i>Register
+      </button>
+    </div>
+  </form>
+
+<div class="bottom-link mt-4 text-center">
+  <p class="text-muted fs-6">
+    Already have an account?
+    <a href="/" class="fw-semibold text-decoration-none link-hover">
+      <i class="bi bi-arrow-left-circle me-1"></i> Return to Home
+    </a>
+  </p>
+</div>
+
+
+<script>
+  // Show spinner on submit
+  document.getElementById("registerForm").addEventListener("submit", function () {
+    document.getElementById("spinner").classList.add("active");
+  });
+
+  // Password toggle logic
+  function togglePassword(inputId, toggleBtn) {
+    const input = document.getElementById(inputId);
+    const icon = toggleBtn.querySelector("i");
+
+    if (input.type === "password") {
+      input.type = "text";
+      icon.classList.remove("bi-eye-slash");
+      icon.classList.add("bi-eye");
+    } else {
+      input.type = "password";
+      icon.classList.remove("bi-eye");
+      icon.classList.add("bi-eye-slash");
+    }
+  }
+</script>

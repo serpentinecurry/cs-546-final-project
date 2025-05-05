@@ -1,0 +1,386 @@
+<!-- views/student/student.handlebars -->
+
+<style>
+  :root {
+    --primary: #6366f1;
+    --secondary: #0ea5e9;
+    --bg: #f3f4f6;
+    --text: #1f2937;
+    --white: #ffffff;
+    --radius: 12px;
+    --transition: all 0.3s ease;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg);
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--text);
+  }
+
+  .header {
+    background: linear-gradient(to right, var(--primary), var(--secondary));
+    padding: 1.25rem 2rem;
+    color: var(--white);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
+  }
+
+  .header-logo img {
+    height: 56px;
+    border-radius: 10px;
+    transition: transform 0.3s;
+  }
+
+  .header-logo img:hover {
+    transform: scale(1.05);
+  }
+
+  .sidebar {
+    background-color: var(--white);
+    width: 270px;
+    padding: 2rem 1.2rem;
+    height: 100vh;
+    position: sticky;
+    top: 88px;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.04);
+  }
+
+  .nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .nav-item {
+    margin-bottom: 1.25rem;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius);
+    transition: var(--transition);
+    font-size: 1.05rem;
+  }
+
+  .nav-link:hover,
+  .nav-link.active {
+    background-color: var(--primary);
+    color: var(--white);
+  }
+
+  .main {
+    flex: 1;
+    padding: 2.5rem;
+  }
+
+  .content-card {
+    background-color: var(--white);
+    padding: 2.5rem;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.06);
+    min-height: 82vh;
+    animation: fadeIn 0.4s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .footer {
+    text-align: center;
+    padding: 1.2rem;
+    font-size: 0.95rem;
+    color: #6b7280;
+    background-color: var(--white);
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .user-avatar {
+    width: 44px;
+    height: 44px;
+    background-color: var(--white);
+    color: var(--text);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    transition: transform 0.3s;
+  }
+
+  .user-avatar:hover {
+    transform: scale(1.1);
+  }
+
+  .dropdown-menu li {
+    font-size: 0.95rem;
+  }
+
+  h2 {
+    font-weight: 700;
+    font-size: 2rem;
+  }
+
+  .change-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 500px;
+  margin-top: 1.5rem;
+}
+
+.change-form .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.change-form label {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.change-form select,
+.change-form input {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  background-color: #fff;
+}
+
+.submit-btn {
+  background: var(--primary);
+  color: var(--white);
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.submit-btn:hover {
+  background: var(--secondary);
+}
+
+.view-btn {
+  background: transparent;
+  color: var(--primary);
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.view-btn:hover {
+  background: var(--primary);
+  color: white;
+}
+
+.form-error {
+  color: red;
+  font-weight: bold;
+  margin-top: 0.75rem;
+}
+
+/* Request Status Table */
+.status-table-wrapper {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.status-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--white);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.status-table th,
+.status-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.status-tag {
+  padding: 0.4rem 0.75rem;
+  border-radius: 50px;
+  font-weight: 600;
+  text-transform: capitalize;
+  font-size: 0.9rem;
+}
+
+.status-tag.pending {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.status-tag.approved {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-tag.rejected {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.change-password-form {
+  max-width: 500px;
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.change-password-form label {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.change-password-form input {
+  padding: 0.75rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: var(--radius);
+  background-color: white;
+  font-size: 1rem;
+}
+
+.submit-btn {
+  background: var(--primary);
+  color: var(--white);
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.submit-btn:hover {
+  background: var(--secondary);
+}
+
+.form-error {
+  color: red;
+  font-weight: bold;
+}
+
+</style>
+
+<header class="header d-flex justify-content-between align-items-center px-4 py-3">
+  <div class="d-flex align-items-center gap-3">
+    <a href="/student" class="d-flex align-items-center text-decoration-none header-logo">
+      <img src="/public/images/scholario_logo.png" alt="Scholario Logo">
+      <div class="ms-3 text-start">
+        <h1 class="text-white fw-bold mb-0" style="font-size: 1.85rem;">Scholario</h1>
+      </div>
+    </a>
+  </div>
+
+  <div class="dropdown">
+    <button class="btn btn-transparent border-0 dropdown-toggle d-flex align-items-center gap-2 text-white"
+            type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+      <div class="user-avatar">
+        <i class="bi bi-person"></i>
+      </div>
+      <div class="d-none d-sm-block text-start">
+        <div class="fw-semibold">{{user.fullName}}</div>
+      </div>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow-sm p-2" aria-labelledby="userDropdown" style="min-width: 220px;">
+      <li class="px-3 py-1 text-muted small">Logged in as <strong>{{user.email}}</strong></li>
+              <li class="px-3 py-1 text-muted small">Role: <strong class="text-capitalize">{{user.role}}</strong></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="dropdown-item" href="/student/profile">Profile</a></li>
+      <li><a class="dropdown-item text-danger fw-semibold" href="/logout">Logout</a></li>
+    </ul>
+
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm p-2" aria-labelledby="userDropdown" style="min-width: 220px;">
+      <li class="px-3 py-1 text-muted small">Role: <strong class="text-capitalize">{{user.role}}</strong></li>
+      <li><hr class="dropdown-divider"></li>
+      <li><a class="dropdown-item" href="/student/profile">Profile</a></li>
+      <li><a class="dropdown-item text-danger fw-semibold" href="/logout">Logout</a></li>
+    </ul>
+  </div>
+</header>
+
+<div class="d-flex">
+  <aside class="sidebar">
+    <ul class="nav">
+      <li class="nav-item">
+        <a href="/student" class="nav-link {{#ifEquals currentPage 'home'}}active{{/ifEquals}}">
+          <i class="bi bi-house-door"></i> Home
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/student/dashboard" class="nav-link {{#ifEquals currentPage 'dashboard'}}active{{/ifEquals}}">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/student/courses" class="nav-link {{#ifEquals currentPage 'courses'}}active{{/ifEquals}}">
+          <i class="bi bi-book"></i> Courses
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/student/absence-request" class="nav-link {{#ifEquals currentPage 'absence-request'}}active{{/ifEquals}}">
+          <i class="bi bi-file-earmark-text"></i> Absence Request
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/student/calendar" class="nav-link {{#ifEquals currentPage 'calendar'}}active{{/ifEquals}}">
+          <i class="bi bi-calendar-event"></i> Calendar
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/student/messages" class="nav-link {{#ifEquals currentPage 'messages'}}active{{/ifEquals}}">
+          <i class="bi bi-chat-dots"></i> Messages
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/student/request-change" class="nav-link {{#ifEquals currentPage 'requestChangeForm'}}active{{/ifEquals}}">
+          <i class="bi bi-gear"></i> Request Profile Change
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <main class="main">
+    <div class="content-card">
+      {{#if partialToRender}}
+        {{> (lookup . 'partialToRender') }}
+      {{else}}
+        <div class="text-center">
+          <h2>Welcome, {{user.firstName}} 👋</h2>
+          <p class="text-muted">Navigate through your student dashboard using the menu on the left.</p>
+        </div>
+      {{/if}}
+    </div>
+  </main>
+</div>
+
+<footer class="footer">
+  &copy; 2025 Scholario. Crafted with 💙 to empower learners.
+</footer>

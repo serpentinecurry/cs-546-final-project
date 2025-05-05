@@ -1,46 +1,183 @@
-<header>
-  <h1>📚 Scholario</h1>
-  <p>Your all-in-one virtual classroom toolkit.</p>
-</header>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #f1f5f9;
+    font-family: "Segoe UI", sans-serif;
+  }
 
-{{#if error}}
-  <p style="color:red;">⚠️ {{error}}</p>
-{{/if}}
-{{#if logout}}
-  <p style="color: green;">✅ {{logout}}</p>
-{{/if}}
-{{#if successMessage}}
-  <p style="color: green;">✅ {{successMessage}}</p>
-{{/if}}
-<main>
-  <section>
-    <h2>Login</h2>
-    <form method="POST" action="/">
-      <label for="email">Email:</label><br />
-      <input type="email" id="email" name="email" value="{{formData.email}}" required /><br />
+  .login-wrapper {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
 
-      <label for="password">Password:</label><br />
-      <input type="password" id="password" name="password" required /><br /><br
-      />
+  .login-left {
+    background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+    color: white;
+    padding: 4rem;
+    flex: 1.3;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
 
-      <button type="submit">Login</button>
-    </form>
-  </section>
+  .login-left img {
+    max-width: 160px;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1.5rem;
+  }
 
-  <section>
-    <p>Don't have an account?</p>
-    <a href="/register">
-      <button>Sign Up</button>
-    </a>
-  </section>
+  .login-left h1 {
+    font-size: 2.8rem;
+    font-weight: 700;
+    margin-bottom: 0.8rem;
+  }
 
-  <section>
-    <h3>What can Scholario do?</h3>
+  .login-left p {
+    font-size: 1.15rem;
+    max-width: 400px;
+    margin-bottom: 2rem;
+    color: #f0f9ff;
+  }
+
+  .login-left ul {
+    text-align: left;
+    margin-top: 2rem;
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .login-left ul li {
+    margin-bottom: 0.75rem;
+    font-size: 1.05rem;
+  }
+
+  .login-left ul li::before {
+    content: "✅";
+    margin-right: 0.5rem;
+  }
+
+  .login-right {
+    flex: 1;
+    background-color: white;
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .login-right h2 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .alert {
+    border-radius: 8px;
+  }
+
+  .form-label {
+    font-weight: 500;
+  }
+
+  .btn-custom {
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+  }
+
+  .btn-custom:hover {
+    background-color: #4338ca;
+  }
+
+  @media (max-width: 768px) {
+    .login-wrapper {
+      flex-direction: column;
+    }
+
+    .login-left,
+    .login-right {
+      flex: 1;
+      padding: 2rem;
+    }
+  }
+</style>
+
+<div class="login-wrapper">
+  <!-- Branding Section -->
+  <div class="login-left">
+    <img src="/public/images/scholario_logo.png" alt="Scholario Logo" />
+    <h1>Scholario</h1>
+    <p>Your all-in-one virtual classroom toolkit for students and faculty.</p>
+
     <ul>
-      <li>✅ Track & visualize attendance</li>
-      <li>✅ Request absences and submit notes</li>
-      <li>✅ Manage TA office hours</li>
-      <li>✅ Engage in lecture discussions</li>
+      <li>Track & visualize attendance effortlessly</li>
+      <li>Request absences and manage submissions</li>
+      <li>Manage TA office hours seamlessly</li>
+      <li>Engage in lecture discussions & more</li>
     </ul>
-  </section>
-</main>
+  </div>
+
+  <!-- Login Form Section -->
+  <div class="login-right">
+    {{#if error}}
+      <div class="alert alert-danger" role="alert">
+        ⚠️ {{error}}
+      </div>
+    {{/if}}
+
+    {{#if logout}}
+      <div class="alert alert-success" role="alert">
+        ✅ {{logout}}
+      </div>
+    {{/if}}
+
+    {{#if successMessage}}
+      <div class="alert alert-success" role="alert">
+        ✅ {{successMessage}}
+      </div>
+    {{/if}}
+
+    <h2>Login to Your Account</h2>
+    <form method="POST" action="/">
+      <div class="mb-3">
+        <label for="email" class="form-label">Email address</label>
+        <input
+          type="email"
+          class="form-control"
+          id="email"
+          name="email"
+          value="{{formData.email}}"
+          required
+        />
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input
+          type="password"
+          class="form-control"
+          id="password"
+          name="password"
+          required
+        />
+      </div>
+
+      <div class="d-grid gap-2 mb-3">
+        <button type="submit" class="btn btn-custom btn-lg">
+          Login
+        </button>
+      </div>
+    </form>
+
+    <div class="text-center mt-3">
+      <p>Don't have an account?</p>
+      <a href="/register" class="btn btn-outline-primary">Sign Up</a>
+    </div>
+  </div>
+</div>
