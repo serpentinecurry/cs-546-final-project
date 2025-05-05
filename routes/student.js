@@ -5,6 +5,7 @@ import { users, courses, changeRequests } from "../config/mongoCollections.js";
 import { absenceProofUpload } from "../middleware.js";
 import { ObjectId } from "mongodb";
 import { userData } from "../data/index.js";
+import { calendarData } from "../data/index.js";
 import bcrypt from "bcrypt";
 import {
   stringValidate,
@@ -308,14 +309,33 @@ router.route("/request-status").get(async (req, res) => {
   }
 });
 
-// router.route("/calendar").get(async (req, res) => {
-//     res.render("student/student", {
-//         layout: "main",
-//         studentContent: loadPartial("calendar"),
-//         user: withUser(req),
-//         currentPage: "calendar"
-//     });
-// });
+router.route("/calendar").get(async (req, res) => {
+    console.log(">>> Session user in /calendar:", req.session.user);
+    try {
+      const officeHours = await calendarData.getOfficeHours(req.session.user._id);
+      return res.render("student/student", {
+          layout: "main",
+          // studentContent: loadPartial("calendar"),
+          partialToRender: "calendar",
+          user: withUser(req),
+          currentPage: "calendar",
+          officeHours: officeHours
+      });
+    } catch (e) {
+      console.log(e);
+      return res.render("error", {error: e});
+    }
+});
+
+/* router.route("/dashboard").get(async (req, res) => {
+  console.log("Session user in /dashboard:", req.session.user);
+  res.render("student/student", {
+    layout: "main",
+    partialToRender: "dashboard",
+    user: withUser(req),
+    currentPage: "dashboard",
+  });
+}); */
 //
 // router.route("/messages").get(async (req, res) => {
 //     res.render("student/student", {
