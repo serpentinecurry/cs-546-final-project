@@ -18,7 +18,7 @@ router.route("/").get(async (req, res) => {
   }
 });
 
-// GET /admin/courses/create - Show create form
+// GET /admin/courses/create
 router
   .route("/create")
   .get(async (req, res) => {

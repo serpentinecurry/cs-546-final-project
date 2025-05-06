@@ -1,7 +1,6 @@
-import { courses } from "../config/mongoCollections.js";
+import { courses, users } from "../config/mongoCollections.js";
 import { ObjectId } from "mongodb";
 import { stringValidate } from "../validation.js";
-import { users } from "../config/mongoCollections.js";
 
 const createCourse = async (courseName, courseCode, professorId) => {
   courseName = stringValidate(courseName);
@@ -96,18 +95,15 @@ const getEnrolledStudents = async (courseId) => {
   const studentIds = approvedRequests.map((req) => new ObjectId(req.studentId));
 
   const enrolledStudents = await usersCollection.find({
-    _id: { $in: studentIds },
-    user_role: "student",
-    $or: [
-      { enrolledCourses: { $elemMatch: { course: new ObjectId(courseId), status: "active" } } },
-      { enrolledCourses: new ObjectId(courseId) }
-    ]
+    rold: "student",
+    enrolledCourses: new ObjectId(courseId),
   }).toArray();
 
   return enrolledStudents;
 };
 
 const NumOfStudentsInCourse = async (courseId) => {
+  
   return this.getEntolledStudents(courseId).length
 };
 

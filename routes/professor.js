@@ -91,9 +91,9 @@ router.route("/course/:id").get(async (req, res) => {
 router.route("/course/:id/analytics").get(async (req, res) => {
     try {
         const courseId = req.params.id;
-        console.log("Loading analytics for course ID:", courseId);
+        console.log("Loading for course:", courseId);
         
-        // Get the course details
+        
         const courseCollection = await courses();
         const course = await courseCollection.findOne({
             _id: new ObjectId(courseId)
@@ -106,44 +106,43 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             });
         }
 
-        // Make sure MongoDB ObjectIds are converted to strings for the handlebars template
+       
         course._id = course._id.toString();
         
-        // Get lectures for the course
+        
         const lecturesCollection = await lectures();
         const courseLectures = await lecturesCollection.find({
             courseId: new ObjectId(courseId)
         }).toArray();
         
-        // Get enrolled students count - with proper error handling
-        let enrolledStudentsCount = 0;
-        if (course.enrolledStudents && Array.isArray(course.enrolledStudents)) {
-            enrolledStudentsCount = course.enrolledStudents.length;
-        }
         
-        // Get pending students with proper error handling
         let pendingStudents = [];
         try {
             pendingStudents = await userData.getPendingEnrollmentRequests(courseId);
-            // Convert ObjectIds to strings for handlebars
+         
             pendingStudents = pendingStudents.map(student => ({
                 ...student,
                 _id: student._id.toString()
             }));
         } catch (e) {
             console.error("Error getting pending enrollment requests:", e);
-            // Don't let this error stop the whole page
+           
         }
         
-        // Get enrolled students list if the function exists
+        
         let enrolledStudents = [];
-        if (userData.getEnrolledStudents) {
-            try {
-                enrolledStudents = await userData.getEnrolledStudents(courseId);
-            } catch (e) {
-                console.error("Error getting enrolled students:", e);
-                // Don't let this error stop the whole page
-            }
+        let enrolledStudentsCount = 0;
+        
+        try {
+            const userCollection = await users();
+            enrolledStudents = await userCollection.find({
+                enrolledCourses: new ObjectId(courseId)
+            }).toArray();
+            
+            enrolledStudentsCount = enrolledStudents.length;
+            
+        } catch (e) {
+            console.error("Error getting enrolled students:", e);
         }
         
         res.render("professorDashboard.handlebars/DataAnalyticsView", {
