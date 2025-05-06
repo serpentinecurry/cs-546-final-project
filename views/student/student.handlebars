@@ -339,9 +339,14 @@
           <i class="bi bi-speedometer2"></i> Dashboard
         </a>
       </li>
+        <li class="nav-item">
+        <a href="/student/all-courses" class="nav-link {{#ifEquals currentPage 'all-courses'}}active{{/ifEquals}}">
+          <i class="bi bi-book"></i> All Courses
+        </a>
+      </li>
       <li class="nav-item">
-        <a href="/student/courses" class="nav-link {{#ifEquals currentPage 'courses'}}active{{/ifEquals}}">
-          <i class="bi bi-book"></i> Courses
+        <a href="/student/my-courses" class="nav-link {{#ifEquals currentPage 'my-courses'}}active{{/ifEquals}}">
+          <i class="bi bi-book"></i> My Courses
         </a>
       </li>
       <li class="nav-item">
@@ -349,16 +354,16 @@
           <i class="bi bi-file-earmark-text"></i> Absence Request
         </a>
       </li>
-      <li class="nav-item">
-        <a href="/student/calendar" class="nav-link {{#ifEquals currentPage 'calendar'}}active{{/ifEquals}}">
-          <i class="bi bi-calendar-event"></i> Calendar
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="/student/messages" class="nav-link {{#ifEquals currentPage 'messages'}}active{{/ifEquals}}">
-          <i class="bi bi-chat-dots"></i> Messages
-        </a>
-      </li>
+<!--      <li class="nav-item">-->
+<!--        <a href="/student/calendar" class="nav-link {{#ifEquals currentPage 'calendar'}}active{{/ifEquals}}">-->
+<!--          <i class="bi bi-calendar-event"></i> Calendar-->
+<!--        </a>-->
+<!--      </li>-->
+<!--      <li class="nav-item">-->
+<!--        <a href="/student/messages" class="nav-link {{#ifEquals currentPage 'messages'}}active{{/ifEquals}}">-->
+<!--          <i class="bi bi-chat-dots"></i> Messages-->
+<!--        </a>-->
+<!--      </li>-->
       <li class="nav-item">
         <a href="/student/request-change" class="nav-link {{#ifEquals currentPage 'requestChangeForm'}}active{{/ifEquals}}">
           <i class="bi bi-gear"></i> Request Profile Change

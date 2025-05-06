@@ -5,12 +5,12 @@ import { users } from "../config/mongoCollections.js";
 import { ObjectId } from "mongodb";
 
 const db = await dbConnection();
-await db.dropDatabase();
+// await db.dropDatabase();
 
 const usersCollection = await users();
 
 const user1 = await userData.createUser(
-    "System", "Admin", "other", "admin@scholorio.com", "Admin@911", "admin", "1990-01-01" 
+    "Anik", "Doshi", "male", "asdoshi@hotmail.com", "Admin@911", "admin", "1990-01-01"
 )
 await usersCollection.updateOne({ email: "admin@scholorio.com" }, { $set: { accessStatus: "approved" } });
 

@@ -1,0 +1,15 @@
+<h2 class="text-center mb-4 text-primary">📘 {{course.courseName}}</h2>
+
+<p class="text-center text-muted mb-2 fs-5">Course Code: <strong>{{course.courseCode}}</strong></p>
+
+{{#if professor}}
+  <p class="text-center fs-6">👨‍🏫 Professor: {{professor.firstName}} {{professor.lastName}}</p>
+{{else}}
+  <p class="text-center text-muted fst-italic">No professor assigned.</p>
+{{/if}}
+
+<hr />
+
+<div class="text-center mt-4">
+  <a href="/student/my-courses" class="btn btn-outline-secondary">⬅️ Back to My Courses</a>
+</div>
