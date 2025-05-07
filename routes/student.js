@@ -102,11 +102,11 @@ router.post("/unenroll/:courseId", async (req, res) => {
         const updateResult = await courseCollection.updateOne(
             {
                 _id: new ObjectId(courseId),
-                "studentEnrollmentRequests.studentId": new ObjectId(studentId),
+                "studentEnrollments.studentId": new ObjectId(studentId),
             },
             {
                 $set: {
-                    "studentEnrollmentRequests.$.status": "inactive",
+                    "studentEnrollments.$.status": "inactive",
                 },
             }
         );
@@ -163,9 +163,9 @@ router.route("/courses/:id").get(async (req, res) => {
 
     const { course, professor } = await coursesData.getCourseById(courseId);
     console.log("→ course loaded:", course.courseName);
-    console.log("→ studentEnrollmentRequests:", course.studentEnrollmentRequests);
+    console.log("→ studentEnrollments:", course.studentEnrollments);
 
-    const isEnrolled = course.studentEnrollmentRequests?.some(
+    const isEnrolled = course.studentEnrollments?.some(
       (r) =>
         r.studentId?.toString() === studentId.toString() &&
         r.status === "active"
@@ -221,7 +221,7 @@ router
 
         const enrolledCourses = await courseCollection
             .find({
-                studentEnrollmentRequests: {
+                studentEnrollments: {
                     $elemMatch: {
                         studentId: new ObjectId(studentId),
                         status: "active",

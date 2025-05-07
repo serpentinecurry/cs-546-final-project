@@ -95,7 +95,7 @@ await usersCollection.updateOne(
   { _id: student1._id },
   { 
     $push: { 
-      studentEnrollmentRequests: {
+      studentEnrollments: {
         courseId: new ObjectId(webDevCourseId),
         status: "pending",
         requestedAt: new Date()
@@ -108,7 +108,7 @@ await usersCollection.updateOne(
   { _id: student2._id },
   { 
     $push: { 
-      studentEnrollmentRequests: {
+      studentEnrollments: {
         courseId: new ObjectId(webDevCourseId),
         status: "pending",
         requestedAt: new Date()
@@ -121,7 +121,7 @@ await usersCollection.updateOne(
   { _id: student3._id },
   { 
     $push: { 
-      studentEnrollmentRequests: {
+      studentEnrollments: {
         courseId: new ObjectId(webDevCourseId),
         status: "pending",
         requestedAt: new Date()
@@ -135,7 +135,7 @@ await usersCollection.updateOne(
   { _id: student3._id },
   { 
     $push: { 
-      studentEnrollmentRequests: {
+      studentEnrollments: {
         courseId: new ObjectId(dbCourseId),
         status: "pending",
         requestedAt: new Date()
