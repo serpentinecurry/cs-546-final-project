@@ -1,4 +1,4 @@
-import { Router } from "express";
+import {Router} from "express";
 import {ObjectId} from "mongodb";
 import userData from "../data/users.js";
 import courseData from "../data/courses.js";
@@ -20,38 +20,36 @@ router.route("/").get(async (req, res) => {
 
     try {
         const userCollection = await users();
-        const professor = await userCollection.findOne({ 
-          _id: new ObjectId(req.session.user._id) 
+        const professor = await userCollection.findOne({
+            _id: new ObjectId(req.session.user._id)
         });
- 
-        
 
-        
-    if (!professor) {
-        return res.status(404).render("error", {
+
+        if (!professor) {
+            return res.status(404).render("error", {
+                layout: "main",
+                error: "Professor not found in the database.",
+            });
+        }
+
+        const courseCollection = await courses();
+        const professorsCourses = await courseCollection.find({
+            professorId: new ObjectId(req.session.user._id)
+        }).toArray();
+
+        res.render("professorDashboard/professorDashboard", {
             layout: "main",
-            error: "Professor not found in the database.",
+            professorName: `${professor.firstName} ${professor.lastName}`,
+            courses: professorsCourses,
+            title: "Professor Dashboard"
+        });
+
+    } catch (error) {
+        res.status(500).render("error", {
+            layout: "main",
+            error: "Internal server error while fetching professor data.",
         });
     }
-
-    const courseCollection = await courses();
-    const professorsCourses = await courseCollection.find({
-        professorId: new ObjectId(req.session.user._id)
-    }).toArray();
-
-    res.render("professorDashboard/professorDashboard", {
-        layout: "main",
-        professorName: `${professor.firstName} ${professor.lastName}`,
-        courses: professorsCourses,
-        title: "Professor Dashboard"
-    });
-
-} catch (error) {
-    res.status(500).render("error", {
-        layout: "main",
-        error: "Internal server error while fetching professor data.",
-    });
-}
 });
 
 
@@ -79,7 +77,7 @@ router.route("/course/:id").get(async (req, res) => {
             courseCode: course.courseCode,
             lectures: courseLectures,
         });
-    } catch(error) {
+    } catch (error) {
         console.error("Error displaying course:", error);
         res.status(500).render("error", {
             layout: "main",
@@ -91,9 +89,9 @@ router.route("/course/:id").get(async (req, res) => {
 router.route("/course/:id/analytics").get(async (req, res) => {
     try {
         const courseId = req.params.id;
-        console.log("Loading analytics for course ID:", courseId);
-        
-        // Get the course details
+        console.log("Loading for course:", courseId);
+
+
         const courseCollection = await courses();
         const course = await courseCollection.findOne({
             _id: new ObjectId(courseId)
@@ -106,47 +104,46 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             });
         }
 
-        // Make sure MongoDB ObjectIds are converted to strings for the handlebars template
+
         course._id = course._id.toString();
-        
-        // Get lectures for the course
+
+
         const lecturesCollection = await lectures();
         const courseLectures = await lecturesCollection.find({
             courseId: new ObjectId(courseId)
         }).toArray();
-        
-        // Get enrolled students count - with proper error handling
-        let enrolledStudentsCount = 0;
-        if (course.enrolledStudents && Array.isArray(course.enrolledStudents)) {
-            enrolledStudentsCount = course.enrolledStudents.length;
-        }
-        
-        // Get pending students with proper error handling
+
+
         let pendingStudents = [];
         try {
             pendingStudents = await userData.getPendingEnrollmentRequests(courseId);
-            // Convert ObjectIds to strings for handlebars
+
             pendingStudents = pendingStudents.map(student => ({
                 ...student,
                 _id: student._id.toString()
             }));
         } catch (e) {
             console.error("Error getting pending enrollment requests:", e);
-            // Don't let this error stop the whole page
+
         }
-        
-        // Get enrolled students list if the function exists
+
+
         let enrolledStudents = [];
-        if (userData.getEnrolledStudents) {
-            try {
-                enrolledStudents = await userData.getEnrolledStudents(courseId);
-            } catch (e) {
-                console.error("Error getting enrolled students:", e);
-                // Don't let this error stop the whole page
-            }
+        let enrolledStudentsCount = 0;
+
+        try {
+            const userCollection = await users();
+            enrolledStudents = await userCollection.find({
+                enrolledCourses: new ObjectId(courseId)
+            }).toArray();
+
+            enrolledStudentsCount = enrolledStudents.length;
+
+        } catch (e) {
+            console.error("Error getting enrolled students:", e);
         }
-        
-        res.render("professorDashboard/DataAnalyticsView", {
+
+        res.render("professorDashboard.handlebars/DataAnalyticsView", {
             layout: "main",
             course: course,
             lectures: courseLectures,
@@ -157,7 +154,7 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             enrolledStudents: enrolledStudents || [],
             successMessage: req.session.successMessage || null,
         });
-        
+
     } catch (error) {
         console.error("Error in course analytics:", error);
         res.status(500).render("error", {
@@ -191,51 +188,50 @@ router.route("/lectures/analytics/:id").get(async (req, res) => {
 
 router.get('/dashboard/:courseId', async (req, res) => {
     try {
-      const courseId = req.params.courseId;
-      const course = await courseData.getCourseById(courseId);
-      
+        const courseId = req.params.courseId;
+        const course = await courseData.getCourseById(courseId);
 
-      const pendingStudents = await userData.getPendingEnrollmentRequests(courseId);
-      
 
-      
-      res.render('professorDashboard', {
-        title: `${course.name} Dashboard`,
-        course: course,
-        pendingStudents: pendingStudents,
-        layout: 'main'
-      });
+        const pendingStudents = await userData.getPendingEnrollmentRequests(courseId);
+
+
+        res.render('professorDashboard', {
+            title: `${course.name} Dashboard`,
+            course: course,
+            pendingStudents: pendingStudents,
+            layout: 'main'
+        });
     } catch (e) {
-      res.status(500).render('error', { error: e });
+        res.status(500).render('error', {error: e});
     }
-  });
-  
+});
+
 router.post('/enrollment/approve', async (req, res) => {
     try {
-        const { studentId, courseId } = req.body;
+        const {studentId, courseId} = req.body;
         await userData.approveEnrollmentRequest(studentId, courseId);
         req.session.successMessage = "Enrollment request approved successfully.";
         res.redirect(`/professor/course/${courseId}/analytics`);
     } catch (error) {
         console.error("Error approving enrollment:", error);
-        res.status(400).render("error", { 
+        res.status(400).render("error", {
             layout: "main",
-            error: typeof error === "string" ? error : error.message || "Error approving enrollment request." 
+            error: typeof error === "string" ? error : error.message || "Error approving enrollment request."
         });
     }
 });
 
 router.post('/enrollment/reject', async (req, res) => {
     try {
-        const { studentId, courseId } = req.body;
+        const {studentId, courseId} = req.body;
         await userData.rejectEnrollmentRequest(studentId, courseId);
         req.session.successMessage = "Enrollment request rejected.";
         res.redirect(`/professor/course/${courseId}/analytics`);
     } catch (error) {
         console.error("Error rejecting enrollment:", error);
-        res.status(400).render("error", { 
+        res.status(400).render("error", {
             layout: "main",
-            error: typeof error === "string" ? error : error.message || "Error rejecting enrollment request." 
+            error: typeof error === "string" ? error : error.message || "Error rejecting enrollment request."
         });
     }
 });
