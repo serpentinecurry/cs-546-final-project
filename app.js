@@ -40,6 +40,24 @@ app.use("/public", express.static("public"));
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
+//Production Session Configuration (for later use)
+// import MongoStore from "connect-mongo";
+//
+// app.use(
+//   session({
+//     name: "Scholario",
+//     secret: "top secret",
+//     saveUninitialized: false,
+//     resave: false,
+//     store: MongoStore.create({
+//       mongoUrl: "mongodb://localhost:27017/scholarioSession", // your MongoDB session DB
+//       ttl: 60 * 60, // 1 hour
+//     }),
+//     cookie: { maxAge: 3600000 },
+//   })
+// );
+
+
 // Session config
 app.use(
     session({

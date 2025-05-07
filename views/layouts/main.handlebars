@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
@@ -14,5 +15,22 @@
 <div class="container my-4">
     {{{body}}}
 </div>
+<script>
+  const successAlert = document.querySelector(".alert-success");
+  if (successAlert) {
+    // Add fade class for Bootstrap transition
+    successAlert.classList.add("fade", "show");
+
+    setTimeout(() => {
+      successAlert.classList.remove("show"); // triggers fade out
+    }, 3000);
+
+    // Optionally remove it from DOM after fade
+    setTimeout(() => {
+      successAlert.remove();
+    }, 4000);
+  }
+</script>
+
 </body>
 </html>
