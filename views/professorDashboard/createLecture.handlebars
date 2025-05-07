@@ -1,0 +1,35 @@
+<a href="/professor/course/{{courseId}}" class="createLecture">Back to Course</a>
+
+<h1>Create New Lecture</h1>
+
+<h2>{{courseName}} {{courseCode}}</h2>
+
+<div>
+    {{#if error}}
+    <p class="error-message">{{error}}</p>
+    {{/if}}
+
+<form method="POST" action="/professor/course/{{courseId}}/lecture/create" class="lecture-form">
+    <div class="form">
+        <label for="lectureTitle">Lecture Title:</label>
+        <input type="text" name="lectureTitle" id="lectureTitle" required />
+    </div>
+
+    <div class="form">
+        <label for="lectureDate">Lecture Date:</label>
+        <input type="date" name="lectureDate" id="lectureDate" required />
+    </div>
+
+    <div class="form">
+        <label for="description">Lecture Description:</label>
+        <textarea name="description" id="description" rows="4" required></textarea>
+    </div>
+
+   <div class="form">
+    <label for="materialsLink">Lecture Materials Link:</label>
+    <input type="text" name="materialsLink" id="materialsLink" placeholder="https://drive.google.com/some-slides" required />
+   </div>
+   
+   <button type="submit" class="btn btn-primary">Create Lecture</button>
+</form>
+</div>

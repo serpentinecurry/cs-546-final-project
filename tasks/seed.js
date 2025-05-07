@@ -5,7 +5,7 @@ import { users } from "../config/mongoCollections.js";
 import { ObjectId } from "mongodb";
 
 const db = await dbConnection();
-// await db.dropDatabase();
+await db.dropDatabase();
 
 const usersCollection = await users();
 

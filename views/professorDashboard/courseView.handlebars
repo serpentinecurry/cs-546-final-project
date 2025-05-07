@@ -1,4 +1,4 @@
-<div class="container">
+
   <a href = "/professor" class="backToClass">Back to Dashboard</a>
   <h1 class="courseTitle">{{courseName}}</h1>
 
@@ -8,7 +8,7 @@
   <div class="Lectures"> 
     <a href="/professor/course/{{courseId}}/lecture/create" class="createLecture">Create Lecture</a>
      
-    {{!-- display lextures --}}
+
     {{#if lectures.length}}
       <ul class="Lectures">
         {{#each lectures}}
@@ -30,4 +30,3 @@
 
   </div>
 
-</div>

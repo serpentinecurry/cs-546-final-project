@@ -2,6 +2,7 @@ import {Router} from "express";
 import {ObjectId} from "mongodb";
 import userData from "../data/users.js";
 import courseData from "../data/courses.js";
+import lecturesData from "../data/lectures.js";
 
 
 const router = Router()
@@ -143,7 +144,7 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             console.error("Error getting enrolled students:", e);
         }
 
-        res.render("professorDashboard.handlebars/DataAnalyticsView", {
+        res.render("professorDashboard/DataAnalyticsView", {
             layout: "main",
             course: course,
             lectures: courseLectures,
@@ -166,6 +167,25 @@ router.route("/course/:id/analytics").get(async (req, res) => {
 
 router.route("/lectures/analytics/:id").get(async (req, res) => {
 
+    try {
+        const lecturesCollection = await lectures()
+        const lecture = await lecturesCollection.findOne
+            ({_id: new ObjectId(req.params.id)})
+        if (!lecture) {
+            return res.status(404).render("error", {
+                layout: "main",
+                error: "Lecture not found in the database.",
+            });
+        }
+    }
+    catch (error) {
+        console.error("Error fetching lecture:", error);
+        return res.status(500).render("error", {
+            layout: "main",
+            error: "Internal server error while fetching lecture data.",
+        });
+    }
+
     const lecturesCollection = await lectures();
     const lecture = await lecturesCollection.findOne(
         {_id: new ObjectId(req.params.id)}
@@ -182,8 +202,6 @@ router.route("/lectures/analytics/:id").get(async (req, res) => {
         layout: "main",
         lecture: lecture,
     });
-
-
 });
 
 router.get('/dashboard/:courseId', async (req, res) => {
@@ -235,5 +253,52 @@ router.post('/enrollment/reject', async (req, res) => {
         });
     }
 });
+
+// lecture creation route
+router.route("/course/:courseId/lecture/create")
+  .get(async (req, res) => {
+    try {
+      const courseId = req.params.courseId;
+      
+     
+      const course = await courseData.getCourseById(courseId);
+      
+      res.render("professorDashboard/createLecture", {
+        courseId: courseId,
+        courseName: course.courseName,
+        courseCode: course.courseCode
+      });
+    } catch (error) {
+      res.status(400).render("error", { error: error.message || "Error loading form" });
+    }
+  })
+  .post(async (req, res) => {
+    try {
+      const courseId = req.params.courseId;
+      const professorId = req.session.user._id;
+      const { lectureTitle, lectureDate, description, materialsLink } = req.body;
+      
+      
+      await lecturesData.createLecture(
+        courseId,
+        lectureTitle,
+        lectureDate, 
+        description,
+        materialsLink
+      );
+      
+      req.session.successMessage = "Lecture created successfully!";
+      res.redirect(`/professor/course/${courseId}/analytics`);
+    } catch (error) {
+      const course = await courseData.getCourseById(req.params.courseId);
+      
+      res.status(400).render("professorDashboard/createLecture", {
+        courseId: req.params.courseId,
+        courseName: course.courseName,
+        courseCode: course.courseCode,
+        error: error.message || "Error creating lecture"
+      });
+    }
+  });
 
 export default router;
