@@ -301,4 +301,55 @@ router.route("/course/:courseId/lecture/create")
     }
   });
 
+
+  router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
+
+    try {
+        const {courseId, lectureId} = req.params
+        const lecturesCollection = await lectures()
+        const lecture = await lecturesCollection.findOne(
+            {_id: new ObjectId(lectureId)}
+        )
+        if (!lecture) {
+            return res.status(404).render("error", {
+                layout: "main",
+                error: "Lecture not found in the database.",
+            })
+        }
+
+        const courseCollection = await courses()
+        const course = await courseCollection.findOne(
+            {_id: new ObjectId(courseId)}
+        )
+
+        if (!course)
+        {
+            return res.status(404).render("error", {
+                layout: "main",
+                error: "Course not found in the database.",
+            })
+        }
+
+        const userCollection = await users()
+        const students = await userCollection.find({
+            enrolledCourses: new ObjectId(courseId)
+        }).toArray()
+
+        res.render("professorDashboard/LectureViews", {
+            layout: "main",
+            lecture: lecture,
+            course: course,
+            students: students
+        })
+
+    } catch (e) {
+        console.error("Error fetching lecture or course:", e);
+        return res.status(500).render("error", {
+            layout: "main",
+            error: "Internal server error while fetching lecture or course data.",
+        });
+    }
+
+})
+
 export default router;

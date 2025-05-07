@@ -1,0 +1,20 @@
+<a href="/professor/course/{{course._id}}/analytics" class="btn btn-secondary mb-3">Back to Course</a>
+
+<h1>Lecture {{lecture.lectureTitle}} for course {{course.courseName}} </h1>
+<h2>Attendance Sheet</h2>
+
+{{#each students}}
+    <div class="student">
+        <p>{{this.firstName}} {{this.lastName}}</p>
+        <input type="checkbox" name="attendance" value="{{this._id}}">
+    </div>
+{{/each}}
+<button type="submit">Submit Attendance</button>
+
+<h3> Lecture Details </h3>
+<h4> Title: {{lecture.lectureTitle}} </h4>
+<h4> Date: {{lecture.lectureDate}} </h4>
+<h4> Description: {{lecture.description}}</h4>
+<h4>Materials: <a href="{{lecture.materialsLink}}" target="_blank">{{lecture.materialsLink}}</a> </h4>
+
+<h4> <a href="/professor/course/{{course._id}}/lecture/{{lecture._id}}/edit">Edit Lecture</a> </h4>

@@ -22,8 +22,8 @@ app.engine(
         layoutsDir: path.join(__dirname, "views/layouts"),
 
         partialsDir: [path.join(__dirname, "views/student/partials"),
-            //added for professor directory
-            path.join(__dirname, "views/professorDasboard.handlebars"),
+
+            path.join(__dirname, "views/professorDasboard"),
         ],
         helpers: {
             ifEquals: function (arg1, arg2, options) {

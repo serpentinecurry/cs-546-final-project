@@ -113,7 +113,7 @@
     <div class="lecture-list">
       {{#each lectures}}
         <div class="lecture-item">
-          <h6>{{this.lectureTitle}} ({{this.lectureDate}})</h6>
+          <a href="/professor/course/{{../course._id}}/lecture/{{this._id}}">{{this.lectureTitle}} ({{this.lectureDate}})</a>
         </div>
       {{/each}}
     </div>
