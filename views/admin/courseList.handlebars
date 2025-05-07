@@ -1,22 +1,78 @@
-<h1 class="text-center mb-4">📚 Courses</h1>
+<style>
+  .course-card {
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    background: #ffffff;
+    padding: 1.5rem;
+  }
 
-<div class="d-flex justify-content-center mb-4">
-  <a href="/admin/courses/create" class="btn btn-success">➕ Create New Course</a>
+  .course-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .course-link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .course-title {
+    font-weight: 600;
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .course-code {
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+  }
+
+  .course-professor {
+    font-size: 0.9rem;
+    color: #374151;
+  }
+
+  .btn-animated {
+    transition: all 0.3s ease;
+  }
+
+  .btn-animated:hover {
+    transform: scale(1.05);
+  }
+</style>
+
+<h1 class="text-center mb-5 display-5 text-primary">📚 Courses</h1>
+
+<div class="text-center mb-4">
+  <a href="/admin/courses/create" class="btn btn-success btn-lg btn-animated">➕ Create New Course</a>
 </div>
 
 {{#if courses.length}}
-  <div class="list-group">
-    {{#each courses}}
-      <a href="/admin/courses/{{this._id}}" class="list-group-item list-group-item-action">
-        <strong>{{this.courseName}}</strong> ({{this.courseCode}})
-      </a>
-    {{/each}}
+  <div class="container">
+    <div class="row g-4">
+      {{#each courses}}
+        <div class="col-md-6 col-lg-4">
+          <a href="/admin/courses/{{this._id}}" class="course-link">
+            <div class="card course-card h-100">
+              <div class="course-title">📖 {{this.courseName}}</div>
+              <div class="course-code">🆔 {{this.courseCode}}</div>
+              {{#if this.professor}}
+                <div class="course-professor">👨‍🏫 {{this.professor.firstName}} {{this.professor.lastName}}</div>
+              {{else}}
+                <div class="course-professor text-muted fst-italic">No professor assigned</div>
+              {{/if}}
+            </div>
+          </a>
+        </div>
+      {{/each}}
+    </div>
   </div>
 {{else}}
-  <p class="text-center">No courses available yet.</p>
+  <p class="text-center text-muted fs-5 mt-4">🚫 No courses available yet.</p>
 {{/if}}
 
-<br />
-<div class="text-center">
-  <a href="/admin" class="btn btn-secondary">⬅️ Back to Admin Dashboard</a>
+<div class="text-center mt-5">
+  <a href="/admin" class="btn btn-outline-secondary btn-animated">⬅️ Back to Admin Dashboard</a>
 </div>

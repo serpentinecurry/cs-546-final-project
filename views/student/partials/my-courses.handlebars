@@ -1,0 +1,39 @@
+<!-- views/student/partials/my-course-details.handlebars -->
+<h2 class="text-center mb-5 display-5 text-primary">🎓 My Courses</h2>
+
+{{#if error}}
+    <div class="alert alert-danger text-center fs-5 w-75 mx-auto">⚠️ {{error}}</div>
+{{/if}}
+
+{{#if courses.length}}
+    <div class="container">
+        <div class="row g-4">
+            {{#each courses}}
+                <div class="col-md-8 col-lg-5">
+                    <div class="card p-4 h-100 shadow-sm rounded">
+                        <h5 class="mb-2 fw-bold fs-4">📖 {{this.courseName}}</h5>
+                        <p class="mb-1 text-muted">🆔 {{this.courseCode}}</p>
+                        {{#if this.professor}}
+                            <p class="mb-2">👨‍🏫 {{this.professor.firstName}} {{this.professor.lastName}}</p>
+                        {{/if}}
+
+                        <div class="d-flex gap-2 mt-3">
+                            <a href="/student/courses/{{this._id}}" class="btn btn-primary w-100">➡️ Go to Course
+                                Page</a>
+                            <form method="POST" action="/student/unenroll/{{this._id}}" class="w-100">
+                                <button type="submit" class="btn btn-outline-danger w-100"
+                                        onclick="return confirm('Are you sure you want to un-enroll from this course?');">
+                                    🚫 Un-enroll
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            {{/each}}
+        </div>
+    </div>
+{{else}}
+    <p class="text-center text-muted fs-5 mt-5">📭 You are not enrolled in any courses yet.</p>
+{{/if}}
+

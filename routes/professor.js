@@ -39,7 +39,7 @@ router.route("/").get(async (req, res) => {
         professorId: new ObjectId(req.session.user._id)
     }).toArray();
 
-    res.render("professorDashboard.handlebars/professorDashboard", {
+    res.render("professorDashboard/professorDashboard", {
         layout: "main",
         professorName: `${professor.firstName} ${professor.lastName}`,
         courses: professorsCourses,
@@ -72,7 +72,7 @@ router.route("/course/:id").get(async (req, res) => {
         const lecturesCollection = await lectures();
         const courseLectures = await lecturesCollection.find({courseId: course._id}).toArray();
 
-        res.render("professorDashboard.handlebars/courseView", {
+        res.render("professorDashboard/courseView", {
             layout: "main",
             courseId: course._id.toString(),
             courseName: course.courseName,
@@ -146,7 +146,7 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             }
         }
         
-        res.render("professorDashboard.handlebars/DataAnalyticsView", {
+        res.render("professorDashboard/DataAnalyticsView", {
             layout: "main",
             course: course,
             lectures: courseLectures,
