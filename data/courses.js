@@ -21,7 +21,7 @@ const createCourse = async (courseName, courseCode, professorId) => {
         meetingTime: "",
         professorOfficeHours: [],
         taOfficeHours: [],
-        studentEnrollmentRequests: [],
+        studentEnrollments: [],
     };
     const insertInfo = await coursesCollection.insertOne(newCourse);
     if (!insertInfo.acknowledged) throw "Could not create course.";
@@ -101,7 +101,7 @@ const getEnrolledStudents = async (courseId) => {
   const course = await coursesCollection.findOne({ _id: new ObjectId(courseId) });
   if (!course) throw "Course not found.";
 
-  const activeRequests = course.studentEnrollmentRequests?.filter(
+  const activeRequests = course.studentEnrollments?.filter(
     (req) => req.status === "active"
   ) || [];
 
@@ -133,7 +133,7 @@ const requestEnrollment = async (courseId, studentId) => {
     if (!course) throw "Course not found.";
 
     // Block if already active or pending
-    const alreadyRequested = course.studentEnrollmentRequests?.some(
+    const alreadyRequested = course.studentEnrollments?.some(
         (r) =>
             r.studentId.toString() === studentId &&
             (r.status === "pending" || r.status === "active")
@@ -141,7 +141,7 @@ const requestEnrollment = async (courseId, studentId) => {
     if (alreadyRequested) throw "⚠️ You have already requested enrollment for this course.";
 
     // If the status is inactive, reactivate it
-    const inactiveRequestIndex = course.studentEnrollmentRequests?.findIndex(
+    const inactiveRequestIndex = course.studentEnrollments?.findIndex(
         (r) =>
             r.studentId.toString() === studentId &&
             r.status === "inactive"
@@ -151,11 +151,11 @@ const requestEnrollment = async (courseId, studentId) => {
         const updateInfo = await coursesCollection.updateOne(
             {
                 _id: new ObjectId(courseId),
-                [`studentEnrollmentRequests.${inactiveRequestIndex}.studentId`]: new ObjectId(studentId),
+                [`studentEnrollments.${inactiveRequestIndex}.studentId`]: new ObjectId(studentId),
             },
             {
                 $set: {
-                    [`studentEnrollmentRequests.${inactiveRequestIndex}.status`]: "pending",
+                    [`studentEnrollments.${inactiveRequestIndex}.status`]: "pending",
                 },
             }
         );
@@ -169,7 +169,7 @@ const requestEnrollment = async (courseId, studentId) => {
         {_id: new ObjectId(courseId)},
         {
             $push: {
-                studentEnrollmentRequests: {
+                studentEnrollments: {
                     studentId: new ObjectId(studentId),
                     status: "pending",
                 },
@@ -202,7 +202,7 @@ const getAllCoursesForStudent = async (studentId) => {
         }
 
         // active enrollment count
-        course.activeCount = course.studentEnrollmentRequests?.filter(
+        course.activeCount = course.studentEnrollments?.filter(
             (r) => r.status === "active"
         ).length || 0;
 
@@ -213,7 +213,7 @@ const getAllCoursesForStudent = async (studentId) => {
             course.maxEnrollment && course.activeCount >= course.maxEnrollment;
 
         // whether this student has already applied
-        course.alreadyApplied = course.studentEnrollmentRequests?.some(
+        course.alreadyApplied = course.studentEnrollments?.some(
             (r) =>
                 r.studentId?.toString() === studentId &&
                 (r.status === "pending" || r.status === "active")
@@ -233,7 +233,7 @@ const getStudentEnrolledCourses = async (studentId) => {
 
     const enrolledCourses = await coursesCollection
         .find({
-            studentEnrollmentRequests: {
+            studentEnrollments: {
                 $elemMatch: {
                     studentId: new ObjectId(studentId),
                     status: "active",

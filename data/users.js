@@ -63,7 +63,7 @@ const createUser = async (
     newUser.enrolledCourses = [];
     newUser.absenceRequests = [];
     newUser.lectureNotes = [];
-    newUser.studentEnrollmentRequests = [];
+    newUser.studentEnrollments = [];
   }
   if (role === "ta") {
     newUser.taForCourses = [];
@@ -215,7 +215,7 @@ const getPendingEnrollmentRequests = async (courseId) => {
  
   const pendingStudents = await usersCollection
     .find({
-      "studentEnrollmentRequests": {
+      "studentEnrollments": {
         $elemMatch: {
           "courseId": new ObjectId(courseId),
           "status": "pending"
@@ -250,10 +250,10 @@ const approveEnrollmentRequest = async (studentId, courseId) => {
   const updateResult = await userCollection.updateOne(
     { 
       _id: new ObjectId(studentId),
-      "studentEnrollmentRequests.courseId": new ObjectId(courseId)
+      "studentEnrollments.courseId": new ObjectId(courseId)
     },
     { 
-      $set: { "studentEnrollmentRequests.$.status": "approved" },
+      $set: { "studentEnrollments.$.status": "approved" },
       $push: { enrolledCourses: new ObjectId(courseId) }
     }
   );
@@ -276,10 +276,10 @@ const rejectEnrollmentRequest = async (studentId, courseId) => {
   const updateResult = await userCollection.updateOne(
     { 
       _id: new ObjectId(studentId),
-      "studentEnrollmentRequests.courseId": new ObjectId(courseId)
+      "studentEnrollments.courseId": new ObjectId(courseId)
     },
     { 
-      $set: { "studentEnrollmentRequests.$.status": "rejected" }
+      $set: { "studentEnrollments.$.status": "rejected" }
     }
   );
 
