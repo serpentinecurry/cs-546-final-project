@@ -8,6 +8,7 @@ import lecturesData from "../data/lectures.js";
 const router = Router()
 
 import {users, courses, lectures, attendance} from "../config/mongoCollections.js";
+import { stringValidate } from "../validation.js";
 
 
 router.route("/").get(async (req, res) => {
@@ -133,13 +134,36 @@ router.route("/course/:id/analytics").get(async (req, res) => {
         let enrolledStudentsCount = 0;
 
         try {
-            const userCollection = await users();
-            enrolledStudents = await userCollection.find({
-                enrolledCourses: new ObjectId(courseId)
-            }).toArray();
+            const courseCollection = await courses();
+            const course = await courseCollection.findOne({
+                _id: new ObjectId(courseId)
+            });
 
+            
+            console.log("Student enrollments:", JSON.stringify(course.studentEnrollments));
+            
+                        const activeEnrollments = course.studentEnrollments ? 
+                course.studentEnrollments.filter(enrollment => enrollment.status === "active") : [];
+            
+                
+            const activeStudentIds = activeEnrollments.map(enrollment => 
+                new ObjectId(enrollment.studentId));
+            
+                
+            if (activeStudentIds.length > 0) {
+                const usersCollection = await users();
+                enrolledStudents = await usersCollection.find({
+                    _id: { $in: activeStudentIds }
+                }).toArray();
+                
+                
+                enrolledStudents = enrolledStudents.map(student => ({
+                    ...student,
+                    _id: student._id.toString()
+                }));
+            }
+            
             enrolledStudentsCount = enrolledStudents.length;
-
         } catch (e) {
             console.error("Error getting enrolled students:", e);
         }
@@ -226,7 +250,8 @@ router.get('/dashboard/:courseId', async (req, res) => {
 
 router.post('/enrollment/approve', async (req, res) => {
     try {
-        const {studentId, courseId} = req.body;
+        const studentId = stringValidate(req.body.studentId);
+        const courseId = stringValidate(req.body.courseId);
         await userData.approveEnrollmentRequest(studentId, courseId);
         req.session.successMessage = "Enrollment request approved successfully.";
         res.redirect(`/professor/course/${courseId}/analytics`);
@@ -241,7 +266,9 @@ router.post('/enrollment/approve', async (req, res) => {
 
 router.post('/enrollment/reject', async (req, res) => {
     try {
-        const {studentId, courseId} = req.body;
+        const studentId = stringValidate(req.body.studentId);
+        const courseId = stringValidate(req.body.courseId);
+        
         await userData.rejectEnrollmentRequest(studentId, courseId);
         req.session.successMessage = "Enrollment request rejected.";
         res.redirect(`/professor/course/${courseId}/analytics`);
@@ -329,10 +356,14 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
             })
         }
 
-        const userCollection = await users()
-        const students = await userCollection.find({
-            enrolledCourses: new ObjectId(courseId)
-        }).toArray()
+        const activeEnrollmentIds = course.studentEnrollments
+            ?.filter(enrollment => enrollment.status === "active")
+            .map(enrollment => enrollment.studentId);
+
+        const usersCollection = await users();
+        const students = await usersCollection.find({
+            _id: { $in: activeEnrollmentIds }
+        }).toArray();
 
         const attendanceCollection = await attendance()
         const attendanceRecords = await attendanceCollection.find({
