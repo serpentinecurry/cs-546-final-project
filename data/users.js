@@ -63,7 +63,6 @@ const createUser = async (
     newUser.enrolledCourses = [];
     newUser.absenceRequests = [];
     newUser.lectureNotes = [];
-    newUser.studentEnrollments = [];
   }
   if (role === "ta") {
     newUser.taForCourses = [];

@@ -129,7 +129,6 @@ router.post("/unenroll/:courseId", async (req, res) => {
     }
 });
 
-
 router.route("/my-courses").get(async (req, res) => {
     try {
         const studentId = req.session.user._id;
@@ -153,51 +152,93 @@ router.route("/my-courses").get(async (req, res) => {
 });
 
 router.route("/courses/:id").get(async (req, res) => {
-  try {
-    const courseId = stringValidate(req.params.id);
-    const studentId = req.session.user._id;
-    console.log("→ courseId:", courseId);
-    console.log("→ studentId:", studentId);
+    try {
+        const courseId = stringValidate(req.params.id);
+        const studentId = req.session.user._id;
+        console.log("→ courseId:", courseId);
+        console.log("→ studentId:", studentId);
 
-    if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
+        if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
 
-    const { course, professor } = await coursesData.getCourseById(courseId);
-    console.log("→ course loaded:", course.courseName);
-    console.log("→ studentEnrollments:", course.studentEnrollments);
+        const {course, professor} = await coursesData.getCourseById(courseId);
+        console.log("→ course loaded:", course.courseName);
+        console.log("→ studentEnrollments:", course.studentEnrollments);
 
-    const isEnrolled = course.studentEnrollments?.some(
-      (r) =>
-        r.studentId?.toString() === studentId.toString() &&
-        r.status === "active"
-    );
+        const isEnrolled = course.studentEnrollments?.some(
+            (r) =>
+                r.studentId?.toString() === studentId.toString() &&
+                r.status === "active"
+        );
 
-    console.log("→ isEnrolled:", isEnrolled);
+        console.log("→ isEnrolled:", isEnrolled);
 
-    if (!isEnrolled) {
-      return res.status(403).render("error", {
-        layout: "main",
-        error: "⛔ You are not actively enrolled in this course.",
-      });
+        if (!isEnrolled) {
+            return res.status(403).render("error", {
+                layout: "main",
+                error: "⛔ You are not actively enrolled in this course.",
+            });
+        }
+
+        return res.render("student/student", {
+            layout: "main",
+            partialToRender: "course-details",
+            course,
+            professor,
+            user: withUser(req),
+        });
+
+    } catch (error) {
+        console.error("❌ ERROR in /student/courses/:id →", error);
+        return res.status(400).render("error", {
+            layout: "main",
+            error: typeof error === "string" ? error : "❌ Failed to load course page.",
+        });
     }
+});
 
-    return res.render("student/student", {
+// GET /student/courses/:id/members
+router.get("/courses/:courseId/members", async (req, res) => {
+  const { courseId } = req.params;
+
+  try {
+    const courseCollection = await courses();
+    const userCollection = await users();
+
+    const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+    if (!course) throw "Course not found";
+
+    const activeEnrollments = course.studentEnrollments?.filter((enr) => enr.status === "active") || [];
+
+    const studentIds = activeEnrollments.map((entry) => new ObjectId(entry.studentId));
+
+    const students = await userCollection
+      .find({ _id: { $in: studentIds } })
+      .project({ firstName: 1, lastName: 1, major: 1 })
+      .toArray();
+
+    const classMembers = students.map((s) => ({
+      fullName: `${s.firstName} ${s.lastName}`,
+      major: s.major,
+        initials : `${s.firstName.charAt(0)}${s.lastName.charAt(0)}`,
+    }));
+
+    res.render("student/student", {
       layout: "main",
-      partialToRender: "course-details",
-      course,
-      professor,
-      user: withUser(req),
-      currentPage: "my-courses"
+        user: withUser(req),
+      partialToRender: "class-members",
+      currentPage: "courses",
+      classMembers,
+        courseId
+
     });
-
-  } catch (error) {
-    console.error("❌ ERROR in /student/courses/:id →", error);
-    return res.status(400).render("error", {
+  } catch (err) {
+    console.error("Error loading class members:", err);
+    res.status(500).render("error", {
       layout: "main",
-      error: typeof error === "string" ? error : "❌ Failed to load course page.",
+      error: "Could not load class members"
     });
   }
 });
-
 
 
 // Absence Request - GET + POST
@@ -468,18 +509,18 @@ router.route("/request-status").get(async (req, res) => {
 router.route("/calendar").get(async (req, res) => {
     console.log(">>> Session user in /calendar:", req.session.user);
     try {
-      const officeHours = await calendarData.getOfficeHours(req.session.user._id);
-      return res.render("student/student", {
-          layout: "main",
-          // studentContent: loadPartial("calendar"),
-          partialToRender: "calendar",
-          user: withUser(req),
-          currentPage: "calendar",
-          officeHours: officeHours
-      });
+        const officeHours = await calendarData.getOfficeHours(req.session.user._id);
+        return res.render("student/student", {
+            layout: "main",
+            // studentContent: loadPartial("calendar"),
+            partialToRender: "calendar",
+            user: withUser(req),
+            currentPage: "calendar",
+            officeHours: officeHours
+        });
     } catch (e) {
-      console.log(e);
-      return res.render("error", {error: e});
+        console.log(e);
+        return res.render("error", {error: e});
     }
 });
 
