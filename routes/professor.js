@@ -7,7 +7,7 @@ import lecturesData from "../data/lectures.js";
 
 const router = Router()
 
-import {users, courses, lectures} from "../config/mongoCollections.js";
+import {users, courses, lectures, attendance} from "../config/mongoCollections.js";
 
 
 router.route("/").get(async (req, res) => {
@@ -302,8 +302,7 @@ router.route("/course/:courseId/lecture/create")
   });
 
 
-  router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
-
+router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
     try {
         const {courseId, lectureId} = req.params
         const lecturesCollection = await lectures()
@@ -335,11 +334,30 @@ router.route("/course/:courseId/lecture/create")
             enrolledCourses: new ObjectId(courseId)
         }).toArray()
 
+        const attendanceCollection = await attendance()
+        const attendanceRecords = await attendanceCollection.find({
+            lectureId: new ObjectId(lectureId)
+        }).toArray()
+        
+        const attendanceMap = {}
+        for (const record of attendanceRecords) {
+            attendanceMap[record.studentId.toString()] = record.status
+        }
+
+        const studentAttendanceHistory = students.map(student => {
+            const id = student._id.toString()
+            return {
+                ...student,
+                id: id,
+                attendanceStatus: attendanceMap[id] || ""
+            }
+        })
+
         res.render("professorDashboard/LectureViews", {
             layout: "main",
             lecture: lecture,
             course: course,
-            students: students
+            students: studentAttendanceHistory
         })
 
     } catch (e) {
@@ -349,6 +367,42 @@ router.route("/course/:courseId/lecture/create")
             error: "Internal server error while fetching lecture or course data.",
         });
     }
+})
+
+//attendance submission route
+router.route("/course/:courseId/lecture/:lectureId/attendance").post(async (req, res) => {
+
+    const {courseId, lectureId} = req.params
+    const attendanceCollection = await attendance()
+    const attendanceData = req.body.attendanceData
+    const attendanceRecords = []
+
+    try {
+        for (const [studentId, status] of Object.entries(attendanceData)) {
+            if (!status) continue
+            const attendanceRecord = {
+                lectureId: new ObjectId(lectureId),
+                courseId: new ObjectId(courseId),
+                studentId: new ObjectId(studentId),
+                status: status,
+                points: status === "present" ? 0 : (status === "excused" ? 0 : 1),
+                createdAt: new Date()
+            }
+            attendanceRecords.push(attendanceRecord)
+        }
+        await attendanceCollection.insertMany(attendanceRecords)
+        req.session.successMessage = "Attendance submitted successfully!"
+        res.redirect(`/professor/course/${courseId}/analytics`)
+
+
+    }     catch (error) {
+        console.error("Error submitting attendance:", error)
+        res.status(500).render("error", {
+            layout: "main",
+            error: "Internal server error while submitting attendance."
+        })
+    }
+
 
 })
 

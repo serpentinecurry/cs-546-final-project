@@ -1,15 +1,22 @@
 <a href="/professor/course/{{course._id}}/analytics" class="btn btn-secondary mb-3">Back to Course</a>
 
-<h1>Lecture {{lecture.lectureTitle}} for course {{course.courseName}} </h1>
-<h2>Attendance Sheet</h2>
+    <h1>Lecture {{lecture.lectureTitle}} for course {{course.courseName}} </h1>
+    <h2>Attendance Sheet</h2>
 
-{{#each students}}
-    <div class="student">
-        <p>{{this.firstName}} {{this.lastName}}</p>
-        <input type="checkbox" name="attendance" value="{{this._id}}">
-    </div>
-{{/each}}
-<button type="submit">Submit Attendance</button>
+<form method="POST" action="/professor/course/{{course._id}}/lecture/{{lecture._id}}/attendance" class="attendance-form">
+    {{#each students}}
+        <div class="student">
+            <p>{{this.firstName}} {{this.lastName}}</p>
+            <select name="attendanceData[{{this._id}}]">
+                <option value="" disabled {{#unless this.attendanceStatus}}selected{{/unless}}>Select Attendance</option>
+                <option value="present" {{#if (eq this.attendanceStatus "present")}}selected{{/if}}>Present</option>
+                <option value="absent" {{#if (eq this.attendanceStatus "absent")}}selected{{/if}}>Absent</option>
+                <option value="excused" {{#if (eq this.attendanceStatus "excused")}}selected{{/if}}>Excused</option>
+            </select>
+        </div>
+    {{/each}}
+    <button type="submit">Submit Attendance</button>
+</form>
 
 <h3> Lecture Details </h3>
 <h4> Title: {{lecture.lectureTitle}} </h4>
