@@ -10,7 +10,7 @@ await db.dropDatabase();
 const usersCollection = await users();
 
 const user1 = await userData.createUser(
-    "Anik", "Doshi", "male", "asdoshi@hotmail.com", "Admin@911", "admin", "1990-01-01"
+    "Anik", "Doshi", "male", "admin@scholorio.com", "Admin@911", "admin", "1990-01-01"
 )
 await usersCollection.updateOne({ email: "admin@scholorio.com" }, { $set: { accessStatus: "approved" } });
 
