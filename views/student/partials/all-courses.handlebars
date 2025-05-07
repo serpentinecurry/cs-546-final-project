@@ -1,0 +1,80 @@
+<h2 class="text-center mb-4 display-5 text-primary">📚 All Available Courses</h2>
+
+{{#if successMessage}}
+    <div class="alert alert-success alert-dismissible text-center fs-6 w-75 mx-auto" role="alert">
+        {{successMessage}}
+    </div>
+{{/if}}
+
+<!-- 🔍 Search Bar -->
+<form method="GET" action="/student/all-courses" class="mb-5 w-75 mx-auto">
+    <div class="d-flex flex-nowrap align-items-center shadow-sm rounded p-3 bg-white gap-3">
+        <span class="fs-4 flex-shrink-0">🔍</span>
+
+        <input
+                type="text"
+                name="search"
+                class="form-control"
+                style="min-width: 0; flex: 1 1 350px;"
+                placeholder="Search by course name or code..."
+                value="{{searchQuery}}"
+                aria-label="Search Courses"
+        />
+
+        <button class="btn btn-primary px-4 flex-shrink-0" type="submit">Search</button>
+
+        {{#if searchQuery}}
+            <a href="/student/all-courses" class="btn btn-outline-danger px-4 flex-shrink-0">Clear</a>
+        {{/if}}
+    </div>
+</form>
+
+
+<!-- ⚠️ Error Message -->
+{{#if error}}
+    <div class="alert alert-danger text-center fs-5 w-75 mx-auto">⚠️ {{error}}</div>
+{{/if}}
+
+<!-- 📋 Course List -->
+{{#if courses.length}}
+    <div class="container">
+        <div class="row g-4">
+            {{#each courses}}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card p-4 h-100 shadow-sm rounded">
+                        <h5 class="mb-2 fw-bold fs-4">📖 {{this.courseName}}</h5>
+                        <p class="mb-1 text-muted fs-6">🆔 {{this.courseCode}}</p>
+
+                        {{#if this.professor}}
+                            <p class="mb-1 fs-6">👨‍🏫 {{this.professor.firstName}} {{this.professor.lastName}}</p>
+                        {{else}}
+                            <p class="mb-1 text-muted fst-italic fs-6">No professor assigned</p>
+                        {{/if}}
+
+                        <p class="mb-3 fs-5 fw-semibold text-dark">
+                            👥 Enrollments:
+                            <span class="fw-bold">{{this.activeCount}} / {{this.maxLimit}}</span>
+                        </p>
+
+                        {{#if this.alreadyApplied}}
+                            <span class="badge bg-secondary w-100 py-2 text-center" style="font-size: 0.9rem;">
+                                ⏳ Already Applied to Enroll
+                            </span>
+
+                        {{else if this.isCourseFull}}
+                            <span class="badge bg-danger w-100 py-2 fs-6 text-center">❌ Course Full</span>
+
+                        {{else}}
+                            <form method="POST" action="/student/enroll/{{this._id}}">
+                                <button type="submit" class="btn btn-primary w-100 fs-6">📥 Apply to Enroll</button>
+                            </form>
+                        {{/if}}
+
+                    </div>
+                </div>
+            {{/each}}
+        </div>
+    </div>
+{{else}}
+    <p class="text-center text-muted fs-5 mt-5">🚫 No courses available.</p>
+{{/if}}
