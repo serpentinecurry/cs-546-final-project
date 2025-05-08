@@ -1,0 +1,51 @@
+<!-- views/student/partials/attendanceRecord.handlebars -->
+<div class="container py-4">
+  <h2 class="text-primary mb-4 text-center">📊 Attendance Summary</h2>
+
+  <!-- Attendance Summary Card -->
+  <div class="card shadow-sm mb-4 text-center p-4">
+    <h4 class="text-success fw-bold">{{attendancePercentage}}%</h4>
+    <p class="mb-1">Your attendance rate for <strong>{{course.courseName}}</strong></p>
+    <p class="text-muted fs-6">
+      Present: <strong>{{presentCount}}</strong> / Total Lectures: <strong>{{totalLectures}}</strong>
+    </p>
+  </div>
+
+  <!-- Attendance Table -->
+  <div class="table-responsive">
+    <table class="table table-bordered align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each attendanceRecords}}
+          <tr>
+            <td>Lecture {{inc @index}}</td>
+            <td>{{this.date}}</td>
+            <td>
+              {{#ifEquals this.status "present"}}
+                <span class="badge bg-success px-3 py-2">Present</span>
+              {{else ifEquals this.status "absent"}}
+                <span class="badge bg-danger px-3 py-2">Absent</span>
+              {{else ifEquals this.status "excused"}}
+                <span class="badge bg-warning text-dark px-3 py-2">Excused</span>
+              {{/ifEquals}}
+            </td>
+            <td>{{this.points}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="text-center mt-4">
+    <a href="/student/courses/{{course._id}}" class="btn btn-outline-secondary rounded-pill px-4">
+      <i class="bi bi-arrow-left me-2"></i> Back to Course Page
+    </a>
+  </div>
+</div>

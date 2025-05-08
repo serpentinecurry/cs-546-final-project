@@ -1,124 +1,128 @@
 <style>
-  .btn-tubular {
-    border-radius: 50px;
-    padding: 0.6rem 1.4rem;
-    font-size: 1.05rem;
-    font-weight: 500;
-    transition: all 0.2s ease-in-out;
-  }
-
-  .btn-tubular:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-   .course-header {
-    background: linear-gradient(135deg, #4f46e5, #0ea5e9);
-    border-radius: 1rem;
-    padding: 2.5rem 2rem;
-    text-align: center;
-    color: #ffffff;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .course-header h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    margin-bottom: 0.5rem;
-    animation: fadeSlideIn 0.6s ease forwards;
-  }
-
-  .course-header .course-code {
-    font-size: 1.2rem;
-    font-weight: 500;
-    opacity: 0.95;
-    margin-bottom: 0.3rem;
-    animation: fadeSlideIn 0.7s ease forwards;
-  }
-
-  .course-header .professor-badge {
-    font-size: 1rem;
-    font-weight: 500;
-    background: rgba(255, 255, 255, 0.15);
-    padding: 0.4rem 1rem;
-    border-radius: 999px;
-    display: inline-block;
-    margin-top: 0.5rem;
-    animation: fadeSlideIn 0.8s ease forwards;
-  }
-
-  @keyframes fadeSlideIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
+    .btn-tubular {
+        border-radius: 50px;
+        padding: 0.6rem 1.4rem;
+        font-size: 1.05rem;
+        font-weight: 500;
+        transition: all 0.2s ease-in-out;
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+
+    .btn-tubular:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
-  }
-  .course-meta {
-    font-size: 1.05rem;
-    font-weight: 500;
-    color: #f8fafc;
-  }
 
-  .course-section {
-    margin-top: 2.5rem;
-  }
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
 
-  .btn-back {
-    border-radius: 50px;
-    padding: 0.5rem 1.5rem;
-    font-size: 1rem;
-  }
+    .course-header {
+        background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+        border-radius: 1rem;
+        padding: 2.5rem 2rem;
+        text-align: center;
+        color: #ffffff;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .course-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+        animation: fadeSlideIn 0.6s ease forwards;
+    }
+
+    .course-header .course-code {
+        font-size: 1.2rem;
+        font-weight: 500;
+        opacity: 0.95;
+        margin-bottom: 0.3rem;
+        animation: fadeSlideIn 0.7s ease forwards;
+    }
+
+    .course-header .professor-badge {
+        font-size: 1rem;
+        font-weight: 500;
+        background: rgba(255, 255, 255, 0.15);
+        padding: 0.4rem 1rem;
+        border-radius: 999px;
+        display: inline-block;
+        margin-top: 0.5rem;
+        animation: fadeSlideIn 0.8s ease forwards;
+    }
+
+    @keyframes fadeSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .course-meta {
+        font-size: 1.05rem;
+        font-weight: 500;
+        color: #f8fafc;
+    }
+
+    .course-section {
+        margin-top: 2.5rem;
+    }
+
+    .btn-back {
+        border-radius: 50px;
+        padding: 0.5rem 1.5rem;
+        font-size: 1rem;
+    }
 </style>
 
 <div class="container py-4">
-  <!-- Header -->
-  <div class="course-header mb-5">
-  <h1><i class="bi bi-book-half me-2"></i> {{course.courseName}}</h1>
-  <p class="course-code">
-    <i class="bi bi-code-slash me-1"></i> Course Code: {{course.courseCode}}
-  </p>
-  {{#if professor}}
-    <div class="professor-badge">
-      <i class="bi bi-person-badge-fill me-1"></i>
-      {{professor.firstName}} {{professor.lastName}}
+    <!-- Header -->
+    <div class="course-header mb-5">
+        <h1><i class="bi bi-book-half me-2"></i> {{course.courseName}}</h1>
+        <p class="course-code">
+            <i class="bi bi-code-slash me-1"></i> Course Code: {{course.courseCode}}
+        </p>
+        {{#if professor}}
+            <div class="professor-badge">
+                <i class="bi bi-person-badge-fill me-1"></i>
+                {{professor.firstName}} {{professor.lastName}}
+            </div>
+        {{else}}
+            <p class="fst-italic mt-2 opacity-75">No professor assigned</p>
+        {{/if}}
     </div>
-  {{else}}
-    <p class="fst-italic mt-2 opacity-75">No professor assigned</p>
-  {{/if}}
-</div>
 
-  <!-- Action Buttons -->
-  <div class="course-section text-center d-flex justify-content-center gap-3 flex-wrap">
-    <a href="/student/courses/{{course._id}}/members" class="btn btn-outline-primary btn-tubular btn-icon">
-      <i class="bi bi-people-fill"></i> Class Members
-    </a>
+    <!-- Action Buttons -->
+    <div class="course-section text-center d-flex justify-content-center gap-3 flex-wrap">
+        <a href="/student/courses/{{course._id}}/members" class="btn btn-outline-primary btn-tubular btn-icon">
+            <i class="bi bi-people-fill"></i> Class Members
+        </a>
 
-<!--    <a href="/student/{{course._id}}/resources" class="btn btn-outline-success btn-tubular btn-icon">-->
-<!--      <i class="bi bi-journal-text"></i> Resources-->
-<!--    </a>-->
+        <a href="/student/{{course._id}}/attendance"
+           class="btn btn-outline-success d-inline-flex align-items-center gap-2 px-4 py-2 rounded-pill shadow-sm fw-semibold">
+            <i class="bi bi-journal-text fs-5"></i>
+            <span>Attendance Record</span>
+        </a>
 
-<!--    <a href="/student/{{course._id}}/attendance" class="btn btn-outline-warning btn-tubular btn-icon">-->
-<!--      <i class="bi bi-clipboard-check"></i> Attendance-->
-<!--    </a>-->
-  </div>
 
-  <!-- Back Button -->
-  <div class="text-center mt-5">
-    <a href="/student/my-courses" class="btn btn-outline-secondary btn-back shadow-sm">
-      <i class="bi bi-arrow-left me-2"></i> Back to My Courses
-    </a>
-  </div>
+        <!--    <a href="/student/{{course._id}}/attendance" class="btn btn-outline-warning btn-tubular btn-icon">-->
+        <!--      <i class="bi bi-clipboard-check"></i> Attendance-->
+        <!--    </a>-->
+    </div>
+
+    <!-- Back Button -->
+    <div class="text-center mt-5">
+        <a href="/student/my-courses" class="btn btn-outline-secondary btn-back shadow-sm">
+            <i class="bi bi-arrow-left me-2"></i> Back to My Courses
+        </a>
+    </div>
 </div>

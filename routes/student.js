@@ -1,6 +1,6 @@
 // routes/student.js
 import {Router} from "express";
-import {users, courses, changeRequests} from "../config/mongoCollections.js";
+import {users, courses, changeRequests, attendance, lectures} from "../config/mongoCollections.js";
 import {absenceProofUpload} from "../middleware.js";
 import {ObjectId} from "mongodb";
 import {userData, calendarData} from "../data/index.js";
@@ -238,6 +238,51 @@ router.get("/courses/:courseId/members", async (req, res) => {
             error: "Could not load class members"
         });
     }
+});
+
+router.get('/:courseId/attendance', async (req, res) => {
+  const { courseId } = req.params;
+  const studentId = new ObjectId(req.session.user._id);
+
+  const attendanceCollection = await attendance();
+  const lectureCollection = await lectures();
+  const courseCollection = await courses();
+
+  const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+
+  const records = await attendanceCollection.find({
+    courseId: new ObjectId(courseId),
+    studentId
+  }).toArray();
+
+  const totalLectures = await lectureCollection.countDocuments({ courseId: new ObjectId(courseId) });
+
+  const presentCount = records.filter(r => r.status === 'present').length;
+  const attendancePercentage = totalLectures ? Math.round((presentCount / totalLectures) * 100) : 0;
+
+  // Format records with readable date
+  const formattedRecords = await Promise.all(
+    records.map(async record => {
+      const lecture = await lectureCollection.findOne({ _id: new ObjectId(record.lectureId) });
+      return {
+        date: lecture?.lectureDate || 'Unknown',
+        status: record.status,
+        points: record.points
+      };
+    })
+  );
+
+  res.render('student/student', {
+    layout: 'main',
+    partialToRender: 'attendanceRecord',
+    currentPage: 'attendance',
+    user: req.session.user,
+    course,
+    attendancePercentage,
+    presentCount,
+    totalLectures,
+    attendanceRecords: formattedRecords
+  });
 });
 
 
@@ -536,6 +581,8 @@ router.route("/calendar").get(async (req, res) => {
         return res.render("error", {error: e});
     }
 });
+
+
 
 //
 // router.route("/messages").get(async (req, res) => {

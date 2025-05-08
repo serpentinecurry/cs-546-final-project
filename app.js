@@ -30,6 +30,9 @@ app.engine(
                 return arg1 === arg2 ? options.fn(this) : options.inverse(this);
             },
             eq: (a, b) => a === b,
+            inc : function(value) {
+                return parseInt(value) + 1;
+            }
         }
     })
 );
