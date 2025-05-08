@@ -15,6 +15,10 @@ import { stringValidate } from "../validation.js";
 // uses createAttendance, updateAttendance, it will be adding 1 point for each class missed, for now excused does not add points
 let createAttendance = async (lectureId, courseId, studentId, status) => {
 
+    if (!lectureId || !courseId || !studentId || !status) {
+        throw "All fields are required.";
+    }
+
     const attendanceCollection = await attendance();
     lectureId = stringValidate(lectureId);
     courseId = stringValidate(courseId);
@@ -29,41 +33,72 @@ let createAttendance = async (lectureId, courseId, studentId, status) => {
     if (!ObjectId.isValid(studentId)) {
         throw "Invalid student ID.";
     }
-    if (status === "present" || status === "absent" || status === "excused") {
+    if (status !== "present" && status !== "absent" && status !== "excused") {
         throw "Status must be either 'present' or 'absent or excused '.";
     }
-    if (status === "present") {
-        points = 0; 
-    }
-    else if (status === "excused") {
-        points = 0
-    }
-    else {
-        point = 1
+
+    let points = 0;
+    if (status === "absent") {
+        points = 1;
     }
 
+    const lectObjId = new ObjectId(lectureId);
+    const courseObjId = new ObjectId(courseId); 
+    const studObjId = new ObjectId(studentId);
 
+    const existingRecord = await attendanceCollection.findOne({
+        lectureId: lectObjId,
+        courseId: courseObjId,
+        studentId: studObjId
+    });
 
-    attendanceCollection.insertOne({
-        lectureId: lectureId,
-        courseId: courseId, 
-        studentId: studentId,
-        status: status,
-        points: points,
-        createdAt: new Date()
-    })
+    if (existingRecord) {
+        const updateInfo = await attendanceCollection.updateOne(
+            { _id: existingRecord._id },
+            { $set: { 
+                status: status,
+                points: points,
+                updatedAt: new Date()
+            }}
+        );
+        if (updateInfo.modifiedCount === 0) {
+            throw "Could not update attendance record";
+        }
 
+        return {
+            updated: true,
+            attendanceId: existingRecord._id.toString(),
+            status: status
+        };
+    } else {
+        const newAttendance = {
+            lectureId: lectObjId,
+            courseId: courseObjId,
+            studentId: studObjId,
+            status: status,
+            points: points,
+            createdAt: new Date()
+        };
+
+        const insertInfo = await attendanceCollection.insertOne(newAttendance);
+
+        if (!insertInfo.insertedId) {
+            throw "Failed to insert attendance record";
+        }
+
+        return {
+            created: true,
+            attendanceId: insertInfo.insertedId.toString(),
+            status: status
+        };
+    }
 }
 
 let updateAttendance = async (attendanceId, updates) => {
 
-    attendancCollection = await attendance();
+    const attendanceCollection = await attendance();
     attendanceId = stringValidate(attendanceId);
-    let attendanceRecord = await attendancCollection.findOne({ _id: new ObjectId(attendanceId) });
-    if (!attendanceRecord) {
-        throw "Attendance not found";
-    }
-    let existingAttendance = await attendancCollection.findOne({ _id: new ObjectId(attendanceId) });
+    let existingAttendance = await attendanceCollection.findOne({ _id: new ObjectId(attendanceId) });
     if (!existingAttendance) {
         throw "Attendance record not found";
     }
