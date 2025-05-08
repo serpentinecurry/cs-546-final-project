@@ -198,46 +198,46 @@ router.route("/courses/:id").get(async (req, res) => {
 
 // GET /student/courses/:id/members
 router.get("/courses/:courseId/members", async (req, res) => {
-  const { courseId } = req.params;
+    const {courseId} = req.params;
 
-  try {
-    const courseCollection = await courses();
-    const userCollection = await users();
+    try {
+        const courseCollection = await courses();
+        const userCollection = await users();
 
-    const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
-    if (!course) throw "Course not found";
+        const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
+        if (!course) throw "Course not found";
 
-    const activeEnrollments = course.studentEnrollments?.filter((enr) => enr.status === "active") || [];
+        const activeEnrollments = course.studentEnrollments?.filter((enr) => enr.status === "active") || [];
 
-    const studentIds = activeEnrollments.map((entry) => new ObjectId(entry.studentId));
+        const studentIds = activeEnrollments.map((entry) => new ObjectId(entry.studentId));
 
-    const students = await userCollection
-      .find({ _id: { $in: studentIds } })
-      .project({ firstName: 1, lastName: 1, major: 1 })
-      .toArray();
+        const students = await userCollection
+            .find({_id: {$in: studentIds}})
+            .project({firstName: 1, lastName: 1, major: 1})
+            .toArray();
 
-    const classMembers = students.map((s) => ({
-      fullName: `${s.firstName} ${s.lastName}`,
-      major: s.major,
-        initials : `${s.firstName.charAt(0)}${s.lastName.charAt(0)}`,
-    }));
+        const classMembers = students.map((s) => ({
+            fullName: `${s.firstName} ${s.lastName}`,
+            major: s.major,
+            initials: `${s.firstName.charAt(0)}${s.lastName.charAt(0)}`,
+        }));
 
-    res.render("student/student", {
-      layout: "main",
-        user: withUser(req),
-      partialToRender: "class-members",
-      currentPage: "courses",
-      classMembers,
-        courseId
+        res.render("student/student", {
+            layout: "main",
+            user: withUser(req),
+            partialToRender: "class-members",
+            currentPage: "courses",
+            classMembers,
+            courseId
 
-    });
-  } catch (err) {
-    console.error("Error loading class members:", err);
-    res.status(500).render("error", {
-      layout: "main",
-      error: "Could not load class members"
-    });
-  }
+        });
+    } catch (err) {
+        console.error("Error loading class members:", err);
+        res.status(500).render("error", {
+            layout: "main",
+            error: "Could not load class members"
+        });
+    }
 });
 
 
@@ -298,7 +298,20 @@ router
     })
 
     .post(absenceProofUpload.single("proof"), async (req, res) => {
-        const {courseId, reason, proofType} = req.body;
+        let {courseId, reason, proofType} = req.body;
+
+        reason = reason?.trim();
+        proofType = proofType?.trim();
+
+        if (!courseId || !reason || !proofType || reason.length === 0 || proofType.length === 0) {
+            return res.status(400).render("student/student", {
+                layout: "main",
+                partialToRender: "absence-request",
+                user: withUser(req),
+                currentPage: "absence-request",
+                error: "All fields including proof type and reason are required and must not be empty.",
+            });
+        }
 
         if (!req.file || !req.file.path) {
             return res.status(400).render("student/student", {
