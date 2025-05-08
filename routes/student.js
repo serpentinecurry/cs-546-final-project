@@ -29,15 +29,54 @@ router.route("/").get(async (req, res) => {
     });
 });
 
-router.route("/dashboard").get(async (req, res) => {
-    console.log("Session user in /dashboard:", req.session.user);
+router.get('/dashboard', async (req, res) => {
+    const studentId = new ObjectId(req.session.user._id);
+    const attendanceCollection = await attendance();
+    const lecturesCollection = await lectures();
+    const courseCollection = await courses();
+
+    // Find all courses where the student is actively enrolled
+    const enrolledCourses = await courseCollection.find({
+        studentEnrollments: {
+            $elemMatch: {
+                studentId,
+                status: "active"
+            }
+        }
+    }).toArray();
+
+    const attendanceData = [];
+
+    for (const course of enrolledCourses) {
+        const totalLectures = await lecturesCollection.countDocuments({courseId: course._id});
+        const relevantRecords = await attendanceCollection.find({
+            courseId: course._id,
+            studentId
+        }).toArray();
+
+        // Exclude excused from denominator
+        const effectiveLectures = relevantRecords.filter(r => r.status !== 'excused').length;
+        const presentCount = relevantRecords.filter(r => r.status === 'present').length;
+
+        const percentage = effectiveLectures > 0
+            ? Math.round((presentCount / effectiveLectures) * 100)
+            : 0;
+
+        attendanceData.push({
+            courseName: course.courseName,
+            percentage
+        });
+    }
+
     res.render("student/student", {
         layout: "main",
         partialToRender: "dashboard",
         user: withUser(req),
-        currentPage: "dashboard",
+        attendanceData,
+        currentPage: "dashboard"
     });
 });
+
 
 router.route("/all-courses").get(async (req, res) => {
     try {
@@ -241,48 +280,66 @@ router.get("/courses/:courseId/members", async (req, res) => {
 });
 
 router.get('/:courseId/attendance', async (req, res) => {
-  const { courseId } = req.params;
-  const studentId = new ObjectId(req.session.user._id);
+    const {courseId} = req.params;
+    const studentId = new ObjectId(req.session.user._id);
 
-  const attendanceCollection = await attendance();
-  const lectureCollection = await lectures();
-  const courseCollection = await courses();
+    const attendanceCollection = await attendance();
+    const lectureCollection = await lectures();
+    const courseCollection = await courses();
 
-  const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+    const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
 
-  const records = await attendanceCollection.find({
-    courseId: new ObjectId(courseId),
-    studentId
-  }).toArray();
+    const records = await attendanceCollection.find({
+        courseId: new ObjectId(courseId),
+        studentId
+    }).toArray();
 
-  const totalLectures = await lectureCollection.countDocuments({ courseId: new ObjectId(courseId) });
+    const totalLectures = await lectureCollection.countDocuments({courseId: new ObjectId(courseId)});
 
-  const presentCount = records.filter(r => r.status === 'present').length;
-  const attendancePercentage = totalLectures ? Math.round((presentCount / totalLectures) * 100) : 0;
+    // Count excused lectures separately
+    const excusedCount = records.filter(r => r.status === 'excused').length;
+    const presentCount = records.filter(r => r.status === 'present').length;
+    const absentCount = records.filter(r => r.status === 'absent').length;
 
-  // Format records with readable date
-  const formattedRecords = await Promise.all(
-    records.map(async record => {
-      const lecture = await lectureCollection.findOne({ _id: new ObjectId(record.lectureId) });
-      return {
-        date: lecture?.lectureDate || 'Unknown',
-        status: record.status,
-        points: record.points
-      };
-    })
-  );
+    const effectiveLectures = totalLectures - excusedCount;
+    const attendancePercentage = effectiveLectures > 0
+        ? Math.round((presentCount / effectiveLectures) * 100)
+        : 0;
 
-  res.render('student/student', {
-    layout: 'main',
-    partialToRender: 'attendanceRecord',
-    currentPage: 'attendance',
-    user: req.session.user,
-    course,
-    attendancePercentage,
-    presentCount,
-    totalLectures,
-    attendanceRecords: formattedRecords
-  });
+    let progressBarClass = "bg-success";
+    if (attendancePercentage < 35) {
+        progressBarClass = "bg-danger";
+    } else if (attendancePercentage < 75) {
+        progressBarClass = "bg-warning text-dark";
+    }
+
+
+    // Format records with readable date
+    const formattedRecords = await Promise.all(
+        records.map(async record => {
+            const lecture = await lectureCollection.findOne({_id: new ObjectId(record.lectureId)});
+            return {
+                date: lecture?.lectureDate || 'Unknown',
+                status: record.status,
+                points: record.points
+            };
+        })
+    );
+
+    res.render('student/student', {
+        layout: 'main',
+        partialToRender: 'attendanceRecord',
+        currentPage: 'attendance',
+        user: req.session.user,
+        course,
+        attendancePercentage,
+        presentCount,
+        totalLectures,
+        excusedCount,
+        absentCount,
+        progressBarClass,
+        attendanceRecords: formattedRecords
+    });
 });
 
 
@@ -581,7 +638,6 @@ router.route("/calendar").get(async (req, res) => {
         return res.render("error", {error: e});
     }
 });
-
 
 
 //

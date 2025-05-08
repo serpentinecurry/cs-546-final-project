@@ -58,28 +58,28 @@ router.route("/").get(async (req, res) => {
 router.route("/course/:id").get(async (req, res) => {
     try {
         return res.redirect(`/professor/course/${req.params.id}/analytics`);
-        // const courseCollection = await courses();
-        // const course = await courseCollection.findOne(
-        //     {_id: new ObjectId(req.params.id)}
-        // );
+        const courseCollection = await courses();
+        const course = await courseCollection.findOne(
+            {_id: new ObjectId(req.params.id)}
+        );
 
-        // if (!course) {
-        //     return res.status(404).render("error", {
-        //         layout: "main",
-        //         error: "Course not found in the database.",
-        //     });
-        // }
+        if (!course) {
+            return res.status(404).render("error", {
+                layout: "main",
+                error: "Course not found in the database.",
+            });
+        }
 
-        // const lecturesCollection = await lectures();
-        // const courseLectures = await lecturesCollection.find({courseId: course._id}).toArray();
+        const lecturesCollection = await lectures();
+        const courseLectures = await lecturesCollection.find({courseId: course._id}).toArray();
 
-        // res.render("professorDashboard/courseView", {
-        //     layout: "main",
-        //     courseId: course._id.toString(),
-        //     courseName: course.courseName,
-        //     courseCode: course.courseCode,
-        //     lectures: courseLectures,
-        // });
+        res.render("professorDashboard/courseView", {
+            layout: "main",
+            courseId: course._id.toString(),
+            courseName: course.courseName,
+            courseCode: course.courseCode,
+            lectures: courseLectures,
+        });
     } catch (error) {
         console.error("Error displaying course:", error);
         res.status(500).render("error", {
@@ -289,10 +289,11 @@ router.route("/course/:courseId/lecture/create")
       const courseId = req.params.courseId;
       
      
-      const courseCollection = await courseData.getCourseById(courseId);
-      const course = await courseCollection.findOne( 
-        {_id: new ObjectId(courseId)}
-      );
+      // const courseCollection = await courseData.getCourseById(courseId);
+      // const course = await courseCollection.findOne(
+      //   {_id: new ObjectId(courseId)}
+      // );
+        const course = await courseData.getCourseById(courseId);
       
       res.render("professorDashboard/createLecture", {
         courseId: courseId,

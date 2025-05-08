@@ -32,7 +32,10 @@ app.engine(
             eq: (a, b) => a === b,
             inc : function(value) {
                 return parseInt(value) + 1;
-            }
+            },
+            json: function(context) {
+                return JSON.stringify(context);
+            },
         }
     })
 );
