@@ -182,7 +182,8 @@
   {{/if}}
 
   <!-- Form -->
-  <form id="registerForm" method="POST" action="/register">
+  <form id="registerForm" novalidate>
+    <div id="registerMessage" class="alert mt-3 d-none"></div>
     <div class="row g-3">
       <div class="col-md-6">
         <label class="form-label" for="firstName">First Name</label>
@@ -267,11 +268,41 @@
   </p>
 </div>
 
-
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
-  // Show spinner on submit
-  document.getElementById("registerForm").addEventListener("submit", function () {
-    document.getElementById("spinner").classList.add("active");
+  const form = document.getElementById("registerForm");
+  const spinner = document.getElementById("spinner");
+  const messageBox = document.getElementById("registerMessage");
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    spinner.classList.add("active");
+    messageBox.classList.add("d-none");
+    messageBox.innerHTML = "";
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await axios.post("/register", data, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      messageBox.className = "alert alert-success mt-3";
+      messageBox.innerHTML = "✅ Registration successful! You can now <a href='/'>log in</a> after your account is approved!.";
+      messageBox.classList.remove("d-none");
+      form.reset();
+    } catch (err) {
+      const error = err.response?.data?.error || "Something went wrong!";
+      messageBox.className = "alert alert-danger mt-3";
+      messageBox.innerText = `⚠️ ${error}`;
+      messageBox.classList.remove("d-none");
+    } finally {
+      spinner.classList.remove("active");
+    }
   });
 
   // Password toggle logic
@@ -290,3 +321,4 @@
     }
   }
 </script>
+

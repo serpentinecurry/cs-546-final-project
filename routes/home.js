@@ -17,7 +17,11 @@ router
   .get(preventDoubleLogin, async (req, res) => {
     const logout = req.query.loggedOut ? "Successfully logged out!" : null;
     const { success } = req.query;
-    res.render("home", { error: false, logout, successMessage: success || null });
+    res.render("home", {
+      error: false,
+      logout,
+      successMessage: success || null,
+    });
   })
   .post(async (req, res) => {
     let { email, password } = req.body;
@@ -26,7 +30,7 @@ router
       passwordValidate(password);
       const user = await userData.login(email, password);
       req.session.user = {
-        _id : user._id,
+        _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         age: user.age,
@@ -102,14 +106,22 @@ router
         major
       );
       if (result && result.registrationCompleted) {
+        if (req.headers.accept?.includes("application/json")) {
+          return res.status(200).json({ success: true });
+        }
         req.session.successMessage =
           "Registration successful! Please wait for admin approval. You’ll be notified via email.";
         return res.redirect("/");
       }
     } catch (error) {
+      const errMsg =
+        typeof error === "string" ? error : error.message || "Invalid input!";
+      //  If it's an AJAX request, return JSON error
+      if (req.headers.accept?.includes("application/json")) {
+        return res.status(400).json({ error: errMsg });
+      }
       res.status(400).render("register", {
-        error:
-          typeof error === "string" ? error : error.message || "Invalid input!",
+        error: errMsg,
         formData: req.body,
       });
     }
