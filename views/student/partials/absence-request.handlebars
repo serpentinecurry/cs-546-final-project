@@ -13,6 +13,14 @@
     </div>
 
     <div class="mb-3">
+        <label for="lectureId" class="form-label">Select Lecture</label>
+        <select class="form-select" id="lectureId" name="lectureId" required disabled>
+            <option disabled selected value="">-- Select a lecture --</option>
+        </select>
+    </div>
+
+
+    <div class="mb-3">
         <label for="reason" class="form-label">Reason</label>
         <textarea class="form-control" id="reason" name="reason" rows="3" minlength="10" required></textarea>
         <div class="form-text">Minimum 10 characters</div>
@@ -54,13 +62,14 @@
                 <div class="card h-100 shadow-sm border-primary">
                     <div class="card-body">
                         <h5 class="card-title text-primary">{{this.courseDisplayName}}</h5>
+                        <h5 class="card-title text-secondary">{{this.lectureDisplayName}}</h5>
                         <p class="card-text"><strong>Reason:</strong> {{this.reason}}</p>
                         <p class="card-text"><strong>Proof Type:</strong> {{this.proofType}}</p>
                         <p class="card-text">
                             <strong>Status:</strong>
-                            {{#ifEquals this.accessStatus "pending"}}
+                            {{#ifEquals this.status "pending"}}
                                 <span class="badge bg-warning text-dark">Pending</span>
-                            {{else ifEquals this.accessStatus "approved"}}
+                            {{else ifEquals this.status "approved"}}
                                 <span class="badge bg-success">Approved</span>
                             {{else}}
                                 <span class="badge bg-danger">Rejected</span>
@@ -129,6 +138,25 @@
             return;
         } else {
             proofTypeInput.classList.remove('is-invalid');
+        }
+    });
+
+    document.getElementById("courseId").addEventListener("change", async function () {
+        const courseId = this.value;
+        const lectureSelect = document.getElementById("lectureId");
+        lectureSelect.innerHTML = '<option disabled selected value="">Loading...</option>';
+        lectureSelect.disabled = true;
+
+        try {
+            const res = await fetch(`/student/lectures/${courseId}`);
+            const lectures = await res.json();
+            lectureSelect.innerHTML = '<option disabled selected value="">-- Select a lecture --</option>';
+            lectures.forEach(lec => {
+                lectureSelect.innerHTML += `<option value="${lec._id}">${lec.lectureTitle} - ${lec.lectureDate}</option>`;
+            });
+            lectureSelect.disabled = false;
+        } catch (err) {
+            lectureSelect.innerHTML = '<option disabled value="">Failed to load lectures</option>';
         }
     });
 </script>

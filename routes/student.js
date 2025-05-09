@@ -349,6 +349,7 @@ router
     .get(async (req, res) => {
         const userCollection = await users();
         const courseCollection = await courses();
+        const lectureCollection = await lectures();
         const studentId = req.session.user._id;
 
         const user = await userCollection.findOne({
@@ -380,10 +381,25 @@ router
                 ] = `${course.courseName} (${course.courseCode})`;
         }
 
+        const courseIds = enrolledCourses.map(c => c._id);
+        const lectureList = await lectureCollection
+            .find({courseId: {$in: courseIds}})
+            .project({_id: 1, lectureTitle: 1, lectureDate: 1})
+            .toArray();
+
+        const lectureMap = {};
+        for (const lec of lectureList) {
+            const date = lec.lectureDate instanceof Date
+                ? lec.lectureDate.toISOString().split("T")[0]
+                : lec.lectureDate || "Unknown";
+            lectureMap[lec._id.toString()] = `${lec.lectureTitle} (${date})`;
+        }
+
         const absenceRequestsWithCourseNames = (user.absenceRequests || []).map(
             (req) => ({
                 ...req,
                 courseDisplayName: courseMap[req.courseId] || "Unknown Course",
+                lectureDisplayName: lectureMap[req.lectureId] || "Unknown Lecture",
             })
         );
 
@@ -400,10 +416,20 @@ router
     })
 
     .post(absenceProofUpload.single("proof"), async (req, res) => {
-        let {courseId, reason, proofType} = req.body;
-
+        let {courseId, lectureId, reason, proofType} = req.body;
+        lectureId = lectureId?.trim();
         reason = reason?.trim();
         proofType = proofType?.trim();
+
+        if (!lectureId) {
+            return res.status(400).render("student/student", {
+                layout: "main",
+                partialToRender: "absence-request",
+                user: withUser(req),
+                currentPage: "absence-request",
+                error: "Lecture must be selected."
+            });
+        }
 
         if (!courseId || !reason || !proofType || reason.length === 0 || proofType.length === 0) {
             return res.status(400).render("student/student", {
@@ -427,10 +453,11 @@ router
 
         const newRequest = {
             courseId,
+            lectureId,
             reason,
             proofType,
             proofDocumentLink: req.file.path,
-            accessStatus: "pending",
+            status: "pending",
             requestedAt: new Date(),
         };
 
@@ -451,6 +478,28 @@ router
             });
         }
     });
+
+router.get("/lectures/:courseId", async (req, res) => {
+    try {
+        const lecturesCollection = await lectures();
+        const courseId = new ObjectId(req.params.courseId);
+        const result = await lecturesCollection
+            .find({courseId})
+            .project({lectureTitle: 1, lectureDate: 1})
+            .toArray();
+
+        res.json(result.map(l => ({
+            _id: l._id,
+            lectureTitle: l.lectureTitle,
+            lectureDate: l.lectureDate instanceof Date
+                ? l.lectureDate.toISOString().split('T')[0]
+                : l.lectureDate
+        })));
+    } catch (e) {
+        res.status(500).json({error: "Failed to fetch lectures"});
+    }
+});
+
 
 router.route("/profile").get(async (req, res) => {
     console.log("User session at /profile:", req.session.user);
