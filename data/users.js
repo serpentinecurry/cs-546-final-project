@@ -67,6 +67,9 @@ const createUser = async (
   if (role === "ta") {
     newUser.taForCourses = [];
   }
+  if (role==="professor"){
+    if(major.trim()!=="") throw "Major field is only for students!"
+  }
   const insertResult = await usersCollection.insertOne(newUser);
   if (!insertResult.acknowledged) throw "Failed to create user";
   return { registrationCompleted: true };

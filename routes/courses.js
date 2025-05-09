@@ -96,7 +96,7 @@ router.route("/:id").get(async (req, res) => {
 router.route("/edit/:id").post(async (req, res) => {
     try {
         let courseId = req.params.id;
-        const {newProfessorId} = req.body;
+        let {newProfessorId} = req.body;
 
         courseId = stringValidate(courseId);
         newProfessorId = stringValidate(newProfessorId);

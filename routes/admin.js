@@ -57,8 +57,7 @@ router.route("/").get(async (req, res) => {
     professorCount,
     taCount,
     courseCount,
-    successMessage:
-        success === "user-created" ? "✅ User created successfully." : null
+    success: req.query.success || null,
   });
 });
 

@@ -11,6 +11,7 @@ import {
     validateEmail,
     isValidDateString,
     passwordValidate,
+    calculateAge,
 } from "../validation.js";
 
 
@@ -537,7 +538,7 @@ router.route("/profile/edit").post(async (req, res) => {
         const userCollection = await users();
         await userCollection.updateOne(
             {_id: new ObjectId(req.session.user._id)},
-            {$set: {firstName, lastName, dateOfBirth}}
+            {$set: {firstName, lastName, dateOfBirth, age: calculateAge(dateOfBirth)}}
         );
 
         req.session.user.firstName = firstName;
