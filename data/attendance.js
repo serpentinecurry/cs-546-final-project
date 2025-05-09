@@ -128,7 +128,27 @@ let updateAttendance = async (attendanceId, updates) => {
 
 }
 
+let averageAttendance = async (courseId) => {
+    courseId = stringValidate(courseId);
+    if (!ObjectId.isValid(courseId)) {
+        throw "Invalid course ID"
+    }
+
+    const attendanceCollection = await attendance();
+
+    const AttendanceTotal = await attendanceCollection.find(
+        {courseId: new ObjectId(courseId)}).toArray();
+
+    const AttendanceCount = AttendanceTotal.filter(
+       (record) => record.status === "present").length;
+
+       return Number((AttendanceCount / AttendanceTotal.length * 100).toFixed(2));
+
+
+}
+
 export default {
     createAttendance,
-    updateAttendance
+    updateAttendance,
+    averageAttendance,
 }

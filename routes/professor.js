@@ -169,6 +169,8 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             console.error("Error getting enrolled students:", e);
         }
 
+        const averageAttendance = await attendanceData.averageAttendance(courseId);
+
         res.render("professorDashboard/DataAnalyticsView", {
             layout: "main",
             course: course,
@@ -176,7 +178,7 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             pendingStudents: pendingStudents || [],
             totalStudents: enrolledStudentsCount,
             totalLectures: courseLectures.length,
-            averageAttendance: "85",
+            averageAttendance: averageAttendance,
             enrolledStudents: enrolledStudents || [],
             successMessage: req.session.successMessage || null,
         });
