@@ -5,9 +5,18 @@ const router = Router();
 
 import { users, courses, changeRequests } from "../config/mongoCollections.js";
 import { userData } from "../data/index.js";
+import {
+  stringValidate,
+  azAZLenValidate,
+  validateEmail,
+  passwordValidate,
+  isValidDateString,
+} from "../validation.js";
+import { sendCredentialsEmail } from "../utils/mailer.js";
 
 router.route("/").get(async (req, res) => {
   console.log(req.session.user);
+  const { success } = req.query;
   const usersCollection = await users();
   const coursesCollection = await courses();
   const pendingUsers = await usersCollection
@@ -48,6 +57,8 @@ router.route("/").get(async (req, res) => {
     professorCount,
     taCount,
     courseCount,
+    successMessage:
+        success === "user-created" ? "✅ User created successfully." : null
   });
 });
 
@@ -260,24 +271,23 @@ router.route("/demote/:id").post(async (req, res) => {
 router.route("/change-requests").get(async (req, res) => {
   try {
     const requestCollection = await changeRequests();
-    const userCollection = await users()
+    const userCollection = await users();
     const rawRequests = await requestCollection
       .find({ status: "pending" })
       .toArray();
-      const requests = [];
+    const requests = [];
 
-      for (const req of rawRequests) {
-        const user = await userCollection.findOne(
-          { _id: req.userId },
-          { projection: { firstName: 1, lastName: 1 } }
-        );
-  
-        requests.push({
-          ...req,
-          fullName: user ? `${user.firstName} ${user.lastName}` : "Unknown User"
-        });
-      }
+    for (const req of rawRequests) {
+      const user = await userCollection.findOne(
+        { _id: req.userId },
+        { projection: { firstName: 1, lastName: 1 } }
+      );
 
+      requests.push({
+        ...req,
+        fullName: user ? `${user.firstName} ${user.lastName}` : "Unknown User",
+      });
+    }
 
     const { success } = req.query;
 
@@ -313,4 +323,82 @@ router.route("/change-requests/:id/reject").post(async (req, res) => {
   }
 });
 
+router
+  .route("/create-user")
+  .get(async (req, res) => {
+    try {
+      return res.render("admin/createUserForm", {
+        user: req.session.user,
+        formData: {},
+        error: null,
+      });
+    } catch (error) {
+      return res.render("admin/createUserForm", {
+        user: req.session.user,
+        formData: req.body,
+        error: error,
+      });
+    }
+  })
+  .post(async (req, res) => {
+    let {
+      firstName,
+      lastName,
+      email,
+      password,
+      confirmPassword,
+      role,
+      dateOfBirth,
+      gender,
+      major,
+    } = req.body;
+    try {
+      firstName = stringValidate(firstName);
+      azAZLenValidate(firstName, 2, 20);
+      lastName = stringValidate(lastName);
+      azAZLenValidate(lastName, 2, 20);
+      if (!["male", "female", "other"].includes(gender)) throw "Invalid Gender";
+      email = validateEmail(email);
+      passwordValidate(password);
+      if (!confirmPassword || typeof confirmPassword !== "string")
+        throw "Enter confirm Password of type string";
+      if (password !== confirmPassword) throw "Passwords dont match!";
+      if (!["student", "professor", "admin", "ta"].includes(role))
+        throw "Invalid user role";
+      if (!isValidDateString(dateOfBirth)) {
+        throw "Invalid date of birth";
+      }
+      if (
+        role === "student" &&
+        (!major || typeof major !== "string" || major.trim().length === 0)
+      )
+        throw "Student must have a major";
+
+      const result = await userData.createUser(
+        firstName,
+        lastName,
+        gender,
+        email,
+        password,
+        role,
+        dateOfBirth,
+        major
+      );
+
+      if (result && result.registrationCompleted) {
+        const usersCollection = await users()
+        await usersCollection.updateOne({ email: email.toLowerCase() }, { $set: { accessStatus: "approved" } });
+        const fullName = `${firstName} ${lastName}`;
+        await sendCredentialsEmail(email, fullName, role, password);
+        return res.redirect("/admin?success=user-created");
+      }
+    } catch (error) {
+      res.status(400).render("admin/createUserForm", {
+        user: req.session.user,
+        error:
+          typeof error === "string" ? error : error.message || "Something went sideways :(",
+        formData: req.body,
+      });
+    }
+  });
 export default router;

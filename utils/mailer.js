@@ -35,8 +35,29 @@ const sendChangeApprovalEmail = async (toEmail, fullName, field, newValue) => {
            <br><h3>– Scholario Admin Team</h3>
            <br><h4>The final project for CS546: Web Programming I (Group_32)</h4>`,
   };
+  await transporter.sendMail(mailOptions);
+};
+
+const sendCredentialsEmail = async (toEmail, fullName, role, password) => {
+  const mailOptions = {
+    from: '"Scholario Admin" <no-reply@scholario.edu>',
+    to: toEmail,
+    subject: `Your Scholario account has been created`,
+    html: `
+      <h2>Welcome to Scholario, ${fullName}!</h2>
+      <p>An account has been created for you with the following credentials:</p>
+      <ul>
+        <li><strong>Email:</strong> ${toEmail}</li>
+        <li><strong>Password:</strong> ${password}</li>
+        <li><strong>Role:</strong> ${role}</li>
+      </ul>
+      <p>Please log in and change your password as soon as possible.</p>
+      <br>
+      <p>– Scholario Admin Team</p>
+    `,
+  };
 
   await transporter.sendMail(mailOptions);
 };
 
-export { sendApprovalEmail, sendChangeApprovalEmail };
+export { sendApprovalEmail, sendChangeApprovalEmail, sendCredentialsEmail };

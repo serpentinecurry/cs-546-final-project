@@ -51,9 +51,15 @@
       <div class="col-md-6">
         <p class="mb-1"><span class="label">📚 Major:</span> <span class="value">{{user.major}}</span></p>
       </div>
-      <div class="col-md-6">
-        <p class="mb-1"><span class="label">📝 Courses Enrolled:</span> <span class="value">{{user.enrolledCourses}}</span></p>
-      </div>
+      {{#if (eq user.accessStatus "approved")}}
+        <div class="col-md-6">
+          <p class="mb-1"><span class="label">📝 Courses Enrolled:</span> <span class="value">{{user.enrolledCourses}}</span></p>
+        </div>
+      {{else}}
+        <div class="col-md-6">
+          <p class="mb-1"><span class="label">📝 Courses Enrolled:</span> <span class="value">NA</span></p>
+        </div>
+      {{/if}}
     </div>
     {{/if}}
 

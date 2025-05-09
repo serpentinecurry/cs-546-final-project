@@ -126,3 +126,14 @@ input.form-control {
   background-color: #0069d9;
   box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
 }
+
+.admin-create-form label {
+  font-weight: 600;
+}
+
+.admin-create-form input,
+.admin-create-form select {
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  font-size: 1rem;
+}
