@@ -11,6 +11,75 @@
 </div>
 {{/if}}
 
+<!-- Absence Requests Section (Added at the top) -->
+{{#if absenceRequests.length}}
+<div class="card mb-4 shadow-sm">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <h4 class="mb-0"><i class="bi bi-calendar-x me-2"></i> Student Absence Requests</h4>
+    <span class="badge bg-light text-primary rounded-pill">{{absenceRequests.length}}</span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Student</th>
+            <th>Reason</th>
+            <th>Documentation</th>
+            <th>Requested</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each absenceRequests}}
+          <tr>
+            <td>{{this.studentName}}</td>
+            <td>
+              {{#if (gt this.reason.length 50)}}
+                {{substr this.reason 0 50}}...
+              {{else}}
+                {{this.reason}}
+              {{/if}}
+            </td>
+            <td>
+              {{#if this.proofLink}}
+                <a href="{{this.proofLink}}" target="_blank" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-file-earmark-text me-1"></i> View Proof
+                </a>
+              {{else}}
+                <span class="text-muted">No document</span>
+              {{/if}}
+            </td>
+            <td>{{this.requestedAt}}</td>
+            <td>
+              <span class="badge rounded-pill bg-{{#if (eq this.status 'approved')}}success{{else if (eq this.status 'rejected')}}danger{{else}}warning{{/if}}">
+                {{this.status}}
+              </span>
+            </td>
+            <td>
+              {{#if (eq this.status "pending")}}
+                <div class="d-flex gap-1">
+                  <form method="POST" action="/professor/absence-request/update/{{this.studentId}}/{{../course._id}}/approve">
+                    <input type="hidden" name="requestIndex" value="{{this.requestIndex}}">
+                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                  </form>
+                  <form method="POST" action="/professor/absence-request/update/{{this.studentId}}/{{../course._id}}/reject">
+                    <input type="hidden" name="requestIndex" value="{{this.requestIndex}}">
+                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                  </form>
+                </div>
+              {{/if}}
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{{/if}}
+
 <h1>Data Analytics Dashboard</h1>
 
 {{!-- Pending Enrollment Requests Section --}}

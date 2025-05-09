@@ -2,8 +2,8 @@ import {Router} from "express";
 import {ObjectId} from "mongodb";
 import userData from "../data/users.js";
 import courseData from "../data/courses.js";
-import lecturesData from "../data/lectures.js";
 import attendanceData from "../data/attendance.js";
+import lectureData from "../data/lectures.js";
 
 const router = Router()
 
@@ -94,7 +94,6 @@ router.route("/course/:id/analytics").get(async (req, res) => {
         const courseId = req.params.id;
         console.log("Loading for course:", courseId);
 
-
         const courseCollection = await courses();
         const course = await courseCollection.findOne({
             _id: new ObjectId(courseId)
@@ -107,29 +106,64 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             });
         }
 
-
         course._id = course._id.toString();
 
+        
+        let absenceRequests = [];
+        try {
+            const userCollection = await users();
+            
+            
+            const studentsWithRequests = await userCollection.find({
+                "absenceRequests": { 
+                    $elemMatch: { 
+                        courseId: courseId 
+                    } 
+                }
+            }).toArray();
+
+            
+            for (const student of studentsWithRequests) {
+                if (Array.isArray(student.absenceRequests)) {
+                    
+                    const courseRequests = student.absenceRequests
+                        .filter(req => req.courseId === courseId)
+                        .map((req, index) => ({
+                            studentName: `${student.firstName} ${student.lastName}`,
+                            studentId: student._id.toString(),
+                            reason: req.reason || "No reason provided",
+                            proofType: req.proofType || "None",
+                            proofLink: req.proofDocumentLink || "",
+                            status: req.status || "pending",
+                            requestedAt: req.requestedAt || new Date(),
+                            reviewedAt: req.reviewedAt || null,
+                            requestIndex: index
+                        }));
+                    
+                    absenceRequests.push(...courseRequests);
+                }
+            }
+            
+            console.log(`Found ${absenceRequests.length} absence requests for course ${courseId}`);
+        } catch (e) {
+            console.error("Error fetching absence requests:", e);
+        }
 
         const lecturesCollection = await lectures();
         const courseLectures = await lecturesCollection.find({
             courseId: new ObjectId(courseId)
         }).toArray();
 
-
         let pendingStudents = [];
         try {
             pendingStudents = await userData.getPendingEnrollmentRequests(courseId);
-
             pendingStudents = pendingStudents.map(student => ({
                 ...student,
                 _id: student._id.toString()
             }));
         } catch (e) {
             console.error("Error getting pending enrollment requests:", e);
-
         }
-
 
         let enrolledStudents = [];
         let enrolledStudentsCount = 0;
@@ -140,23 +174,17 @@ router.route("/course/:id/analytics").get(async (req, res) => {
                 _id: new ObjectId(courseId)
             });
 
-            
-            console.log("Student enrollments:", JSON.stringify(course.studentEnrollments));
-            
-                        const activeEnrollments = course.studentEnrollments ? 
+            const activeEnrollments = course.studentEnrollments ? 
                 course.studentEnrollments.filter(enrollment => enrollment.status === "active") : [];
             
-                
             const activeStudentIds = activeEnrollments.map(enrollment => 
                 new ObjectId(enrollment.studentId));
             
-                
             if (activeStudentIds.length > 0) {
                 const usersCollection = await users();
                 enrolledStudents = await usersCollection.find({
                     _id: { $in: activeStudentIds }
                 }).toArray();
-                
                 
                 enrolledStudents = enrolledStudents.map(student => ({
                     ...student,
@@ -180,6 +208,7 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             totalLectures: courseLectures.length,
             averageAttendance: averageAttendance,
             enrolledStudents: enrolledStudents || [],
+            absenceRequests: absenceRequests, // Now properly populated
             successMessage: req.session.successMessage || null,
         });
 
@@ -235,34 +264,20 @@ router.get('/dashboard/:courseId', async (req, res) => {
     try {
         const courseId = req.params.courseId;
         const course = await courseData.getCourseById(courseId);
-
-
         const pendingStudents = await userData.getPendingEnrollmentRequests(courseId);
-
-
-        res.render('professorDashboard', {
-            title: `${course.name} Dashboard`,
-            course: course,
-            pendingStudents: pendingStudents,
-            layout: 'main'
+        
+        res.render("professorDashboard/courseView", {
+            layout: "main",
+            courseId: course._id.toString(),
+            courseName: course.courseName,
+            courseCode: course.courseCode,
+            pendingStudents: pendingStudents
         });
-    } catch (e) {
-        res.status(500).render('error', {error: e});
-    }
-});
-
-router.post('/enrollment/approve', async (req, res) => {
-    try {
-        const studentId = stringValidate(req.body.studentId);
-        const courseId = stringValidate(req.body.courseId);
-        await userData.approveEnrollmentRequest(studentId, courseId);
-        req.session.successMessage = "Enrollment request approved successfully.";
-        res.redirect(`/professor/course/${courseId}/analytics`);
     } catch (error) {
-        console.error("Error approving enrollment:", error);
+        console.error("Error loading course dashboard:", error);
         res.status(400).render("error", {
             layout: "main",
-            error: typeof error === "string" ? error : error.message || "Error approving enrollment request."
+            error: typeof error === "string" ? error : error.message || "Error loading course dashboard."
         });
     }
 });
@@ -272,14 +287,35 @@ router.post('/enrollment/reject', async (req, res) => {
         const studentId = stringValidate(req.body.studentId);
         const courseId = stringValidate(req.body.courseId);
         
+        // Add your rejection logic here
         await userData.rejectEnrollmentRequest(studentId, courseId);
-        req.session.successMessage = "Enrollment request rejected.";
+        
+        req.session.successMessage = "Enrollment request rejected successfully";
         res.redirect(`/professor/course/${courseId}/analytics`);
     } catch (error) {
         console.error("Error rejecting enrollment:", error);
         res.status(400).render("error", {
             layout: "main",
             error: typeof error === "string" ? error : error.message || "Error rejecting enrollment request."
+        });
+    }
+});
+
+router.post('/enrollment/approve', async (req, res) => {
+    try {
+        const studentId = stringValidate(req.body.studentId);
+        const courseId = stringValidate(req.body.courseId);
+        
+        
+        await userData.approveEnrollmentRequest(studentId, courseId);
+        
+        req.session.successMessage = "Enrollment request approved successfully";
+        res.redirect(`/professor/course/${courseId}/analytics`);
+    } catch (error) {
+        console.error("Error approving enrollment:", error);
+        res.status(400).render("error", {
+            layout: "main",
+            error: typeof error === "string" ? error : error.message || "Error approving enrollment request."
         });
     }
 });
@@ -313,7 +349,7 @@ router.route("/course/:courseId/lecture/create")
       const { lectureTitle, lectureDate, description, materialsLink } = req.body;
       
       
-      await lecturesData.createLecture(
+      await lectureData.createLecture(
         courseId,
         lectureTitle,
         lectureDate, 
@@ -340,9 +376,7 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
     try {
         const {courseId, lectureId} = req.params
         const lecturesCollection = await lectures()
-        const lecture = await lecturesCollection.findOne(
-            {_id: new ObjectId(lectureId)}
-        )
+        const lecture = await lectureData.getLectureById(lectureId)
         if (!lecture) {
             return res.status(404).render("error", {
                 layout: "main",
@@ -362,6 +396,9 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
                 error: "Course not found in the database.",
             })
         }
+
+        
+        course._id = course._id.toString();
 
         const activeEnrollmentIds = course.studentEnrollments
             ?.filter(enrollment => enrollment.status === "active")
@@ -415,7 +452,7 @@ router.route("/course/:courseId/lecture/:lectureId/attendance").post(async (req,
     try {
         
         for (const [studentId, status] of Object.entries(attendanceFormData)) {
-            //replaced with createAttendance function
+            
             await attendanceData.createAttendance(
                 lectureId,
                 courseId,
@@ -434,5 +471,123 @@ router.route("/course/:courseId/lecture/:lectureId/attendance").post(async (req,
         })
     }
 })
+
+// absence request approve or reject route - doesn't mark as absent yet 
+router.post('/absence-request/update/:studentId/:courseId/:action', async (req, res) => {
+    try {
+        const { studentId, courseId, action } = req.params;
+        const { requestIndex } = req.body;
+        
+        if (action !== "approve" && action !== "reject") {
+            return res.status(400).render("error", {
+                layout: "main",
+                error: "Invalid action"
+            });
+        }
+        
+        const userCollection = await users();
+        const student = await userCollection.findOne({ _id: new ObjectId(studentId) });
+        
+        if (!student || !student.absenceRequests) {
+            return res.status(404).render("error", {
+                layout: "main",
+                error: "Student or absence requests not found"
+            });
+        }
+        
+        const requestIndexNum = parseInt(requestIndex);
+        if (isNaN(requestIndexNum) || requestIndexNum < 0 || requestIndexNum >= student.absenceRequests.length) {
+            return res.status(400).render("error", {
+                layout: "main",
+                error: "Invalid request index"
+            });
+        }
+        
+        
+        const updateStatus = action === "approve" ? "approved" : "rejected";
+        
+        await userCollection.updateOne(
+            { _id: new ObjectId(studentId) },
+            { 
+                $set: { 
+                    [`absenceRequests.${requestIndexNum}.status`]: updateStatus,
+                    [`absenceRequests.${requestIndexNum}.reviewedAt`]: new Date(),
+                    [`absenceRequests.${requestIndexNum}.reviewedBy`]: req.session.user._id
+                } 
+            }
+        );
+        
+        req.session.successMessage = `Absence request ${updateStatus}`;
+        res.redirect(`/professor/course/${courseId}/analytics`);
+    } catch (e) {
+        console.error("Error updating absence request:", e);
+        res.status(500).render("error", {
+            layout: "main",
+            error: "An error occurred while processing the request: " + e.message
+        });
+    }
+});
+
+// Edit lecture routes
+router.route("/course/:courseId/lecture/:lectureId/edit")
+  .get(async (req, res) => {
+    try {
+      const { courseId, lectureId } = req.params;
+      
+      
+      const courseCollection = await courses();
+      const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+      
+      if (!course) {
+        return res.status(404).render("error", {
+          layout: "main",
+          error: "Course not found"
+        });
+      }
+      
+      
+      course._id = course._id.toString();
+      
+      const lecture = await lectureData.getLectureById(lectureId);
+      
+      
+      res.render("professorDashboard/editLecture", {
+        layout: "main",
+        lecture: lecture,
+        course: course
+      });
+    } catch (error) {
+      console.error("Error loading lecture edit form:", error);
+      res.status(400).render("error", {
+        layout: "main",
+        error: "Error loading lecture edit form: " + error.message
+      });
+    }
+  })
+  .post(async (req, res) => {
+    try {
+      const { courseId, lectureId } = req.params;
+      const { lectureTitle, lectureDate, lectureDescription, lectureMaterials } = req.body;
+      
+      const updates = {
+        lectureTitle: lectureTitle,
+        lectureDate: lectureDate,
+        description: lectureDescription, 
+        materialsLink: lectureMaterials
+      };
+      
+      await lectureData.updateLecture(lectureId, updates);
+      
+      req.session.successMessage = "Lecture updated successfully!";
+      res.redirect(`/professor/course/${courseId}/analytics`);
+      
+    } catch (error) {
+      console.error("Error updating lecture:", error);
+      res.status(400).render("error", {
+        layout: "main",
+        error: "Error updating lecture: " + error.message
+      });
+    }
+  });
 
 export default router;

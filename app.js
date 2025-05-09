@@ -36,6 +36,16 @@ app.engine(
             json: function(context) {
                 return JSON.stringify(context);
             },
+            gt: function(a, b) {
+                return a > b;
+            },
+            substr: function(str, start, len) {
+                if (typeof str !== 'string') return '';
+                return str.substr(start, len);
+            },
+            formatDate: function(date) {
+                return new Date(date).toLocaleDateString();
+            }
         }
     })
 );

@@ -87,7 +87,8 @@ let createLecture = async (courseId, lectureTitle, lectureDate, description, mat
     return { isLectureCreated: true, lectureId: insertion.insertedId.toString() };
 }
 
-let updateLecture = async (lectureId, updates) => {
+const updateLecture = async (lectureId, updates) => {
+
 
     lectureId = stringValidate(lectureId)
     let lectureList = await lectures();
@@ -153,8 +154,34 @@ let insertRating = async (lectureId, studentId, rating) => {
     return { isRatingAdded: true };
 }
 
+
+
+const getLectureById = async (lectureId) => {
+  if (!lectureId) throw 'Lecture ID is required';
+  if (typeof lectureId !== 'string') throw 'Lecture ID must be a string';
+  lectureId = lectureId.trim();
+  if (lectureId.length === 0) throw 'Lecture ID cannot be empty';
+
+  try {
+    const lecturesCollection = await lectures();
+    const objectId = new ObjectId(lectureId);
+    const lecture = await lecturesCollection.findOne({ _id: objectId });
+
+    if (!lecture) throw 'Lecture not found';
+    
+    lecture._id = lecture._id.toString();
+    
+    return lecture;
+  } catch (e) {
+    if (e.message === 'Lecture not found') throw e;
+    if (e instanceof ObjectId.TypeError) throw 'Invalid lecture ID format';
+    throw `Error retrieving lecture: ${e.message}`;
+  }
+};
+
 export default {
     createLecture,
     updateLecture,
-    insertRating
+    insertRating,
+    getLectureById
 }

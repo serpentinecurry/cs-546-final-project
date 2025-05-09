@@ -1,7 +1,7 @@
 <a href="/professor/course/{{course._id}}" class="btn btn-secondary mb-3">Back to Course</a>
 
-    <h1>Lecture {{lecture.lectureTitle}} for course {{course.courseName}} </h1>
-    <h2>Attendance Sheet</h2>
+<h1>Lecture {{lecture.lectureTitle}} for course {{course.courseName}} </h1>
+<h2>Attendance Sheet</h2>
 
 <form method="POST" action="/professor/course/{{course._id}}/lecture/{{lecture._id}}/attendance" class="attendance-form">
     {{#each students}}
@@ -18,10 +18,16 @@
     <button type="submit">Submit Attendance</button>
 </form>
 
-<h3> Lecture Details </h3>
-<h4> Title: {{lecture.lectureTitle}} </h4>
-<h4> Date: {{lecture.lectureDate}} </h4>
-<h4> Description: {{lecture.description}}</h4>
-<h4>Materials: <a href="{{lecture.materialsLink}}" target="_blank">{{lecture.materialsLink}}</a> </h4>
-
-<h4> <a href="/professor/course/{{course._id}}/lecture/{{lecture._id}}/edit">Edit Lecture</a> </h4>
+<div class="lecture-details mb-4">
+  <h2>Lecture Details</h2>
+  <p><strong>Title:</strong> {{lecture.lectureTitle}}</p>
+  <p><strong>Date:</strong> {{lecture.lectureDate}}</p>
+  <p><strong>Description:</strong> {{lecture.lectureDescription}}</p>
+  {{#if lecture.lectureMaterials}}
+  <p><strong>Materials:</strong> <a href="{{lecture.lectureMaterials}}" target="_blank">{{lecture.lectureMaterials}}</a></p>
+  {{/if}}
+  
+  <a href="/professor/course/{{course._id}}/lecture/{{lecture._id}}/edit" class="btn btn-warning">
+    <i class="bi bi-pencil-square me-1"></i> Edit Lecture
+  </a>
+</div>
