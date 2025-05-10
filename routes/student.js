@@ -41,7 +41,6 @@ router.get('/dashboard', async (req, res) => {
     const lecturesCollection = await lectures();
     const courseCollection = await courses();
 
-    // Find all courses where the student is actively enrolled
     const enrolledCourses = await courseCollection.find({
         studentEnrollments: {
             $elemMatch: {
@@ -55,24 +54,36 @@ router.get('/dashboard', async (req, res) => {
 
     for (const course of enrolledCourses) {
         const totalLectures = await lecturesCollection.countDocuments({courseId: course._id});
-        const relevantRecords = await attendanceCollection.find({
+        if (totalLectures === 0) continue;
+
+        const records = await attendanceCollection.find({
             courseId: course._id,
             studentId
         }).toArray();
 
-        // Exclude excused from denominator
-        const effectiveLectures = relevantRecords.filter(r => r.status !== 'excused').length;
-        const presentCount = relevantRecords.filter(r => r.status === 'present').length;
+        // Exclude excused records
+        const filteredRecords = records.filter(r => r.status !== 'excused');
+        const effectiveLectures = filteredRecords.length;
 
-        const percentage = effectiveLectures > 0
-            ? Math.round((presentCount / effectiveLectures) * 100)
-            : 0;
+        // ⛔ Skip course if all lectures are excused
+        if (effectiveLectures === 0) continue;
+
+        const presentCount = filteredRecords.filter(r => r.status === 'present').length;
+        const absentCount = filteredRecords.filter(r => r.status === 'absent').length;
+
+        const attendancePercentage = Math.round((presentCount / effectiveLectures) * 100);
+
+        const warningMessage = attendancePercentage < 35
+            ? `⚠️ Your attendance in ${course.courseName} is critically low (${attendancePercentage}%).`
+            : null;
 
         attendanceData.push({
             courseName: course.courseName,
-            percentage
+            percentage: attendancePercentage,
+            warningMessage
         });
     }
+
 
     res.render("student/student", {
         layout: "main",
@@ -81,7 +92,8 @@ router.get('/dashboard', async (req, res) => {
         attendanceData,
         currentPage: "dashboard"
     });
-});
+})
+;
 
 
 router.route("/all-courses").get(async (req, res) => {

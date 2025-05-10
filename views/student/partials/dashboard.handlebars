@@ -1,4 +1,25 @@
-<h2 class="fw-bold text-primary mb-3 text-center">Welcome back, Scholar! 🎓</h2>
+<h2 class="fw-bold text-primary mb-4 text-center">Welcome back, Scholar! 🎓</h2>
+
+{{#if (some attendanceData "warningMessage")}}
+  <div class="p-4 bg-white rounded-4 shadow-sm mb-5 border border-2 border-primary-subtle">
+      <div class="alert alert-danger text-center fw-semibold mb-4">
+          🚨 You have missed too many classes in one or more courses. Please review your attendance!
+      </div>
+
+      {{#each attendanceData}}
+          {{#if warningMessage}}
+              <div class="mb-4 p-3 rounded border border-warning bg-light-subtle shadow-sm">
+                  <h5 class="mb-2 text-dark">{{courseName}}</h5>
+                  <div class="alert alert-warning py-2 px-3 mb-0">
+                      <i class="bi bi-exclamation-triangle-fill me-2"></i> {{warningMessage}}
+                  </div>
+              </div>
+          {{/if}}
+      {{/each}}
+  </div>
+{{/if}}
+
+
 <div class="p-4 bg-white rounded-4 shadow-sm mb-5 border border-2 border-primary-subtle">
     <h4 class="mb-4 text-primary">
         <i class="bi bi-graph-up-arrow me-2"></i>Attendance Performance
@@ -7,8 +28,7 @@
     <canvas id="attendanceChart" height="160"></canvas>
 
     <script id="attendance-json" type="application/json">
-    {{{json attendanceData}}}
-
+        {{{json attendanceData}}}
     </script>
 
     <script>
