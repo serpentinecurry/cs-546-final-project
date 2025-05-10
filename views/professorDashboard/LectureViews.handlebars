@@ -25,11 +25,9 @@
     <p><strong>Title:</strong> {{lecture.lectureTitle}}</p>
     <p><strong>Date:</strong> {{lecture.lectureDate}}</p>
     <p><strong>Lecture Time:</strong> {{lectureStartTime}} - {{lectureEndTime}} </p>
-    <p><strong>Description:</strong> {{lecture.lectureDescription}}</p>
-    {{#if lecture.lectureMaterials}}
-        <p><strong>Materials:</strong> <a href="{{lecture.lectureMaterials}}"
-                                          target="_blank">{{lecture.lectureMaterials}}</a></p>
-    {{/if}}
+    <p><strong>Description:</strong> {{lecture.description}}</p>
+    <p><strong>Materials:</strong> <a href="{{lecture.materialsLink}}">{{lecture.materialsLink}}</a></p>
+    <p><strong>Average Rating:</strong> {{averageRating}} / 5</p>
 
     <a href="/professor/course/{{course._id}}/lecture/{{lecture._id}}/edit" class="btn btn-warning">
         <i class="bi bi-pencil-square me-1"></i> Edit Lecture

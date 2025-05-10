@@ -13,6 +13,17 @@
       <input type="date" class="form-control" id="lectureDate" name="lectureDate" value="{{lecture.lectureDate}}" required>
     </div>
 
+    <div class="mb-3 row">
+      <div class="col">
+        <label for="lectureStartTime" class="form-label">Start Time</label>
+        <input type="time" class="form-control" id="lectureStartTime" name="lectureStartTime" value="{{lecture.lectureStartTime}}" required>
+      </div>
+      <div class="col">
+        <label for="lectureEndTime" class="form-label">End Time</label>
+        <input type="time" class="form-control" id="lectureEndTime" name="lectureEndTime" value="{{lecture.lectureEndTime}}" required>
+      </div>
+    </div>
+
     <div class="mb-3">
       <label for="lectureDescription" class="form-label">Description</label>
       <textarea class="form-control" id="lectureDescription" name="lectureDescription" rows="4">{{lecture.lectureDescription}}</textarea>

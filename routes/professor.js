@@ -643,11 +643,13 @@ router.route("/course/:courseId/lecture/:lectureId/edit")
     .post(async (req, res) => {
         try {
             const {courseId, lectureId} = req.params;
-            const {lectureTitle, lectureDate, lectureDescription, lectureMaterials} = req.body;
+            const {lectureTitle, lectureDate, lectureStartTime, lectureEndTime, lectureDescription, lectureMaterials} = req.body;
 
             const updates = {
                 lectureTitle: lectureTitle,
                 lectureDate: lectureDate,
+                lectureStartTime: lectureStartTime,
+                lectureEndTime: lectureEndTime,
                 description: lectureDescription,
                 materialsLink: lectureMaterials
             };
@@ -656,12 +658,11 @@ router.route("/course/:courseId/lecture/:lectureId/edit")
 
             req.session.successMessage = "Lecture updated successfully!";
             res.redirect(`/professor/course/${courseId}/analytics`);
-
         } catch (error) {
             console.error("Error updating lecture:", error);
             res.status(400).render("error", {
                 layout: "main",
-                error: "Error updating lecture: " + error.message
+                error: "Error updating lecture: " + error
             });
         }
     });
