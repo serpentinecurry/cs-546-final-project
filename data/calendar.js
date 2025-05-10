@@ -39,4 +39,53 @@ const getStudentLectures = async (studentId) => {
     return studentLectures;
 }
 
+const parseTimeString = (timeString) => {
+    let hours, minutes, timeOfDay;
+    [hours, minutes] = timeString.split(':');
+    [minutes, timeOfDay] = minutes.split(' ');
+
+    if (timeOfDay == 'PM') {
+        hours += 12
+    } else if (hours == 12) {
+        hours -= 12;
+    }
+
+    return {hours: hours, minutes: minutes};
+}
+
+const lecturesToEventObjects = async (lectures) => {
+    let events = [];
+
+    for (let l of lectures) {
+        const eventObject = {};
+        // event id: "coursecode-date" (e.g. CS-546-2025-04-15)
+        eventObject.id = l.courseCode + "-" + l.lectureDate;
+        // CS-546 - Learn AJAX
+        eventObject.title = l.courseCode + " - " + l.lectureTitle;
+
+        // initialize date objects
+        let start = new Date(l.lectureDate);
+        let end = new Date(l.lectureDate);
+
+        // get start and end time
+        let startTimeString, endTimeString;
+        [startTimeString, endTimeString] = l.time.split(' - ');
+
+        const startTime = parseTimeString(startTimeString);
+        const endTime = parseTimeString(endTimeString);
+
+        start.setHours(startTime.hours);
+        start.setMinutes(startTime.minutes);
+        end.setHours(endTime.hours);
+        end.setMinutes(endTime.minutes);
+
+        eventObject.start = start;
+        eventObject.end = end;
+
+        events.push(eventObject);
+    }
+
+    return events;
+}
+
 export default {lecturesToEventObjects};
