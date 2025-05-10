@@ -1,3 +1,8 @@
+<ol hidden = true>
+  {{#each events}}
+  <li class="event">{{this}}</li>
+  {{/each}}
+</ol>
 <div id="calendar"></div>
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js'></script>
 <script>
@@ -7,6 +12,14 @@
           timezone: 'local',
           initialView: 'timeGridWeek'
         });
+
+        const eventList = document.getElementsByClassName("event");
+
+        for (e of eventList) {
+          const event = JSON.parse(e.innerHTML);
+          calendar.addEvent(event);
+        }
+
         calendar.render();
       });
 </script>
