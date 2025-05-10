@@ -94,7 +94,15 @@ router.route("/all-courses").get(async (req, res) => {
                 );
             });
         }
-
+        allCourses = allCourses.map((course) => {
+            const enrollment = course.studentEnrollments?.find((enr) => enr.studentId.toString() === studentId.toString());
+            return {
+                ...course,
+                isEnrolled: enrollment && enrollment.status === "active",
+                alreadyApplied: enrollment && enrollment.status === "pending",
+                isCourseFull: course.activeCount >= course.maxLimit,
+            };
+        });
         res.render("student/student", {
             layout: "main",
             partialToRender: "all-courses",

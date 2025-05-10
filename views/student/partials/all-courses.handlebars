@@ -116,11 +116,14 @@
               👥 Enrolled: <strong>{{this.activeCount}}</strong> / {{this.maxLimit}}
             </p>
 
-            {{#if this.alreadyApplied}}
+            {{#if this.isEnrolled}}
+              <span class="badge bg-success text-light py-2 px-3 w-100 text-center rounded-pill">
+                ✅ Already Enrolled
+              </span>
+            {{else if this.alreadyApplied}}
               <span class="badge badge-applied text-light py-2 px-3 w-100 text-center rounded-pill">
                 ⏳ Already Applied to Enroll
               </span>
-
             {{else if this.isCourseFull}}
               <span class="badge badge-full text-light py-2 px-3 w-100 text-center rounded-pill">
                 ❌ Course Full
