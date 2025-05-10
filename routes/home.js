@@ -1,4 +1,8 @@
 import { Router } from "express";
+import crypto from "crypto";
+import bcrypt from "bcrypt";
+import { sendResetEmail } from "../utils/mailer.js";
+import { users } from "../config/mongoCollections.js";
 const router = Router();
 
 import { userData } from "../data/index.js";
@@ -139,4 +143,84 @@ router.route("/logout").get(async (req, res) => {
   });
 });
 
+router
+  .route("/forgot-password")
+  .get(async (req, res) => {
+    res.render("forgotPassword", { error: null });
+  })
+  .post(async (req, res) => {
+    const { email } = req.body;
+    const usersCollection = await users();
+    const user = await usersCollection.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.render("forgotPassword", { error: "User not found." });
+    }
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiry = Date.now() + 1000 * 60 * 15; // 15 minutes
+
+    await usersCollection.updateOne(
+      { _id: user._id },
+      { $set: { resetToken: token, resetTokenExpiry: expiry } }
+    );
+
+    const resetLink = `http://localhost:3000/reset-password/${token}`;
+    await sendResetEmail(user.email, user.firstName, resetLink);
+
+    res.render("forgotPassword", {
+      success: "Check your email for reset link.",
+    });
+  });
+
+router
+  .route("/reset-password/:token")
+  .get(async (req, res) => {
+    const { token } = req.params;
+    const usersCollection = await users();
+    const user = await usersCollection.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: Date.now() },
+    });
+
+    if (!user)
+      return res
+        .status(400)
+        .render("error", { error: "Invalid or expired token" });
+
+    return res.render("resetPassword", { token });
+  })
+  .post(async (req, res) => {
+    const { token } = req.params;
+    const { newPassword, confirmPassword } = req.body;
+
+    if (newPassword !== confirmPassword) {
+      return res.render("resetPassword", {
+        token,
+        error: "Passwords don't match.",
+      });
+    }
+
+    const usersCollection = await users();
+    const user = await usersCollection.findOne({
+      resetToken: token,
+      resetTokenExpiry: { $gt: Date.now() },
+    });
+
+    if (!user)
+      return res
+        .status(400)
+        .render("error", { error: "Invalid or expired token" });
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await usersCollection.updateOne(
+      { _id: user._id },
+      {
+        $set: { password: hashed },
+        $unset: { resetToken: "", resetTokenExpiry: "" },
+      }
+    );
+
+    res.redirect("/?success=Password updated. Please log in.");
+  });
 export default router;

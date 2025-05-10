@@ -60,4 +60,36 @@ const sendCredentialsEmail = async (toEmail, fullName, role, password) => {
   await transporter.sendMail(mailOptions);
 };
 
-export { sendApprovalEmail, sendChangeApprovalEmail, sendCredentialsEmail };
+const sendResetEmail = async (toEmail, name, resetLink) => {
+  const mailOptions = {
+    from: `"Scholario Support" <${process.env.MAIL_USER}>`,
+    to: toEmail,
+    subject: "🔐 Reset Your Scholario Password",
+    html: `
+      <h2>Hey ${name},</h2>
+      <p>We received a request to reset your Scholario password.</p>
+      <p>Click the button below to reset it:</p>
+      <a href="${resetLink}" style="
+        background-color: #4f46e5;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 8px;
+        display: inline-block;
+        margin: 10px 0;
+      ">Reset Password</a>
+      <p>This link will expire in 15 minutes.</p>
+      <p>If you didn't request this, you can safely ignore this email.</p>
+      <br/>
+      <small>© Scholario Team</small>
+    `,
+  };
+  await transporter.sendMail(mailOptions);
+};
+
+export {
+  sendApprovalEmail,
+  sendChangeApprovalEmail,
+  sendCredentialsEmail,
+  sendResetEmail,
+};
