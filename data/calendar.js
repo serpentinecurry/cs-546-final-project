@@ -1,39 +1,42 @@
 import { ObjectId } from 'mongodb';
-import { users } from '../config/mongoCollections.js';
-import { courseData } from './index.js';
+import { users, courses, lectures } from '../config/mongoCollections.js';
+// import { courseData } from './index.js';
 
-const getOfficeHours = async (studentId) => {
+
+// function that returns an array of all lectures for a given student
+const getStudentLectures = async (studentId) => {
     const userCollection = await users();
     const student = await userCollection.findOne({_id: new ObjectId(studentId)});
-    const courseIds = student.enrolledCourses;
 
-    let returnResult = [];
+    if (!student)
+        throw `Student with ID ${studentId} not found`;
 
-    for (let courseId of courseIds) {
-        const courseInfo = await courseData.getCourseById(courseId);
-        // object w/ course code and array of office hours
-        const officeHoursInfo = {courseCode: courseInfo.course.courseCode};
-        let officeHours = courseInfo.course.taOfficeHours;
+    const courseCollection = await courses();
+    // get courses that the student is in
+    let courses = await courseCollection
+        .find({
+            "studentEnrollmentRequests.studentId": new ObjectId(studentId),
+            "studentEnrollmentRequests.status": "active"
+        })
+        .toArray();
 
-        for (let item of officeHours) {
-            const taId = item.taId;
-            const taInfo = userCollection.findOne({_id: new ObjectId(taId)});
-            let taName = taInfo.firstName + " " + taInfo.lastName;
+    // array of all the students' lectures
+    let studentLectures = [];
+    const lectureCollection = await studentLectures();
 
-            item.name = taName;
+    for (let course of courses) {
+        let courseId = course._id;
+        
+        let courseLectures = lectureCollection.find({courseId: courseId}).toArray();
+        for (let lecture of courseLectures) {
+            lecture.courseCode = course.courseCode;
+            lecture.time = course.meetingTime;
         }
 
-        const professorOfficeHours = courseInfo.course.professorOfficeHours;
-        const professorInfo = courseInfo.professor;
-        professorOfficeHours.name = professorInfo.firstName + " " + professorInfo.lastName;
-        officeHours.push(professorOfficeHours);
-
-        officeHoursInfo.officeHours = officeHours;
-
-        returnResult.push(officeHoursInfo);
+        studentLectures = studentLectures.concat(courseLectures);
     }
 
-    return returnResult;
+    return studentLectures;
 }
 
-export default {getOfficeHours};
+export default {lecturesToEventObjects};
