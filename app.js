@@ -45,6 +45,21 @@ app.engine(
             },
             formatDate: function(date) {
                 return new Date(date).toLocaleDateString();
+            },
+            array: function() {
+                return Array.from({ length: arguments[0] }, (_, i) => i + 1);
+            },
+            lte: function(a, b) {
+                return a <= b;
+            },
+            lt: function(a, b) {
+                return a < b;
+            },
+            add: function(a, b) {
+                return Number(a) + Number(b);
+            },
+            and: function(a, b) {
+                return a && b;
             }
         }
     })

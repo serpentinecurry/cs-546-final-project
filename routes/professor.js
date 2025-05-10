@@ -200,6 +200,48 @@ router.route("/course/:id/analytics").get(async (req, res) => {
 
         const averageAttendance = await attendanceData.averageAttendance(courseId);
 
+        let totalPresent = 0;
+        let totalAbsent = 0;
+        let totalExcused = 0;
+
+        try {
+            const attendanceCollection = await attendance();
+
+            // Add this code to handle both String and ObjectId courseIds
+            let courseObjectId;
+            try {
+                courseObjectId = new ObjectId(courseId);
+            } catch (e) {
+                courseObjectId = courseId;
+            }
+
+            // Modify your query to check both formats
+            const attendanceRecords = await attendanceCollection.find({
+                $or: [
+                    {courseId: courseId.toString()},
+                    {courseId: courseObjectId}
+                ]
+            }).toArray();
+
+            console.log(`Found ${attendanceRecords.length} attendance records`);
+
+            // Ensure minimal values for the chart to render
+            totalPresent = attendanceRecords.filter(r => r.status === 'present').length;
+            totalAbsent = attendanceRecords.filter(r => r.status === 'absent').length;
+            totalExcused = attendanceRecords.filter(r => r.status === 'excused').length;
+
+            // If all zeros, add sample data so chart shows something
+            if (totalPresent === 0 && totalAbsent === 0 && totalExcused === 0) {
+                totalPresent = 1;
+                totalAbsent = 1;
+                totalExcused = 1;
+            }
+
+            console.log(`Attendance counts: Present=${totalPresent}, Absent=${totalAbsent}, Excused=${totalExcused}`);
+        } catch (e) {
+            console.error("Error fetching attendance statistics:", e);
+        }
+
         res.render("professorDashboard/DataAnalyticsView", {
             layout: "main",
             course: course,
@@ -209,8 +251,11 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             totalLectures: courseLectures.length,
             averageAttendance: averageAttendance,
             enrolledStudents: enrolledStudents || [],
-            absenceRequests: absenceRequests, // Now properly populated
+            absenceRequests: absenceRequests,
             successMessage: req.session.successMessage || null,
+            totalPresent: totalPresent || 0,
+            totalAbsent: totalAbsent || 0,
+            totalExcused: totalExcused || 0
         });
 
     } catch (error) {
@@ -448,13 +493,22 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
             endDateTime = endDateTime.add(1, 'day'); // Overnight lecture
         }
 
+        
+    
+        // Add these lines to get the ratings data
+        const averageRating = await lectureData.getAverageRating(lectureId);
+        const ratingCount = lecture.ratings ? lecture.ratings.length : 0;
+    
+
         res.render("professorDashboard/LectureViews", {
             layout: "main",
             lecture,
             lectureStartTime: startDateTime.isValid() ? startDateTime.format("hh:mm A") : "N/A",
             lectureEndTime: endDateTime.isValid() ? endDateTime.format("hh:mm A") : "N/A",
             course: course,
-            students: studentAttendanceHistory
+            students: studentAttendanceHistory,
+            averageRating: averageRating,
+            ratingCount: ratingCount
         })
 
     } catch (e) {

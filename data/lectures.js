@@ -220,9 +220,28 @@ const getLectureById = async (lectureId) => {
     }
 };
 
+
+// Add this function to lectures.js
+const getAverageRating = async (lectureId) => {
+    if (!lectureId) throw 'Lecture ID is required';
+    
+    const lectureCollection = await lectures();
+    const lecture = await lectureCollection.findOne({ _id: new ObjectId(lectureId) });
+    
+    if (!lecture) throw 'Lecture not found';
+    
+    if (!lecture.ratings || lecture.ratings.length === 0) {
+      return 0; // No ratings yet
+    }
+    
+    const sum = lecture.ratings.reduce((total, rating) => total + rating.value, 0);
+    return (sum / lecture.ratings.length).toFixed(1);
+  };
+
 export default {
     createLecture,
     updateLecture,
     insertRating,
-    getLectureById
+    getLectureById,
+    getAverageRating
 }
