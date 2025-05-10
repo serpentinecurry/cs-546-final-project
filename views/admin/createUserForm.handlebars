@@ -1,4 +1,4 @@
-<h2 class="mb-4 text-danger">Create New User</h2>
+<h2 class="mb-4 text-danger">Create New Professor</h2>
 
 {{#if error}}
   <div class="alert alert-danger">{{error}}</div>
@@ -38,7 +38,7 @@
   </div>
 
   <div class="row g-3 mb-3">
-    <div class="col-md-6">
+    {{!-- <div class="col-md-6">
       <label for="role" class="form-label">Role</label>
       <select name="role" id="role" class="form-select" required>
         <option value="">Select</option>
@@ -46,11 +46,13 @@
         <option value="professor" {{#ifEquals formData.role "professor"}}selected{{/ifEquals}}>Professor</option>
         <option value="ta" {{#ifEquals formData.role "ta"}}selected{{/ifEquals}}>TA</option>
       </select>
-    </div>
-    <div class="col-md-6">
+    </div> --}}
+    <input type="hidden" name="role" id="role" value="professor" />
+    {{!-- <div class="col-md-6">
       <label for="major" class="form-label">Major (if student)</label>
       <input type="text" name="major" id="major" class="form-control" value="{{formData.major}}">
-    </div>
+    </div> --}}
+    <input type="hidden" name="major" id="major" value="" />
   </div>
 
   <div class="mb-3">

@@ -66,6 +66,10 @@ const createUser = async (
   }
   if (role === "ta") {
     newUser.taForCourses = [];
+    newUser.major = major;
+    newUser.enrolledCourses = [];
+    newUser.absenceRequests = [];
+    newUser.lectureNotes = [];
   }
   if (role==="professor"){
     if(major.trim()!=="") throw "Major field is only for students!"

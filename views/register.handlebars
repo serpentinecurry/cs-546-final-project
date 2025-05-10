@@ -173,7 +173,7 @@
   <!-- Title -->
   <div class="register-title">
     <h1><i class="bi bi-person-plus-fill me-2"></i> Register for Scholario</h1>
-    <p class="text-muted">Create your Scholario account and join the future of learning</p>
+    <p class="text-muted">Create your Scholario Student account and join the future of learning</p>
   </div>
 
   <!-- Error Message -->
@@ -223,14 +223,18 @@
 </div>
 
 
-      <div class="col-md-6">
+      {{!-- <div class="col-md-6">
         <label class="form-label" for="role">Role</label>
         <select class="form-select" name="role" id="role" required>
           <option value="student" {{#if (eq formData.role 'student')}}selected{{/if}}>Student</option>
           <option value="ta" {{#if (eq formData.role 'ta')}}selected{{/if}}>TA</option>
           <option value="professor" {{#if (eq formData.role 'professor')}}selected{{/if}}>Professor</option>
         </select>
-      </div>
+      </div> --}}
+
+      <!-- Hidden Role Field -->
+    <input type="hidden" name="role" id="role" value="student" />
+
 
       {{!-- <div class="col-md-3">
         <label class="form-label" for="age">Age</label>
@@ -246,8 +250,8 @@
         </select>
       </div>
 
-      <div class="col-md-12">
-        <label class="form-label" for="major">Major (Students only)</label>
+      <div class="col-md-9">
+        <label class="form-label" for="major">Major</label>
         <input class="form-control" name="major" id="major" value="{{formData.major}}" />
       </div>
     </div>
