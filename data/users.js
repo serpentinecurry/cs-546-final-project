@@ -27,6 +27,7 @@ const createUser = async (
   lastName = stringValidate(lastName);
   azAZLenValidate(lastName, 2, 20);
   let age = calculateAge(dateOfBirth);
+  if (age<15) throw "Minimum age 15 to signup!"
   if (!["male", "female", "other"].includes(gender)) throw "Invalid gender";
   email = validateEmail(email);
   passwordValidate(password);

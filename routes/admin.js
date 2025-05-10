@@ -139,8 +139,13 @@ router.route("/user/:id").get(async (req, res) => {
     const usersCollection = await users();
     const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
     if (!user) throw "User not found";
-
-    res.render("admin/userProfile", { user });
+    const enrolledCourseIds = user.enrolledCourses || [];
+    const coursesCollection = await courses();
+    const enrolledCourses = await coursesCollection
+      .find({ _id: { $in: enrolledCourseIds.map((id) => new ObjectId(id)) } })
+      .project({ courseCode: 1, _id: 0 })
+      .toArray();
+    res.render("admin/userProfile", { user, enrolledCourseCodes: enrolledCourses.map(c => c.courseCode) });
   } catch (error) {
     return res.status(400).render("error", {
       error:
@@ -385,8 +390,11 @@ router
       );
 
       if (result && result.registrationCompleted) {
-        const usersCollection = await users()
-        await usersCollection.updateOne({ email: email.toLowerCase() }, { $set: { accessStatus: "approved" } });
+        const usersCollection = await users();
+        await usersCollection.updateOne(
+          { email: email.toLowerCase() },
+          { $set: { accessStatus: "approved" } }
+        );
         const fullName = `${firstName} ${lastName}`;
         await sendCredentialsEmail(email, fullName, role, password);
         return res.redirect("/admin?success=user-created");
@@ -395,7 +403,9 @@ router
       res.status(400).render("admin/createUserForm", {
         user: req.session.user,
         error:
-          typeof error === "string" ? error : error.message || "Something went sideways :(",
+          typeof error === "string"
+            ? error
+            : error.message || "Something went sideways :(",
         formData: req.body,
       });
     }

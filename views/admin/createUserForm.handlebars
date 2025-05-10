@@ -3,8 +3,8 @@
 {{#if error}}
   <div class="alert alert-danger">{{error}}</div>
 {{/if}}
-
-<form action="/admin/create-user" method="POST" class="admin-create-form">
+<div class="alert alert-danger" id="error" hidden></div>
+<form action="/admin/create-user" method="POST" class="admin-create-form" id="admin-create-formm">
   <div class="row g-3 mb-3">
     <div class="col-md-6">
       <label for="firstName" class="form-label">First Name</label>
@@ -75,3 +75,5 @@
 <div class="text-center mt-5">
   <a href="/admin" class="btn btn-outline-secondary btn-animated">⬅️ Back to Admin Dashboard</a>
 </div>
+
+<script src="/public/js/createProfessorFormValidate.js"></script>
