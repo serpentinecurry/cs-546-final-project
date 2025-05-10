@@ -27,7 +27,7 @@ const getStudentLectures = async (studentId) => {
     for (let course of courses) {
         let courseId = course._id;
         
-        let courseLectures = lectureCollection.find({courseId: courseId}).toArray();
+        let courseLectures = await lectureCollection.find({courseId: courseId}).toArray();
         for (let lecture of courseLectures) {
             lecture.courseCode = course.courseCode;
             lecture.time = course.meetingTime;
