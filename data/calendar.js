@@ -38,20 +38,6 @@ const getStudentLectures = async (studentId) => {
     return lecturesToEventObjects(studentLectures);
 }
 
-const parseTimeString = (timeString) => {
-    let hours, minutes, timeOfDay;
-    [hours, minutes] = timeString.split(':');
-    [minutes, timeOfDay] = minutes.split(' ');
-
-    if (timeOfDay == 'PM') {
-        hours += 12
-    } else if (hours == 12) {
-        hours -= 12;
-    }
-
-    return {hours: hours, minutes: minutes};
-}
-
 const lecturesToEventObjects = async (lectures) => {
     let events = [];
 
