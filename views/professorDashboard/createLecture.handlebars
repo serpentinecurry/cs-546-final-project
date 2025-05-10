@@ -1,6 +1,6 @@
 <a href="/professor/course/{{courseId}}" class="btn btn-secondary mb-3">Back to Course</a>
 
-<h1>Create New Lecture</h1>
+<h1>Create a New Lecture</h1>
 
 <h2>{{courseName}} {{courseCode}}</h2>
 
@@ -21,6 +21,11 @@
     </div>
 
     <div class="form">
+        <label for="lectureTime">Lecture Time:</label>
+        <input type="time" name="lectureTime" id="lectureTime" required />
+    </div>
+
+    <div class="form">
         <label for="description">Lecture Description:</label>
         <textarea name="description" id="description" rows="4" required></textarea>
     </div>
@@ -29,7 +34,7 @@
     <label for="materialsLink">Lecture Materials Link:</label>
     <input type="text" name="materialsLink" id="materialsLink" placeholder="https://drive.google.com/some-slides" required />
    </div>
-   
+
    <button type="submit" class="btn btn-primary">Create Lecture</button>
 </form>
 </div>

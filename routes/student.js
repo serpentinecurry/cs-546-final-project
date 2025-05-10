@@ -219,11 +219,24 @@ router.route("/courses/:id").get(async (req, res) => {
             });
         }
 
+        const lecturesCollection = await lectures();
+        const lecturesList = await lecturesCollection.find({courseId: new ObjectId(courseId)}).sort({lectureTitle: 1}).toArray();
+
+        const formattedLectures = lecturesList.map(lec => ({
+            _id: lec._id.toString(),
+            title: lec.lectureTitle,
+            date: lec.lectureDate instanceof Date ? lec.lectureDate.toISOString().split("T")[0] : lec.lectureDate,
+            time: lec.lectureTime || "N/A",
+            description: lec.description,
+            materialsLink: lec.materialsLink,
+        }));
+
         return res.render("student/student", {
             layout: "main",
             partialToRender: "course-details",
             course,
             professor,
+            lectures: formattedLectures,
             user: withUser(req),
         });
 
@@ -235,6 +248,52 @@ router.route("/courses/:id").get(async (req, res) => {
         });
     }
 });
+
+router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
+    try {
+        const {courseId, lectureId} = req.params;
+
+        if (!ObjectId.isValid(courseId) || !ObjectId.isValid(lectureId)) {
+            throw "Invalid course or lecture ID.";
+        }
+
+        const lecturesCollection = await lectures();
+        const courseCollection = await courses();
+        const userCollection = await users();
+
+        const lecture = await lecturesCollection.findOne({_id: new ObjectId(lectureId)});
+        if (!lecture) throw "Lecture not found.";
+
+        const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
+        if (!course) throw "Course not found.";
+
+        const professor = await userCollection.findOne({_id: new ObjectId(lecture.professorId)});
+
+        return res.render("student/student", {
+            layout: "main",
+            partialToRender: "lecture-detail",
+            currentPage: "courses",
+            user: withUser(req),
+            courseName: course.courseName,
+            lecture: {
+                title: lecture.lectureTitle,
+                date: lecture.lectureDate instanceof Date
+                    ? lecture.lectureDate.toISOString().split("T")[0]
+                    : lecture.lectureDate,
+                description: lecture.description,
+                materialsLink: lecture.materialsLink,
+            },
+            professorName: professor ? `${professor.firstName} ${professor.lastName}` : "Unknown",
+        });
+    } catch (error) {
+        console.error("Lecture detail error:", error);
+        return res.status(400).render("error", {
+            layout: "main",
+            error: typeof error === "string" ? error : "Failed to load lecture details.",
+        });
+    }
+});
+
 
 // GET /student/courses/:id/members
 router.get("/courses/:courseId/members", async (req, res) => {

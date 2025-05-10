@@ -1,0 +1,28 @@
+<div class="container py-4">
+    <h2 class="text-primary mb-3">{{courseName}} - {{lecture.title}}</h2>
+
+    <div class="mb-3">
+        <strong>Date:</strong> {{lecture.date}} <br>
+        <strong>Time:</strong> {{lecture.time}}
+    </div>
+
+    <div class="mb-3">
+        <strong>Professor:</strong> {{professorName}}
+    </div>
+    <div class="mb-3">
+        <strong>Description:</strong>
+        <p>{{lecture.description}}</p>
+    </div>
+    <div class="mb-3">
+        <strong>Materials:</strong>
+        <a href="{{lecture.materialsLink}}" target="_blank" class="btn btn-outline-primary btn-sm">
+            View Materials
+        </a>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="/student/courses/{{../course._id}}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Course
+        </a>
+    </div>
+</div>
