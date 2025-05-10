@@ -267,7 +267,8 @@ router.route("/courses/:id").get(async (req, res) => {
 
 router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
     try {
-        const {courseId, lectureId} = req.params;
+        const { courseId, lectureId } = req.params;
+        const studentId = req.session.user._id;
 
         if (!ObjectId.isValid(courseId) || !ObjectId.isValid(lectureId)) {
             throw "Invalid course or lecture ID.";
@@ -277,13 +278,24 @@ router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
         const courseCollection = await courses();
         const userCollection = await users();
 
-        const lecture = await lecturesCollection.findOne({_id: new ObjectId(lectureId)});
+        const lecture = await lecturesCollection.findOne({ _id: new ObjectId(lectureId) });
         if (!lecture) throw "Lecture not found.";
 
-        const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
+        const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
         if (!course) throw "Course not found.";
 
-        const professor = await userCollection.findOne({_id: new ObjectId(lecture.professorId)});
+        const professor = await userCollection.findOne({ _id: new ObjectId(lecture.professorId) });
+
+        // Determine if lecture ended
+        let lectureEndTimestamp = null;
+        if (lecture.lectureDate && lecture.lectureEndTime) {
+            const dateTime = new Date(`${lecture.lectureDate}T${lecture.lectureEndTime}`);
+            if (!isNaN(dateTime)) {
+                lectureEndTimestamp = dateTime.toISOString();
+            }
+        }
+
+        const hasRated = lecture.ratings?.some(r => r.studentId.toString() === studentId.toString());
 
         return res.render("student/student", {
             layout: "main",
@@ -291,25 +303,26 @@ router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
             currentPage: "courses",
             user: withUser(req),
             courseName: course.courseName,
-            lecture: {
-                title: lecture.lectureTitle,
-                date: lecture.lectureDate instanceof Date
-                    ? lecture.lectureDate.toISOString().split("T")[0]
-                    : lecture.lectureDate,
-                time: {
-                    start: lecture.lectureStartTime
-                        ? dayjs(`${lecture.lectureDate}T${lecture.lectureStartTime}`).format("hh:mm A")
-                        : "N/A",
-                    end: lecture.lectureEndTime
-                        ? dayjs(`${lecture.lectureDate}T${lecture.lectureEndTime}`).format("hh:mm A")
-                        : "N/A"
-                },
-                description: lecture.description,
-                materialsLink: lecture.materialsLink,
-            },
+            course,
             professorName: professor ? `${professor.firstName} ${professor.lastName}` : "Unknown",
-            course
+            lecture: {
+                _id: lecture._id.toString(),
+                title: lecture.lectureTitle,
+                date: lecture.lectureDate,
+                startTime: lecture.lectureStartTime
+                    ? dayjs(`${lecture.lectureDate}T${lecture.lectureStartTime}`).format("hh:mm A")
+                    : "N/A",
+                endTime: lecture.lectureEndTime
+                    ? dayjs(`${lecture.lectureDate}T${lecture.lectureEndTime}`).format("hh:mm A")
+                    : "N/A",
+
+                description: lecture.description,
+                materialsLink: lecture.materialsLink
+            },
+            lectureEndTimestamp,
+            hasRated
         });
+
     } catch (error) {
         console.error("Lecture detail error:", error);
         return res.status(400).render("error", {
@@ -318,6 +331,56 @@ router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
         });
     }
 });
+
+router.post("/courses/:courseId/lectures/:lectureId/rate", async (req, res) => {
+    try {
+        const { courseId, lectureId } = req.params;
+        const { rating } = req.body;
+        const studentId = req.session.user._id;
+
+        if (!ObjectId.isValid(courseId) || !ObjectId.isValid(lectureId)) {
+            return res.status(400).json({ message: "Invalid course or lecture ID." });
+        }
+
+        const numericRating = parseFloat(rating);
+        if (isNaN(numericRating) || numericRating < 0.5 || numericRating > 5) {
+            return res.status(400).json({ message: "Rating must be between 0.5 and 5." });
+        }
+
+        const lecturesCollection = await lectures();
+        const lecture = await lecturesCollection.findOne({ _id: new ObjectId(lectureId), courseId: new ObjectId(courseId) });
+        if (!lecture) return res.status(404).json({ message: "Lecture not found." });
+
+        // Check lecture end time
+        const endTime = new Date(`${lecture.lectureDate}T${lecture.lectureEndTime}`);
+        const now = new Date();
+        if (isNaN(endTime.getTime()) || now < endTime) {
+            return res.status(403).json({ message: "You can only rate after the lecture ends." });
+        }
+
+        // Prevent duplicate rating
+        const hasRated = lecture.ratings?.some(r => r.studentId.toString() === studentId.toString());
+        if (hasRated) {
+            return res.status(409).json({ message: "You have already rated this lecture." });
+        }
+
+        const newRating = {
+            studentId: new ObjectId(studentId),
+            rating: numericRating
+        };
+
+        await lecturesCollection.updateOne(
+            { _id: new ObjectId(lectureId) },
+            { $push: { ratings: newRating } }
+        );
+
+        return res.json({ message: "✅ Rating submitted successfully!" });
+    } catch (err) {
+        console.error("Rating submission failed:", err);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
 
 
 // GET /student/courses/:id/members

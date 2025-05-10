@@ -1,39 +1,61 @@
 <div class="container py-5">
-  <div class="bg-white rounded shadow-sm p-5 border border-light-subtle">
-    <!-- Lecture Header -->
+  <div class="bg-white rounded-4 shadow-lg p-5 border border-2 border-light">
+
+    <!-- Header -->
     <div class="text-center mb-4">
       <h2 class="fw-bold text-primary"><i class="bi bi-easel2-fill me-2"></i>{{courseName}} – {{lecture.title}}</h2>
       <p class="text-muted fs-6 fst-italic">{{professorName}}</p>
     </div>
 
     <!-- Date & Time -->
-    <div class="row mb-4">
-      <div class="col-md-6 mb-2">
-        <div class="p-3 bg-light border rounded shadow-sm h-100">
-          <h6 class="text-secondary"><i class="bi bi-calendar-event me-2"></i>Date</h6>
-          <p class="mb-0 fw-semibold">{{lecture.date}}</p>
+    <div class="row g-4 mb-4">
+      <div class="col-md-6">
+        <div class="p-4 bg-light border rounded-3 shadow-sm h-100">
+          <h6 class="text-secondary fw-semibold"><i class="bi bi-calendar-event me-2"></i>Date</h6>
+          <p class="mb-0 fs-5 fw-semibold">{{lecture.date}}</p>
         </div>
       </div>
-      <div class="col-md-6 mb-2">
-        <div class="p-3 bg-light border rounded shadow-sm h-100">
-          <h6 class="text-secondary"><i class="bi bi-clock me-2"></i>Time</h6>
-          <p class="mb-0 fw-semibold">{{lecture.time.start}} - {{lecture.time.end}}</p>
+      <div class="col-md-6">
+        <div class="p-4 bg-light border rounded-3 shadow-sm h-100">
+          <h6 class="text-secondary fw-semibold"><i class="bi bi-clock me-2"></i>Time</h6>
+          <p class="mb-0 fs-5 fw-semibold">{{lecture.startTime}} – {{lecture.endTime}}</p>
         </div>
       </div>
     </div>
 
     <!-- Description -->
-    <div class="mb-4">
-      <h5 class="text-primary mb-2"><i class="bi bi-file-text me-2"></i>Description</h5>
-      <p class="lead text-dark lh-base">{{lecture.description}}</p>
+    <div class="mb-5">
+      <h5 class="text-primary fw-bold mb-3"><i class="bi bi-file-text me-2"></i>Description</h5>
+      <p class="fs-5 text-dark lh-lg">{{lecture.description}}</p>
     </div>
 
     <!-- Materials -->
-    <div class="mb-4">
-      <h5 class="text-primary mb-2"><i class="bi bi-link-45deg me-2"></i>Materials</h5>
-      <a href="{{lecture.materialsLink}}" target="_blank" class="btn btn-outline-primary btn-icon">
+    <div class="mb-5">
+      <h5 class="text-primary fw-bold mb-3"><i class="bi bi-link-45deg me-2"></i>Materials</h5>
+      <a href="{{lecture.materialsLink}}" target="_blank" class="btn btn-outline-primary px-4 py-2 rounded-pill fw-semibold">
         <i class="bi bi-box-arrow-up-right me-1"></i> View Lecture Materials
       </a>
+    </div>
+
+    <!-- Rating Section -->
+    <div class="mt-4">
+      <h5 class="fw-bold text-primary mb-3"><i class="bi bi-star-fill text-warning me-2"></i>Rate this Lecture</h5>
+
+      <div id="rating-block">
+        {{#if hasRated}}
+          <p class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-2"></i>You have already rated this lecture.</p>
+        {{else}}
+          <div class="d-flex flex-wrap align-items-center gap-3">
+            <input type="number" min="0.5" max="5" step="0.5" id="numericRating" class="form-control w-auto" placeholder="Rating (0.5 - 5)" title="Enter a rating between 0.5 to 5">
+            <button id="submitRatingBtn" class="btn btn-primary rounded-pill" disabled>
+              <i class="bi bi-send me-1"></i> Submit
+            </button>
+          </div>
+          <div class="mt-3">
+            <p id="ratingMessage" class="fw-semibold text-danger"></p>
+          </div>
+        {{/if}}
+      </div>
     </div>
 
     <!-- Back Button -->
@@ -44,3 +66,52 @@
     </div>
   </div>
 </div>
+
+<script>
+  const hasRated = {{#if hasRated}}true{{else}}false{{/if}};
+  const lectureEndTime = "{{lectureEndTimestamp}}";
+  const now = new Date();
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const submitBtn = document.getElementById('submitRatingBtn');
+    const ratingInput = document.getElementById('numericRating');
+    const message = document.getElementById('ratingMessage');
+
+    if (!lectureEndTime || now < new Date(lectureEndTime) || hasRated) {
+      submitBtn.disabled = true;
+      ratingInput.disabled = true;
+      message.textContent = "Rating is disabled until the lecture ends or has already been submitted.";
+    } else {
+      ratingInput.addEventListener("input", () => {
+        const val = parseFloat(ratingInput.value);
+        submitBtn.disabled = !(val >= 0.5 && val <= 5);
+      });
+
+      submitBtn.addEventListener("click", () => {
+        const val = parseFloat(ratingInput.value);
+        if (confirm("Are you sure you want to submit this rating?")) {
+          fetch(`/student/courses/{{course._id}}/lectures/{{lecture._id}}/rate`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ rating: val })
+          })
+          .then(res => res.json())
+          .then(data => {
+            message.textContent = data.message || "Rating submitted!";
+            message.classList.remove("text-danger");
+            message.classList.add("text-success");
+            ratingInput.disabled = true;
+            submitBtn.disabled = true;
+          })
+          .catch(() => {
+            message.textContent = "❌ Failed to submit rating.";
+            message.classList.remove("text-success");
+            message.classList.add("text-danger");
+          });
+        }
+      });
+    }
+  });
+</script>
