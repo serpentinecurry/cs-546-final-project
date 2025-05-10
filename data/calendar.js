@@ -13,7 +13,7 @@ const getStudentLectures = async (studentId) => {
 
     const courseCollection = await courses();
     // get courses that the student is in
-    let courses = await courseCollection
+    let studentCourses = await courseCollection
         .find({
             "studentEnrollmentRequests.studentId": new ObjectId(studentId),
             "studentEnrollmentRequests.status": "active"
@@ -22,9 +22,9 @@ const getStudentLectures = async (studentId) => {
 
     // array of all the students' lectures
     let studentLectures = [];
-    const lectureCollection = await studentLectures();
+    const lectureCollection = await lectures();
 
-    for (let course of courses) {
+    for (let course of studentCourses) {
         let courseId = course._id;
         
         let courseLectures = await lectureCollection.find({courseId: courseId}).toArray();
