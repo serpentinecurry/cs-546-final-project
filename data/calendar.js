@@ -78,7 +78,7 @@ const lecturesToEventObjects = async (lectures) => {
         eventObject.start = start;
         eventObject.end = end;
 
-        events.push(eventObject);
+        events.push(JSON.stringify(eventObject));
     }
 
     return events;
