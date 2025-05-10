@@ -1,6 +1,6 @@
-import { lectures, courses } from "../config/mongoCollections.js";
-import { ObjectId } from "mongodb";
-import { stringValidate } from "../validation.js";
+import {lectures, courses} from "../config/mongoCollections.js";
+import {ObjectId} from "mongodb";
+import {stringValidate} from "../validation.js";
 
 // {
 //     "_id": "ObjectId",
@@ -17,20 +17,21 @@ import { stringValidate } from "../validation.js";
 //     "createdAt": "timestamp",
 //     "updatedAt": "timestamp"
 //   }
-  
-
-//functions include creating, updating, inserting a rating, 
 
 
-let createLecture = async (courseId, lectureTitle, lectureDate, lectureTime, description, materialsLink) => {
-    if (!courseId || !lectureTitle || !lectureDate || !lectureTime || !description || !materialsLink) {
+//functions include creating, updating, inserting a rating,
+
+
+let createLecture = async (courseId, lectureTitle, lectureDate, lectureStartTime, lectureEndTime, description, materialsLink) => {
+    if (!courseId || !lectureTitle || !lectureDate || !lectureStartTime || !lectureEndTime || !description || !materialsLink) {
         throw "All fields are required.";
     }
 
     courseId = stringValidate(courseId);
     lectureTitle = stringValidate(lectureTitle);
     lectureDate = stringValidate(lectureDate);
-    lectureTime = stringValidate(lectureTime);
+    lectureStartTime = stringValidate(lectureStartTime);
+    lectureEndTime = stringValidate(lectureEndTime);
     description = stringValidate(description);
     materialsLink = stringValidate(materialsLink);
 
@@ -42,12 +43,32 @@ let createLecture = async (courseId, lectureTitle, lectureDate, lectureTime, des
         throw "Lecture date must be in YYYY-MM-DD format.";
     }
 
-    if (!/^\d{2}:\d{2}$/.test(lectureTime)) {
-        throw "Lecture time must be in HH:MM format.";
+    if (lectureDate < new Date().toISOString().split('T')[0]) {
+        throw "Lecture date must be today or in the future.";
+    }
+
+    if (!/^\d{2}:\d{2}$/.test(lectureStartTime)) {
+        throw "Lecture Start time must be in HH:MM format.";
+    }
+
+    const startDateTime = new Date(`${lectureDate}T${lectureStartTime}:00`);
+    let endDateTime = new Date(`${lectureDate}T${lectureEndTime}:00`);
+
+// If end time is earlier than or equal to start, assume it goes to next day
+    if (endDateTime <= startDateTime) {
+        endDateTime.setDate(endDateTime.getDate() + 1);
+    }
+
+    if (startDateTime >= endDateTime) {
+        throw new Error("Lecture Start time must be before Lecture End time.");
+    }
+
+    if (!/^\d{2}:\d{2}$/.test(lectureEndTime)) {
+        throw "Lecture End time must be in HH:MM format.";
     }
 
     const courseCollection = await courses();
-    const courseDoc = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+    const courseDoc = await courseCollection.findOne({_id: new ObjectId(courseId)});
 
     if (!courseDoc) {
         throw "Course ID does not exist.";
@@ -60,10 +81,10 @@ let createLecture = async (courseId, lectureTitle, lectureDate, lectureTime, des
 
     const lectureCollection = await lectures();
 
-    // Check for duplicate lecture title in same course
+    // Check for duplicate lecture title in the same course
     const existingTitle = await lectureCollection.findOne({
         courseId: new ObjectId(courseId),
-        lectureTitle: { $regex: `^${lectureTitle}$`, $options: "i" }
+        lectureTitle: {$regex: `^${lectureTitle}$`, $options: "i"}
     });
 
     if (existingTitle) {
@@ -74,11 +95,12 @@ let createLecture = async (courseId, lectureTitle, lectureDate, lectureTime, des
     const existingConflict = await lectureCollection.findOne({
         courseId: new ObjectId(courseId),
         lectureDate,
-        lectureTime
+        lectureStartTime,
+        lectureEndTime: {$gte: lectureStartTime}
     });
 
     if (existingConflict) {
-        throw `A lecture already exists for ${lectureDate} at ${lectureTime}. Please pick a different time.`;
+        throw `A lecture already exists for ${lectureDate} at ${lectureStartTime} till ${lectureEndTime}. Please pick a different time.`;
     }
 
     const newLecture = {
@@ -86,7 +108,8 @@ let createLecture = async (courseId, lectureTitle, lectureDate, lectureTime, des
         professorId: new ObjectId(professorId),
         lectureTitle,
         lectureDate,
-        lectureTime,
+        lectureStartTime,
+        lectureEndTime,
         description,
         materialsLink,
         ratings: [],
@@ -112,7 +135,7 @@ const updateLecture = async (lectureId, updates) => {
     lectureId = stringValidate(lectureId)
     let lectureList = await lectures();
     try {
-        lectureList = await lectureList.findOne({ _id: new ObjectId(lectureId) });
+        lectureList = await lectureList.findOne({_id: new ObjectId(lectureId)});
         if (!lectureList) {
             throw "Lecture not found";
         }
@@ -134,8 +157,8 @@ const updateLecture = async (lectureId, updates) => {
         const lectureCollection = await lectures();
 
         const updateInfo = await lectureCollection.updateOne(
-            { _id: new ObjectId(lectureId) },
-            { $set: updates }
+            {_id: new ObjectId(lectureId)},
+            {$set: updates}
         );
 
         return updateInfo
@@ -160,7 +183,7 @@ let insertRating = async (lectureId, studentId, rating) => {
     const lectureCollection = await lectures();
     const lecture = await lectureCollection.updateOne({
         _id: new ObjectId(lectureId),
-        ratings: { $not: { $elemMatch: { studentId: new ObjectId(studentId) } } }
+        ratings: {$not: {$elemMatch: {studentId: new ObjectId(studentId)}}}
     }, {
         $push: {
             ratings: {
@@ -169,33 +192,32 @@ let insertRating = async (lectureId, studentId, rating) => {
             }
         }
     });
-    
-    return { isRatingAdded: true };
+
+    return {isRatingAdded: true};
 }
 
 
-
 const getLectureById = async (lectureId) => {
-  if (!lectureId) throw 'Lecture ID is required';
-  if (typeof lectureId !== 'string') throw 'Lecture ID must be a string';
-  lectureId = lectureId.trim();
-  if (lectureId.length === 0) throw 'Lecture ID cannot be empty';
+    if (!lectureId) throw 'Lecture ID is required';
+    if (typeof lectureId !== 'string') throw 'Lecture ID must be a string';
+    lectureId = lectureId.trim();
+    if (lectureId.length === 0) throw 'Lecture ID cannot be empty';
 
-  try {
-    const lecturesCollection = await lectures();
-    const objectId = new ObjectId(lectureId);
-    const lecture = await lecturesCollection.findOne({ _id: objectId });
+    try {
+        const lecturesCollection = await lectures();
+        const objectId = new ObjectId(lectureId);
+        const lecture = await lecturesCollection.findOne({_id: objectId});
 
-    if (!lecture) throw 'Lecture not found';
-    
-    lecture._id = lecture._id.toString();
-    
-    return lecture;
-  } catch (e) {
-    if (e.message === 'Lecture not found') throw e;
-    if (e instanceof ObjectId.TypeError) throw 'Invalid lecture ID format';
-    throw `Error retrieving lecture: ${e.message}`;
-  }
+        if (!lecture) throw 'Lecture not found';
+
+        lecture._id = lecture._id.toString();
+
+        return lecture;
+    } catch (e) {
+        if (e.message === 'Lecture not found') throw e;
+        if (e instanceof ObjectId.TypeError) throw 'Invalid lecture ID format';
+        throw `Error retrieving lecture: ${e.message}`;
+    }
 };
 
 export default {

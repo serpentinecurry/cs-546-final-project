@@ -4,6 +4,7 @@ import userData from "../data/users.js";
 import courseData from "../data/courses.js";
 import attendanceData from "../data/attendance.js";
 import lectureData from "../data/lectures.js";
+import dayjs from "dayjs";
 
 const router = Router()
 
@@ -338,22 +339,29 @@ router.route("/course/:courseId/lecture/create")
         }
     })
     .post(async (req, res) => {
+
+        let lectureTitle, lectureDate, lectureStartTime, lectureEndTime, description, materialsLink;
+
+        const courseId = req.params.courseId;
+        let course;
         try {
-            const courseId = req.params.courseId;
+
+            course = await courseData.getCourseById(courseId);
+
             const professorId = req.session.user._id;
-            const {
-                lectureTitle,
-                lectureDate,
-                lectureTime, // ⬅️ New field
-                description,
-                materialsLink
-            } = req.body;
+            lectureTitle = req.body.lectureTitle;
+            lectureDate = req.body.lectureDate;
+            lectureStartTime = req.body.lectureStartTime;
+            lectureEndTime = req.body.lectureEndTime;
+            description = req.body.description;
+            materialsLink = req.body.materialsLink;
 
             await lectureData.createLecture(
                 courseId,
                 lectureTitle,
                 lectureDate,
-                lectureTime, // ⬅️ Pass it here
+                lectureStartTime,
+                lectureEndTime,
                 description,
                 materialsLink
             );
@@ -361,13 +369,19 @@ router.route("/course/:courseId/lecture/create")
             req.session.successMessage = "Lecture created successfully!";
             res.redirect(`/professor/course/${courseId}/analytics`);
         } catch (error) {
-            const course = await courseData.getCourseById(req.params.courseId);
-
             res.status(400).render("professorDashboard/createLecture", {
-                courseId: req.params.courseId,
-                courseName: course.courseName,
-                courseCode: course.courseCode,
-                error: error.message || "Error creating lecture"
+                courseId,
+                courseName: course?.courseName || "Unknown Course",
+                courseCode: course?.courseCode || "",
+                error: error.message || error || "Error creating lecture",
+                formData: {
+                    lectureTitle,
+                    lectureDate,
+                    lectureStartTime,
+                    lectureEndTime,
+                    description,
+                    materialsLink
+                }
             });
         }
     });
@@ -428,9 +442,17 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
             }
         })
 
+        let startDateTime = dayjs(`${lecture.lectureDate}T${lecture.lectureStartTime}`);
+        let endDateTime = dayjs(`${lecture.lectureDate}T${lecture.lectureEndTime}`);
+        if (endDateTime.isBefore(startDateTime)) {
+            endDateTime = endDateTime.add(1, 'day'); // Overnight lecture
+        }
+
         res.render("professorDashboard/LectureViews", {
             layout: "main",
-            lecture: lecture,
+            lecture,
+            lectureStartTime: startDateTime.isValid() ? startDateTime.format("hh:mm A") : "N/A",
+            lectureEndTime: endDateTime.isValid() ? endDateTime.format("hh:mm A") : "N/A",
             course: course,
             students: studentAttendanceHistory
         })
