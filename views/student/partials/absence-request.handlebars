@@ -2,45 +2,43 @@
       class="p-4 shadow-sm rounded bg-white">
     <h2 class="mb-4">Submit Absence Request</h2>
 
+    {{#if error}}
+        <div class="alert alert-danger">{{error}}</div>
+    {{/if}}
+
     <div class="mb-3">
         <label for="courseId" class="form-label">Select Course</label>
-        <select class="form-select" id="courseId" name="courseId" required>
-            <option disabled selected value="">-- Select a course --</option>
+        <select class="form-select {{#if error}}is-invalid{{/if}}" id="courseId" name="courseId" required>
+            <option disabled {{#unless selectedCourseId}}selected{{/unless}} value="">-- Select a course --</option>
             {{#each enrolledCourses}}
-                <option value="{{this._id}}">{{this.courseName}} ({{this.courseCode}})</option>
+                <option value="{{this._id}}" {{#ifEquals ../selectedCourseId this._id}}selected{{/ifEquals}}>
+                    {{this.courseName}} ({{this.courseCode}})
+                </option>
             {{/each}}
         </select>
     </div>
 
     <div class="mb-3">
         <label for="lectureId" class="form-label">Select Lecture</label>
-        <select class="form-select" id="lectureId" name="lectureId" required disabled>
-            <option disabled selected value="">-- Select a lecture --</option>
+        <select class="form-select {{#if error}}is-invalid{{/if}}" id="lectureId" name="lectureId" required disabled>
+            <option disabled {{#unless selectedLectureId}}selected{{/unless}} value="">-- Select a lecture --</option>
         </select>
     </div>
 
-
     <div class="mb-3">
         <label for="reason" class="form-label">Reason</label>
-        <textarea class="form-control" id="reason" name="reason" rows="3" minlength="10" required></textarea>
+        <textarea class="form-control" id="reason" name="reason" rows="3" minlength="10"
+                  required>{{selectedReason}}</textarea>
         <div class="form-text">Minimum 10 characters</div>
+        <div class="invalid-feedback">Reason must be at least 10 characters and not empty.</div>
     </div>
-
-    <div class="invalid-feedback">
-        Reason must be at least 10 characters and not empty.
-    </div>
-
 
     <div class="mb-3">
         <label for="proofType" class="form-label">Proof Type</label>
-        <input type="text" class="form-control" id="proofType" name="proofType" placeholder="e.g. Doctor's note"
-               required>
+        <input type="text" class="form-control" id="proofType" name="proofType"
+               value="{{selectedProofType}}" placeholder="e.g. Doctor's note" required>
+        <div class="invalid-feedback">Proof type is required and must not be blank.</div>
     </div>
-
-    <div class="invalid-feedback">
-        Proof type is required and must not be blank.
-    </div>
-
 
     <div class="mb-3">
         <label for="proof" class="form-label">Upload Proof (PDF/Image)</label>
@@ -91,8 +89,6 @@
     </div>
 {{/if}}
 
-
-
 <script>
     document.getElementById('proof').addEventListener('change', function () {
         const file = this.files[0];
@@ -118,7 +114,6 @@
         const reason = reasonInput.value.trim();
         const proofType = proofTypeInput.value.trim();
 
-        // Remove whitespace-only values
         reasonInput.value = reason;
         proofTypeInput.value = proofType;
 
@@ -150,14 +145,39 @@
         try {
             const res = await fetch(`/student/lectures/${courseId}`);
             const lectures = await res.json();
+
             lectureSelect.innerHTML = '<option disabled selected value="">-- Select a lecture --</option>';
             lectures.forEach(lec => {
-                lectureSelect.innerHTML += `<option value="${lec._id}">${lec.lectureTitle} - ${lec.lectureDate}</option>`;
+                const option = document.createElement("option");
+                option.value = lec._id;
+                option.textContent = `${lec.lectureTitle} - ${lec.lectureDate}`;
+                if (lec.isDisabled) {
+                    option.disabled = true;
+                    option.textContent += " (Already Requested)";
+                }
+                lectureSelect.appendChild(option);
             });
+
             lectureSelect.disabled = false;
         } catch (err) {
             lectureSelect.innerHTML = '<option disabled value="">Failed to load lectures</option>';
         }
     });
-</script>
 
+    // Trigger change immediately if a course already selected (server error response)
+    window.addEventListener("DOMContentLoaded", () => {
+        const selectedCourse = document.getElementById("courseId").value;
+        if (selectedCourse) {
+            document.getElementById("courseId").dispatchEvent(new Event("change"));
+        }
+    });
+
+    document.getElementById("courseId").addEventListener("change", function () {
+        this.classList.remove("is-invalid");
+    });
+
+    document.getElementById("lectureId").addEventListener("change", function () {
+        this.classList.remove("is-invalid");
+    });
+
+</script>

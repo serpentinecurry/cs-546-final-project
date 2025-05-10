@@ -271,7 +271,7 @@ router.route("/courses/:id").get(async (req, res) => {
 
 router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
     try {
-        const { courseId, lectureId } = req.params;
+        const {courseId, lectureId} = req.params;
         const studentId = req.session.user._id;
 
         if (!ObjectId.isValid(courseId) || !ObjectId.isValid(lectureId)) {
@@ -282,15 +282,15 @@ router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
         const courseCollection = await courses();
         const userCollection = await users();
 
-        const lecture = await lecturesCollection.findOne({ _id: new ObjectId(lectureId) });
+        const lecture = await lecturesCollection.findOne({_id: new ObjectId(lectureId)});
         if (!lecture) throw "Lecture not found.";
 
-        const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+        const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
         if (!course) throw "Course not found.";
 
-        const professor = await userCollection.findOne({ _id: new ObjectId(lecture.professorId) });
+        const professor = await userCollection.findOne({_id: new ObjectId(lecture.professorId)});
 
-        // Determine if lecture ended
+        // Determine if a lecture ended
         let lectureEndTimestamp = null;
         if (lecture.lectureDate && lecture.lectureEndTime) {
             const dateTime = new Date(`${lecture.lectureDate}T${lecture.lectureEndTime}`);
@@ -338,34 +338,37 @@ router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
 
 router.post("/courses/:courseId/lectures/:lectureId/rate", async (req, res) => {
     try {
-        const { courseId, lectureId } = req.params;
-        const { rating } = req.body;
+        const {courseId, lectureId} = req.params;
+        const {rating} = req.body;
         const studentId = req.session.user._id;
 
         if (!ObjectId.isValid(courseId) || !ObjectId.isValid(lectureId)) {
-            return res.status(400).json({ message: "Invalid course or lecture ID." });
+            return res.status(400).json({message: "Invalid course or lecture ID."});
         }
 
         const numericRating = parseFloat(rating);
         if (isNaN(numericRating) || numericRating < 0.5 || numericRating > 5) {
-            return res.status(400).json({ message: "Rating must be between 0.5 and 5." });
+            return res.status(400).json({message: "Rating must be between 0.5 and 5."});
         }
 
         const lecturesCollection = await lectures();
-        const lecture = await lecturesCollection.findOne({ _id: new ObjectId(lectureId), courseId: new ObjectId(courseId) });
-        if (!lecture) return res.status(404).json({ message: "Lecture not found." });
+        const lecture = await lecturesCollection.findOne({
+            _id: new ObjectId(lectureId),
+            courseId: new ObjectId(courseId)
+        });
+        if (!lecture) return res.status(404).json({message: "Lecture not found."});
 
         // Check lecture end time
         const endTime = new Date(`${lecture.lectureDate}T${lecture.lectureEndTime}`);
         const now = new Date();
         if (isNaN(endTime.getTime()) || now < endTime) {
-            return res.status(403).json({ message: "You can only rate after the lecture ends." });
+            return res.status(403).json({message: "You can only rate after the lecture ends."});
         }
 
         // Prevent duplicate rating
         const hasRated = lecture.ratings?.some(r => r.studentId.toString() === studentId.toString());
         if (hasRated) {
-            return res.status(409).json({ message: "You have already rated this lecture." });
+            return res.status(409).json({message: "You have already rated this lecture."});
         }
 
         const newRating = {
@@ -374,17 +377,16 @@ router.post("/courses/:courseId/lectures/:lectureId/rate", async (req, res) => {
         };
 
         await lecturesCollection.updateOne(
-            { _id: new ObjectId(lectureId) },
-            { $push: { ratings: newRating } }
+            {_id: new ObjectId(lectureId)},
+            {$push: {ratings: newRating}}
         );
 
-        return res.json({ message: "✅ Rating submitted successfully!" });
+        return res.json({message: "✅ Rating submitted successfully!"});
     } catch (err) {
         console.error("Rating submission failed:", err);
-        return res.status(500).json({ message: "Internal Server Error" });
+        return res.status(500).json({message: "Internal Server Error"});
     }
 });
-
 
 
 // GET /student/courses/:id/members
@@ -573,57 +575,118 @@ router
         reason = reason?.trim();
         proofType = proofType?.trim();
 
-        if (!lectureId) {
+        const studentId = req.session.user._id;
+        const userCollection = await users();
+        const courseCollection = await courses();
+        const lectureCollection = await lectures();
+
+        // Helper to repopulate data on failure
+        async function renderWithError(errorMessage) {
+            const enrolledCourses = await courseCollection
+                .find({
+                    studentEnrollments: {
+                        $elemMatch: {
+                            studentId: new ObjectId(studentId),
+                            status: "active",
+                        },
+                    },
+                })
+                .toArray();
+
+            const courseMap = {};
+            for (const course of enrolledCourses) {
+                courseMap[course._id.toString()] = `${course.courseName} (${course.courseCode})`;
+            }
+
+            const courseIds = enrolledCourses.map(c => c._id);
+            const lectureList = await lectureCollection
+                .find({courseId: {$in: courseIds}})
+                .project({_id: 1, lectureTitle: 1, lectureDate: 1})
+                .toArray();
+
+            const lectureMap = {};
+            for (const lec of lectureList) {
+                const date = lec.lectureDate instanceof Date
+                    ? lec.lectureDate.toISOString().split("T")[0]
+                    : lec.lectureDate || "Unknown";
+                lectureMap[lec._id.toString()] = `${lec.lectureTitle} (${date})`;
+            }
+
+            const userDoc = await userCollection.findOne({_id: new ObjectId(studentId)});
+
+            const absenceRequestsWithCourseNames = (userDoc.absenceRequests || []).map(req => ({
+                ...req,
+                courseDisplayName: courseMap[req.courseId] || "Unknown Course",
+                lectureDisplayName: lectureMap[req.lectureId] || "Unknown Lecture",
+            }));
+
             return res.status(400).render("student/student", {
                 layout: "main",
                 partialToRender: "absence-request",
-                user: withUser(req),
+                user: {
+                    ...withUser(req),
+                    absenceRequests: absenceRequestsWithCourseNames,
+                },
+                enrolledCourses,
                 currentPage: "absence-request",
-                error: "Lecture must be selected."
+                error: errorMessage,
+                selectedCourseId: courseId,
+                selectedLectureId: lectureId,
+                selectedReason: reason,
+                selectedProofType: proofType,
             });
+        }
+
+        // === Input Validations ===
+        if (!lectureId) {
+            return await renderWithError("Lecture must be selected.");
         }
 
         if (!courseId || !reason || !proofType || reason.length === 0 || proofType.length === 0) {
-            return res.status(400).render("student/student", {
-                layout: "main",
-                partialToRender: "absence-request",
-                user: withUser(req),
-                currentPage: "absence-request",
-                error: "All fields including proof type and reason are required and must not be empty.",
-            });
+            return await renderWithError("All fields including proof type and reason are required and must not be empty.");
         }
 
         if (!req.file || !req.file.path) {
-            return res.status(400).render("student/student", {
-                layout: "main",
-                partialToRender: "absence-request",
-                user: withUser(req),
-                currentPage: "absence-request",
-                error: "Proof document upload failed or was missing.",
-            });
+            return await renderWithError("Proof document upload failed or was missing.");
         }
 
-        const newRequest = {
-            courseId,
-            lectureId,
-            reason,
-            proofType,
-            proofDocumentLink: req.file.path,
-            status: "pending",
-            requestedAt: new Date(),
-        };
-
         try {
-            const userCollection = await users();
+            // Check for duplicate request
+            const existingRequest = await userCollection.findOne({
+                _id: new ObjectId(studentId),
+                absenceRequests: {
+                    $elemMatch: {
+                        courseId,
+                        lectureId,
+                    },
+                },
+            });
+
+            if (existingRequest) {
+                return await renderWithError("An absence request for this lecture has already been submitted.");
+            }
+
+            // Prepare a new request object
+            const newRequest = {
+                courseId,
+                lectureId,
+                reason,
+                proofType,
+                proofDocumentLink: req.file.path,
+                status: "pending",
+                requestedAt: new Date(),
+            };
+
+            // Save to DB
             await userCollection.updateOne(
-                {_id: new ObjectId(req.session.user._id)},
+                {_id: new ObjectId(studentId)},
                 {$push: {absenceRequests: newRequest}}
             );
 
             req.session.successMessage = "Absence request submitted!";
             res.redirect("/student/absence-request");
         } catch (e) {
-            console.error("❌ Error submitting request:", e);
+            console.error("❌ Error submitting absence request:", e);
             res.status(500).render("error", {
                 layout: "main",
                 error: "Failed to submit absence request. Please try again.",
@@ -631,23 +694,49 @@ router
         }
     });
 
+
 router.get("/lectures/:courseId", async (req, res) => {
     try {
         const lecturesCollection = await lectures();
-        const courseId = new ObjectId(req.params.courseId);
-        const result = await lecturesCollection
-            .find({courseId})
+        const usersCollection = await users();
+
+        const courseId = req.params.courseId;
+        const studentId = req.session.user._id;
+
+        const courseObjectId = new ObjectId(courseId);
+
+        // Fetch lectures for the selected course
+        const allLectures = await lecturesCollection
+            .find({courseId: courseObjectId})
             .project({lectureTitle: 1, lectureDate: 1})
             .toArray();
 
-        res.json(result.map(l => ({
-            _id: l._id,
-            lectureTitle: l.lectureTitle,
-            lectureDate: l.lectureDate instanceof Date
-                ? l.lectureDate.toISOString().split('T')[0]
-                : l.lectureDate
-        })));
+        // Fetch user's absence requests
+        const user = await usersCollection.findOne(
+            {_id: new ObjectId(studentId)},
+            {projection: {absenceRequests: 1}}
+        );
+
+        // Get all lectureIds for which absence has already been requested in this course
+        const requestedLectureIds = new Set(
+            (user?.absenceRequests || [])
+                .filter(req => req.courseId === courseId)
+                .map(req => req.lectureId)
+        );
+
+        // Add an ` isDisabled ` flag to each lecture
+        const result = allLectures.map(lec => ({
+            _id: lec._id.toString(),
+            lectureTitle: lec.lectureTitle,
+            lectureDate: lec.lectureDate instanceof Date
+                ? lec.lectureDate.toISOString().split('T')[0]
+                : lec.lectureDate,
+            isDisabled: requestedLectureIds.has(lec._id.toString())
+        }));
+
+        res.json(result);
     } catch (e) {
+        console.error("Error fetching lectures:", e);
         res.status(500).json({error: "Failed to fetch lectures"});
     }
 });
