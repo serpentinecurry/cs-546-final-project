@@ -925,12 +925,20 @@ router.route("/request-status").get(async (req, res) => {
 
 router.route("/calendar").get(async (req, res) => {
     console.log(">>> Session user in /calendar:", req.session.user);
-    return res.render("student/student", {
-        layout: "main",
-        partialToRender: "calendar",
-        user: withUser(req),
-        currentPage: "calendar"
-    });
+
+    try {
+        const events = await calendarData.getStudentLectures(req.session.user._id);
+        return res.render("student/student", {
+            layout: "main",
+            partialToRender: "calendar",
+            user: withUser(req),
+            currentPage: "calendar",
+            events: events
+        });
+    } catch (error) {
+        console.log(error);
+        return res.render("error", {error: error});
+    }
 });
 
 

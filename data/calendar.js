@@ -13,10 +13,10 @@ const getStudentLectures = async (studentId) => {
 
     const courseCollection = await courses();
     // get courses that the student is in
-    let studentCourses = await courseCollection
+    const studentCourses = await courseCollection
         .find({
-            "studentEnrollmentRequests.studentId": new ObjectId(studentId),
-            "studentEnrollmentRequests.status": "active"
+            "studentEnrollments.studentId": new ObjectId(studentId),
+            "studentEnrollments.status": "active"
         })
         .toArray();
 
@@ -30,13 +30,12 @@ const getStudentLectures = async (studentId) => {
         let courseLectures = await lectureCollection.find({courseId: courseId}).toArray();
         for (let lecture of courseLectures) {
             lecture.courseCode = course.courseCode;
-            lecture.time = course.meetingTime;
         }
 
         studentLectures = studentLectures.concat(courseLectures);
     }
 
-    return studentLectures;
+    return lecturesToEventObjects(studentLectures);
 }
 
 const parseTimeString = (timeString) => {
@@ -68,16 +67,13 @@ const lecturesToEventObjects = async (lectures) => {
         let end = new Date(l.lectureDate);
 
         // get start and end time
-        let startTimeString, endTimeString;
-        [startTimeString, endTimeString] = l.time.split(' - ');
+        let startTime = l.lectureStartTime.split(':');
+        let endTime = l.lectureEndTime.split(':');
 
-        const startTime = parseTimeString(startTimeString);
-        const endTime = parseTimeString(endTimeString);
-
-        start.setHours(startTime.hours);
-        start.setMinutes(startTime.minutes);
-        end.setHours(endTime.hours);
-        end.setMinutes(endTime.minutes);
+        start.setHours(startTime[0]);
+        start.setMinutes(startTime[1]);
+        end.setHours(endTime[0]);
+        end.setMinutes(endTime[1]);
 
         eventObject.start = start;
         eventObject.end = end;
@@ -88,4 +84,4 @@ const lecturesToEventObjects = async (lectures) => {
     return events;
 }
 
-export default {lecturesToEventObjects};
+export default {getStudentLectures};
