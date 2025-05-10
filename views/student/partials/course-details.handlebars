@@ -12,12 +12,6 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
-    .btn-icon {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
     .course-header {
         background: linear-gradient(135deg, #4f46e5, #0ea5e9);
         border-radius: 1rem;
@@ -25,56 +19,36 @@
         text-align: center;
         color: #ffffff;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-        position: relative;
-        overflow: hidden;
+        animation: fadeInDown 0.5s ease-in-out both;
     }
 
-    .course-header h1 {
-        font-size: 2.5rem;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        margin-bottom: 0.5rem;
-        animation: fadeSlideIn 0.6s ease forwards;
-    }
-
-    .course-header .course-code {
-        font-size: 1.2rem;
-        font-weight: 500;
-        opacity: 0.95;
-        margin-bottom: 0.3rem;
-        animation: fadeSlideIn 0.7s ease forwards;
-    }
-
-    .course-header .professor-badge {
-        font-size: 1rem;
-        font-weight: 500;
-        background: rgba(255, 255, 255, 0.15);
-        padding: 0.4rem 1rem;
-        border-radius: 999px;
-        display: inline-block;
-        margin-top: 0.5rem;
-        animation: fadeSlideIn 0.8s ease forwards;
-    }
-
-    @keyframes fadeSlideIn {
-        from {
+    @keyframes fadeInDown {
+        0% {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(-10px);
         }
-        to {
+        100% {
             opacity: 1;
             transform: translateY(0);
         }
     }
 
-    .course-meta {
-        font-size: 1.05rem;
-        font-weight: 500;
-        color: #f8fafc;
-    }
-
     .course-section {
         margin-top: 2.5rem;
+    }
+
+    .rounded-badge {
+        border-radius: 999px;
+        padding: 0.4rem 1rem;
+        background-color: rgba(255, 255, 255, 0.2);
+        display: inline-block;
+        font-weight: 500;
+        font-size: 1rem;
+        margin-top: 0.3rem;
+    }
+
+    .table thead th {
+        background-color: #f8fafc;
     }
 
     .btn-back {
@@ -82,41 +56,97 @@
         padding: 0.5rem 1.5rem;
         font-size: 1rem;
     }
+
+    .shadow-card {
+        background: #ffffff;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    }
 </style>
 
 <div class="container py-4">
     <!-- Header -->
     <div class="course-header mb-5">
         <h1><i class="bi bi-book-half me-2"></i> {{course.courseName}}</h1>
-        <p class="course-code">
-            <i class="bi bi-code-slash me-1"></i> Course Code: {{course.courseCode}}
+        <p class="mb-1">
+            <i class="bi bi-code-slash me-1"></i> <strong>Course Code:</strong> {{course.courseCode}}
         </p>
         {{#if professor}}
-            <div class="professor-badge">
+            <span class="rounded-badge">
                 <i class="bi bi-person-badge-fill me-1"></i>
                 {{professor.firstName}} {{professor.lastName}}
-            </div>
+            </span>
         {{else}}
             <p class="fst-italic mt-2 opacity-75">No professor assigned</p>
         {{/if}}
     </div>
 
-    <!-- Action Buttons -->
+    <!-- Quick Action Buttons -->
     <div class="course-section text-center d-flex justify-content-center gap-3 flex-wrap">
         <a href="/student/courses/{{course._id}}/members" class="btn btn-outline-primary btn-tubular btn-icon">
             <i class="bi bi-people-fill"></i> Class Members
         </a>
 
         <a href="/student/{{course._id}}/attendance"
-           class="btn btn-outline-success d-inline-flex align-items-center gap-2 px-4 py-2 rounded-pill shadow-sm fw-semibold">
-            <i class="bi bi-journal-text fs-5"></i>
-            <span>Attendance Record</span>
+           class="btn btn-outline-success btn-tubular btn-icon">
+            <i class="bi bi-journal-text fs-5"></i> Attendance Record
         </a>
+    </div>
 
+    <!-- Announcements -->
+    <div class="course-section">
+        <div class="shadow-card">
+            <h4 class="mb-3 text-primary"><i class="bi bi-megaphone-fill me-2"></i>Announcements</h4>
+            {{#if announcements.length}}
+                <ul class="list-group">
+                    {{#each announcements}}
+                        <li class="list-group-item">{{this}}</li>
+                    {{/each}}
+                </ul>
+            {{else}}
+                <p class="text-muted fst-italic">No announcements yet.</p>
+            {{/if}}
+        </div>
+    </div>
 
-        <!--    <a href="/student/{{course._id}}/attendance" class="btn btn-outline-warning btn-tubular btn-icon">-->
-        <!--      <i class="bi bi-clipboard-check"></i> Attendance-->
-        <!--    </a>-->
+    <!-- Lectures -->
+    <div class="course-section">
+        <div class="shadow-card">
+            <h4 class="mb-3 text-primary"><i class="bi bi-easel2-fill me-2"></i>Lectures</h4>
+            {{#if lectures.length}}
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Title</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {{#each lectures}}
+                            <tr>
+                                <td>{{inc @index}}</td>
+                                <td>{{this.title}}</td>
+                                <td>{{this.date}}</td>
+                                <td>{{this.time}}</td>
+                                <td>
+                                    <a href="/student/courses/{{../course._id}}/lectures/{{this._id}}" class="btn btn-sm btn-outline-primary">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                        {{/each}}
+                        </tbody>
+                    </table>
+                </div>
+            {{else}}
+                <p class="text-muted fst-italic">No lectures added yet.</p>
+            {{/if}}
+        </div>
     </div>
 
     <!-- Back Button -->

@@ -1,0 +1,46 @@
+<div class="container py-5">
+  <div class="bg-white rounded shadow-sm p-5 border border-light-subtle">
+    <!-- Lecture Header -->
+    <div class="text-center mb-4">
+      <h2 class="fw-bold text-primary"><i class="bi bi-easel2-fill me-2"></i>{{courseName}} – {{lecture.title}}</h2>
+      <p class="text-muted fs-6 fst-italic">{{professorName}}</p>
+    </div>
+
+    <!-- Date & Time -->
+    <div class="row mb-4">
+      <div class="col-md-6 mb-2">
+        <div class="p-3 bg-light border rounded shadow-sm h-100">
+          <h6 class="text-secondary"><i class="bi bi-calendar-event me-2"></i>Date</h6>
+          <p class="mb-0 fw-semibold">{{lecture.date}}</p>
+        </div>
+      </div>
+      <div class="col-md-6 mb-2">
+        <div class="p-3 bg-light border rounded shadow-sm h-100">
+          <h6 class="text-secondary"><i class="bi bi-clock me-2"></i>Time</h6>
+          <p class="mb-0 fw-semibold">{{lecture.time}}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="mb-4">
+      <h5 class="text-primary mb-2"><i class="bi bi-file-text me-2"></i>Description</h5>
+      <p class="lead text-dark lh-base">{{lecture.description}}</p>
+    </div>
+
+    <!-- Materials -->
+    <div class="mb-4">
+      <h5 class="text-primary mb-2"><i class="bi bi-link-45deg me-2"></i>Materials</h5>
+      <a href="{{lecture.materialsLink}}" target="_blank" class="btn btn-outline-primary btn-icon">
+        <i class="bi bi-box-arrow-up-right me-1"></i> View Lecture Materials
+      </a>
+    </div>
+
+    <!-- Back Button -->
+    <div class="text-center mt-5">
+      <a href="/student/courses/{{../course._id}}" class="btn btn-outline-secondary btn-lg px-4 rounded-pill">
+        <i class="bi bi-arrow-left me-2"></i> Back to Course
+      </a>
+    </div>
+  </div>
+</div>
