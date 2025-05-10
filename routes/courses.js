@@ -117,6 +117,30 @@ router.route("/edit/:id").post(async (req, res) => {
     }
 });
 
+router.route("/update-info/:id").post(async (req, res) => {
+  try {
+    const courseId = stringValidate(req.params.id);
+    const { courseName, courseCode } = req.body;
+
+    if (!ObjectId.isValid(courseId)) throw "Invalid course ID";
+
+    const validatedName = stringValidate(courseName);
+    const validatedCode = stringValidate(courseCode);
+
+    await courseData.updateCourseInfo(courseId, validatedName, validatedCode);
+
+    return res.redirect(`/admin/courses/${courseId}`);
+  } catch (error) {
+    return res.status(400).render("error", {
+      error:
+        typeof error === "string"
+          ? error
+          : error.message || "Error updating course info.",
+    });
+  }
+});
+
+
 router.route("/delete/:id").post(async (req, res) => {
     try {
         let courseId = req.params.id;

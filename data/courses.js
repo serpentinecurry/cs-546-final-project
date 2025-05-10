@@ -257,6 +257,19 @@ const getStudentEnrolledCourses = async (studentId) => {
     return enrolledCourses;
 };
 
+const updateCourseInfo = async(courseId, newName, newCode) => {
+  if (!ObjectId.isValid(courseId)) throw "Invalid course ID";
+  newName = stringValidate(newName);
+  newCode = stringValidate(newCode);
+
+  const courseCollection = await courses();
+  const updateResult = await courseCollection.updateOne(
+    { _id: new ObjectId(courseId) },
+    { $set: { courseName: newName, courseCode: newCode } }
+  );
+
+  if (updateResult.modifiedCount === 0) throw "No changes made to course info.";
+}
 
 export default {
     createCourse,
@@ -268,5 +281,6 @@ export default {
     getEnrolledStudents,
     NumOfStudentsInCourse,
     requestEnrollment,
-    getStudentEnrolledCourses
+    getStudentEnrolledCourses,
+    updateCourseInfo
 };
