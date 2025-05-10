@@ -8,7 +8,7 @@
     {{#each students}}
         <div class="student">
             <p>{{this.firstName}} {{this.lastName}}</p>
-            <select name="attendanceData[{{this._id}}]">
+            <select name="attendance[{{this._id}}]">
                 <option value="" disabled {{#unless this.attendanceStatus}}selected{{/unless}}>Select Attendance
                 </option>
                 <option value="present" {{#if (eq this.attendanceStatus "present")}}selected{{/if}}>Present</option>

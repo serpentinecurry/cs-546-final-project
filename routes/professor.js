@@ -533,20 +533,19 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
 router.route("/course/:courseId/lecture/:lectureId/attendance").post(async (req, res) => {
     try {
         const {courseId, lectureId} = req.params;
-        const attendanceData = req.body.attendance;
+        const attendanceFormData = req.body.attendance;  // Changed variable name to avoid confusion
 
         // Validate that attendance data exists
-        if (!attendanceData) {
+        if (!attendanceFormData) {
             return res.status(400).render("error", {
                 layout: "main",
                 error: "No attendance data submitted. Please select attendance status for all students."
             });
         }
 
-        const attendanceFormData = req.body.attendanceData;
-
+        // Use the SAME variable name here - not a different one
         for (const [studentId, status] of Object.entries(attendanceFormData)) {
-
+            // Fixed: Use the imported attendanceData module, not the local variable
             await attendanceData.createAttendance(
                 lectureId,
                 courseId,
