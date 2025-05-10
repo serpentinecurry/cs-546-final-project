@@ -1,10 +1,13 @@
 const stringValidate = (str) => {
-  if (!str) throw `Enter a string Argument, not ${str}`;
-  if (typeof str !== "string") throw `Argument must be a string, not ${str}`;
+  if (str === undefined || str === null)
+    throw `Enter a string argument — received: ${str}`;
+  if (typeof str !== "string")
+    throw `Argument must be a string, not ${typeof str} (${JSON.stringify(str)})`;
   if (str.trim().length === 0)
-    throw `Argument cannot be an empty string or string with just spaces, hence "${str}" is invalid`;
+    throw `Argument cannot be an empty string or just spaces — received: "${str}"`;
   return str.trim();
 };
+
 
 const azAZLenValidate = (str, min, max) => {
   if (str.length < min) throw `${str} length must be greater than ${min}!`;
