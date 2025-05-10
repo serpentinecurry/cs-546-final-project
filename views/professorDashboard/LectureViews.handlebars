@@ -33,3 +33,39 @@
         <i class="bi bi-pencil-square me-1"></i> Edit Lecture
     </a>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    
+    const form = document.querySelector('.attendance-form');
+    if (!form) return;
+    
+    
+    form.addEventListener('submit', function(event) {
+      
+      const studentDivs = document.querySelectorAll('.student');
+      const unselectedStudents = [];
+      
+      
+      studentDivs.forEach(div => {
+        const studentName = div.querySelector('p').textContent.trim();
+        const select = div.querySelector('select');
+        
+        
+        if (!select.value) {
+          unselectedStudents.push(studentName);
+          div.classList.add('bg-danger', 'text-white', 'p-2', 'mb-2'); 
+        } else {
+          div.classList.remove('bg-danger', 'text-white', 'p-2', 'mb-2');
+        }
+      });
+      
+      
+      if (unselectedStudents.length > 0) {
+        event.preventDefault();
+        alert('Not all attendance data filled: ' + unselectedStudents.join(', '));
+        return false;
+      }
+    });
+  });
+</script>

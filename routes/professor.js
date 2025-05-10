@@ -93,7 +93,7 @@ router.route("/course/:id").get(async (req, res) => {
 router.route("/course/:id/analytics").get(async (req, res) => {
     try {
         const courseId = req.params.id;
-        console.log("Loading for course:", courseId);
+        
 
         const courseCollection = await courses();
         const course = await courseCollection.findOne({
@@ -154,6 +154,15 @@ router.route("/course/:id/analytics").get(async (req, res) => {
         const courseLectures = await lecturesCollection.find({
             courseId: new ObjectId(courseId)
         }).toArray();
+
+        
+        for (let lecture of courseLectures) {
+            try {
+                lecture.averageRating = await lectureData.getAverageRating(lecture._id);
+            } catch (e) {
+                lecture.averageRating = "0.00";
+            }
+        }
 
         let pendingStudents = [];
         try {
@@ -522,10 +531,19 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
 
 //attendance submission route
 router.route("/course/:courseId/lecture/:lectureId/attendance").post(async (req, res) => {
-    const {courseId, lectureId} = req.params
-    const attendanceFormData = req.body.attendanceData
-
     try {
+        const {courseId, lectureId} = req.params;
+        const attendanceData = req.body.attendance;
+
+        // Validate that attendance data exists
+        if (!attendanceData) {
+            return res.status(400).render("error", {
+                layout: "main",
+                error: "No attendance data submitted. Please select attendance status for all students."
+            });
+        }
+
+        const attendanceFormData = req.body.attendanceData;
 
         for (const [studentId, status] of Object.entries(attendanceFormData)) {
 

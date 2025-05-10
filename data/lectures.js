@@ -230,18 +230,36 @@ const getAverageRating = async (lectureId) => {
     
     if (!lecture) throw 'Lecture not found';
     
-    if (!lecture.ratings || lecture.ratings.length === 0) {
-      return 0; // No ratings yet
-    }
+    if (!lecture || !lecture.ratings || lecture.ratings.length === 0) {
+        return "No ratings yet";
+      }
     
-    const sum = lecture.ratings.reduce((total, rating) => total + rating.value, 0);
+    const sum = lecture.ratings.reduce((total, rating) => total + rating.rating, 0);
     return (sum / lecture.ratings.length).toFixed(1);
   };
+
+const validateAttendanceData = async (attendanceData, studentIds) => {
+  if (!attendanceData) {
+    throw "No attendance data submitted. Please select attendance status for all students.";
+  }
+  
+  
+  if (Array.isArray(studentIds) && studentIds.length > 0) {
+    for (const studentId of studentIds) {
+      if (!attendanceData[studentId] || !['present', 'absent', 'excused'].includes(attendanceData[studentId])) {
+        throw `Missing or invalid attendance status for student ${studentId}. Please select a status for all students.`;
+      }
+    }
+  }
+  
+  return true;
+};
 
 export default {
     createLecture,
     updateLecture,
     insertRating,
     getLectureById,
-    getAverageRating
+    getAverageRating,
+    validateAttendanceData
 }

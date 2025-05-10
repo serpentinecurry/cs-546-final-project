@@ -152,18 +152,23 @@
     <h3>Attendance Overview</h3>
   </div>
   <div class="card-body">
-    <div class="row">
-      <div class="col-md-6">
-        <canvas id="attendanceChart" width="300" height="300"></canvas>
-      </div>
-      <div class="col-md-6 d-flex align-items-center">
-        <div class="attendance-legend">
-          <div class="mb-2"><span class="badge bg-success me-2">&nbsp;</span> Present: <span id="presentCount">{{totalPresent}}</span> students</div>
-          <div class="mb-2"><span class="badge bg-danger me-2">&nbsp;</span> Absent: <span id="absentCount">{{totalAbsent}}</span> students</div>
-          <div><span class="badge bg-warning me-2">&nbsp;</span> Excused: <span id="excusedCount">{{totalExcused}}</span> students</div>
+    {{!-- Only show chart if there are enrolled students --}}
+    {{#if (gt enrolledStudentsCount 0)}}
+      <div class="row">
+        <div class="col-md-6">
+          <canvas id="attendanceChart" width="300" height="300"></canvas>
+        </div>
+        <div class="col-md-6 d-flex align-items-center">
+          <div class="attendance-legend">
+            <div class="mb-2"><span class="badge bg-success me-2">&nbsp;</span> Present: <span id="presentCount">{{totalPresent}}</span> students</div>
+            <div class="mb-2"><span class="badge bg-danger me-2">&nbsp;</span> Absent: <span id="absentCount">{{totalAbsent}}</span> students</div>
+            <div><span class="badge bg-warning me-2">&nbsp;</span> Excused: <span id="excusedCount">{{totalExcused}}</span> students</div>
+          </div>
         </div>
       </div>
-    </div>
+    {{else}}
+      <p><strong>No attendance data now</strong></p>
+    {{/if}}
   </div>
 </div>
 
