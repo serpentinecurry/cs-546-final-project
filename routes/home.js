@@ -193,7 +193,14 @@ router
   .post(async (req, res) => {
     const { token } = req.params;
     const { newPassword, confirmPassword } = req.body;
-
+    try {
+      passwordValidate(newPassword)
+    } catch (error) {
+      return res.render("resetPassword", {
+        token,
+        error: typeof error === "string" ? error : error.message || "Invalid Password!",
+      });
+    }
     if (newPassword !== confirmPassword) {
       return res.render("resetPassword", {
         token,
