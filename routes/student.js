@@ -6,6 +6,7 @@ import {ObjectId} from "mongodb";
 import {userData, calendarData} from "../data/index.js";
 import coursesData from "../data/courses.js";
 import bcrypt from "bcrypt";
+import dayjs from "dayjs";
 import {
     stringValidate,
     validateEmail,
@@ -234,7 +235,14 @@ router.route("/courses/:id").get(async (req, res) => {
             _id: lec._id.toString(),
             title: lec.lectureTitle,
             date: lec.lectureDate instanceof Date ? lec.lectureDate.toISOString().split("T")[0] : lec.lectureDate,
-            time: lec.lectureTime || "N/A",
+            time: {
+                start: lec.lectureStartTime
+                    ? dayjs(`${lec.lectureDate}T${lec.lectureStartTime}`).format("hh:mm A")
+                    : "N/A",
+                end: lec.lectureEndTime
+                    ? dayjs(`${lec.lectureDate}T${lec.lectureEndTime}`).format("hh:mm A")
+                    : "N/A"
+            },
             description: lec.description,
             materialsLink: lec.materialsLink,
         }));
@@ -288,7 +296,14 @@ router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
                 date: lecture.lectureDate instanceof Date
                     ? lecture.lectureDate.toISOString().split("T")[0]
                     : lecture.lectureDate,
-                time: lecture.lectureTime,
+                time: {
+                    start: lecture.lectureStartTime
+                        ? dayjs(`${lecture.lectureDate}T${lecture.lectureStartTime}`).format("hh:mm A")
+                        : "N/A",
+                    end: lecture.lectureEndTime
+                        ? dayjs(`${lecture.lectureDate}T${lecture.lectureEndTime}`).format("hh:mm A")
+                        : "N/A"
+                },
                 description: lecture.description,
                 materialsLink: lecture.materialsLink,
             },
