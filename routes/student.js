@@ -280,6 +280,7 @@ router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
                 date: lecture.lectureDate instanceof Date
                     ? lecture.lectureDate.toISOString().split("T")[0]
                     : lecture.lectureDate,
+                time: lecture.lectureTime,
                 description: lecture.description,
                 materialsLink: lecture.materialsLink,
             },
