@@ -23,13 +23,17 @@ const withUser = (req) => ({
     fullName: `${req.session.user.firstName} ${req.session.user.lastName}`,
 });
 
+// router.route("/").get(async (req, res) => {
+//     res.render("student/student", {
+//         layout: "main",
+//         user: withUser(req),
+//         currentPage: "home",
+//     });
+// });
+
 router.route("/").get(async (req, res) => {
-    res.render("student/student", {
-        layout: "main",
-        user: withUser(req),
-        currentPage: "home",
-    });
-});
+    res.redirect("/student/dashboard");
+})
 
 router.get('/dashboard', async (req, res) => {
     const studentId = new ObjectId(req.session.user._id);
