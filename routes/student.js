@@ -285,6 +285,7 @@ router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
                 materialsLink: lecture.materialsLink,
             },
             professorName: professor ? `${professor.firstName} ${professor.lastName}` : "Unknown",
+            course
         });
     } catch (error) {
         console.error("Lecture detail error:", error);
