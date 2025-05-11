@@ -214,59 +214,49 @@ router.route("/course/:id/analytics").get(async (req, res) => {
         let totalExcused = 0;
 
         try {
+            // Get attendance data using the provided functions
+            const absentStudents = await attendanceData.getAllAbsentStudents(courseId);
+            
+            // Note: getAllPresentStudents takes studentId not courseId (this is inconsistent)
+            // Fix this by getting attendance for the course instead
             const attendanceCollection = await attendance();
-
-            // Add this code to handle both String and ObjectId courseIds
-            let courseObjectId;
-            try {
-                courseObjectId = new ObjectId(courseId);
-            } catch (e) {
-                courseObjectId = courseId;
-            }
-
-            // Modify your query to check both formats
-            const attendanceRecords = await attendanceCollection.find({
-                $or: [
-                    {courseId: courseId.toString()},
-                    {courseId: courseObjectId}
-                ]
+            const presentRecords = await attendanceCollection.find({
+                courseId: new ObjectId(courseId), 
+                status: "present"
             }).toArray();
-
-            console.log(`Found ${attendanceRecords.length} attendance records`);
-
-            // Ensure minimal values for the chart to render
-            totalPresent = attendanceRecords.filter(r => r.status === 'present').length;
-            totalAbsent = attendanceRecords.filter(r => r.status === 'absent').length;
-            totalExcused = attendanceRecords.filter(r => r.status === 'excused').length;
-
-            // If all zeros, add sample data so chart shows something
-            if (totalPresent === 0 && totalAbsent === 0 && totalExcused === 0) {
-                totalPresent = 1;
-                totalAbsent = 1;
-                totalExcused = 1;
-            }
-
+            
+            const excusedStudents = await attendanceData.getAllExcusedStudents(courseId);
+            
+            // Count the records
+            totalPresent = presentRecords.length;
+            totalAbsent = absentStudents.length;
+            totalExcused = excusedStudents.length;
+            
+            // Set flag to determine if we should show the chart
+            const hasAttendanceData = (totalPresent > 0 || totalAbsent > 0 || totalExcused > 0);
+            
             console.log(`Attendance counts: Present=${totalPresent}, Absent=${totalAbsent}, Excused=${totalExcused}`);
+            
+            // Pass this to the template
+            res.render("professorDashboard/DataAnalyticsView", {
+                layout: "main",
+                course: course,
+                lectures: courseLectures,
+                pendingStudents: pendingStudents || [],
+                totalStudents: enrolledStudentsCount,
+                totalLectures: courseLectures.length,
+                averageAttendance: averageAttendance,
+                enrolledStudents: enrolledStudents || [],
+                absenceRequests: absenceRequests,
+                successMessage: req.session.successMessage || null,
+                totalPresent: totalPresent || 0,
+                totalAbsent: totalAbsent || 0,
+                totalExcused: totalExcused || 0,
+                hasAttendanceData // Add this flag
+            });
         } catch (e) {
-            console.error("Error fetching attendance statistics:", e);
+            console.error("Error fetching attendance data:", e);
         }
-
-        res.render("professorDashboard/DataAnalyticsView", {
-            layout: "main",
-            course: course,
-            lectures: courseLectures,
-            pendingStudents: pendingStudents || [],
-            totalStudents: enrolledStudentsCount,
-            totalLectures: courseLectures.length,
-            averageAttendance: averageAttendance,
-            enrolledStudents: enrolledStudents || [],
-            absenceRequests: absenceRequests,
-            successMessage: req.session.successMessage || null,
-            totalPresent: totalPresent || 0,
-            totalAbsent: totalAbsent || 0,
-            totalExcused: totalExcused || 0
-        });
-
     } catch (error) {
         console.error("Error in course analytics:", error);
         res.status(500).render("error", {
@@ -574,43 +564,50 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
 
         course._id = course._id.toString();
 
-        const activeEnrollmentIds = course.studentEnrollments
-            ?.filter(enrollment => enrollment.status === "active")
-            .map(enrollment => enrollment.studentId);
-
-        const usersCollection = await users();
-        const students = await usersCollection.find({
-            _id: {$in: activeEnrollmentIds}
-        }).toArray();
-
-        const attendanceCollection = await attendance()
+        const activeEnrollments = course.studentEnrollments?.filter(enrollment => 
+            enrollment.status === "active"
+        ) || [];
+        
+        const activeStudentIds = activeEnrollments.map(enrollment => 
+            new ObjectId(enrollment.studentId)
+        );
+        
+        let students = [];
+        if (activeStudentIds.length > 0) {
+            const usersCollection = await users();
+            students = await usersCollection.find({
+                _id: { $in: activeStudentIds }
+            }).toArray();
+            
+            students = students.map(s => ({
+                ...s,
+                _id: s._id.toString()
+            }));
+        }
+        
+        const attendanceCollection = await attendance();
         const attendanceRecords = await attendanceCollection.find({
             lectureId: new ObjectId(lectureId)
-        }).toArray()
-
-        const attendanceMap = {}
+        }).toArray();
+        
+        const attendanceMap = {};
         for (const record of attendanceRecords) {
-            attendanceMap[record.studentId.toString()] = record.status
+            attendanceMap[record.studentId.toString()] = record.status;
         }
-
-        const studentAttendanceHistory = students.map(student => {
-            const id = student._id.toString()
-            return {
-                ...student,
-                id: id,
-                attendanceStatus: attendanceMap[id] || ""
-            }
-        })
+        
+        const studentAttendanceHistory = students.map(student => ({
+            ...student,
+            attendanceStatus: attendanceMap[student._id] || ""
+        }));
 
         let startDateTime = dayjs(`${lecture.lectureDate}T${lecture.lectureStartTime}`);
         let endDateTime = dayjs(`${lecture.lectureDate}T${lecture.lectureEndTime}`);
         if (endDateTime.isBefore(startDateTime)) {
-            endDateTime = endDateTime.add(1, 'day'); // Overnight lecture
+            endDateTime = endDateTime.add(1, 'day'); 
         }
 
         
     
-        // Add these lines to get the ratings data
         const averageRating = await lectureData.getAverageRating(lectureId);
         const ratingCount = lecture.ratings ? lecture.ratings.length : 0;
     
@@ -639,20 +636,20 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
 router.route("/course/:courseId/lecture/:lectureId/attendance").post(async (req, res) => {
     try {
         const {courseId, lectureId} = req.params;
-        const attendanceData = req.body.attendance;
+        
+        // Change this line - validate attendanceData instead of attendance
+        const attendanceFormData = req.body.attendanceData;
 
         // Validate that attendance data exists
-        if (!attendanceData) {
+        if (!attendanceFormData) {
             return res.status(400).render("error", {
                 layout: "main",
-                error: "No attendance data submitted. Please select attendance status for all students."
+                error: "Some attendance data missing."
             });
         }
 
-        const attendanceFormData = req.body.attendanceData;
-
+        // Rest of code remains the same
         for (const [studentId, status] of Object.entries(attendanceFormData)) {
-
             await attendanceData.createAttendance(
                 lectureId,
                 courseId,
