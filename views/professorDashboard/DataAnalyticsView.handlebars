@@ -22,14 +22,35 @@
                 {{#each weekdays}}
                     <tr>
                         <td>{{this}}</td>
-                        <td><input type="time" class="form-control" name="{{this}}_startTime"/></td>
-                        <td><input type="time" class="form-control" name="{{this}}_endTime"/></td>
-                        <td><input type="checkbox" name="{{this}}_active"/></td>
+                        <td>
+                            <label>
+                                <input type="time" name="{{this}}_startTime"
+                                       value="{{getScheduleTime ../scheduleMap this 'startTime'}}"/>
+                            </label>
+                        </td>
+                        <td>
+                            <label>
+                                <input type="time" name="{{this}}_endTime"
+                                       value="{{getScheduleTime ../scheduleMap this 'endTime'}}"/>
+                            </label>
+                        </td>
+                        <td>
+                        <label>
+                                <input type="checkbox" name="{{this}}_active"
+                            {{#if (getScheduleTime ../scheduleMap this 'startTime')}}checked
+                            </label>{{/if}}
+                        </td>
                     </tr>
                 {{/each}}
+
                 </tbody>
             </table>
-            <button type="submit" class="btn btn-primary mt-2">Save Schedule</button>
+            <button id="submitScheduleBtn" type="submit" class="btn btn-primary">
+                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"
+                      id="scheduleSpinner"></span>
+                <span id="scheduleBtnText">Save Schedule</span>
+            </button>
+
         </form>
     </div>
 </div>
@@ -339,6 +360,10 @@
         const form = document.getElementById('scheduleForm');
         if (!form) return;
 
+        const btn = document.getElementById('submitScheduleBtn');
+        const spinner = document.getElementById('scheduleSpinner');
+        const btnText = document.getElementById('scheduleBtnText');
+
         form.addEventListener('submit', function (e) {
             e.preventDefault();
 
@@ -353,20 +378,17 @@
                 const end = formData.get(`${day}_endTime`);
 
                 if (active) {
-                    // Require both times
                     if (!start || !end) {
                         errors.push(`${dayMap(day)}: Start and end time are required.`);
                         return;
                     }
 
-                    // Validate time format
                     const timePattern = /^\d{2}:\d{2}$/;
                     if (!timePattern.test(start) || !timePattern.test(end)) {
                         errors.push(`${dayMap(day)}: Invalid time format. Use HH:MM.`);
                         return;
                     }
 
-                    // Compare times
                     const [sh, sm] = start.split(':').map(Number);
                     const [eh, em] = end.split(':').map(Number);
                     const startMinutes = sh * 60 + sm;
@@ -388,6 +410,11 @@
 
             const courseId = form.dataset.courseId;
 
+            // ✅ Spinner logic STARTS HERE — only if submit is valid
+            spinner.classList.remove('d-none');
+            btnText.textContent = 'Saving...';
+            btn.disabled = true;
+
             fetch(`/professor/course/${courseId}/set-schedule`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -404,6 +431,12 @@
                     .catch(err => {
                         console.error('Schedule save failed:', err);
                         alert('Error saving schedule.');
+                    })
+                    .finally(() => {
+                        // ✅ Always reset spinner state
+                        spinner.classList.add('d-none');
+                        btnText.textContent = 'Save Schedule';
+                        btn.disabled = false;
                     });
         });
 
@@ -419,5 +452,6 @@
         }
     };
 </script>
+
 
 

@@ -66,6 +66,21 @@ app.engine(
             },
             some: function (array, key) {
                 return Array.isArray(array) && array.some(item => item[key]);
+            },
+            dayMap: function (shortDay) {
+                const map = {M: 'Monday', T: 'Tuesday', W: 'Wednesday', Th: 'Thursday', F: 'Friday'};
+                return map[shortDay] || shortDay;
+            },
+            getScheduleTime(scheduleMap, short, timeType) {
+                const map = {
+                    M: 'Monday',
+                    T: 'Tuesday',
+                    W: 'Wednesday',
+                    Th: 'Thursday',
+                    F: 'Friday'
+                };
+                const day = map[short];
+                return scheduleMap && scheduleMap[day] ? scheduleMap[day][timeType] : '';
             }
         }
     })
@@ -78,33 +93,33 @@ app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
 //Production Session Configuration (for later use)
-import MongoStore from "connect-mongo";
-
-app.use(
-    session({
-        name: "Scholario",
-        secret: "top secret",
-        saveUninitialized: false,
-        resave: false,
-        store: MongoStore.create({
-            mongoUrl: "mongodb://localhost:27017/scholarioSession", // your MongoDB session DB
-            ttl: 60 * 60, // 1 hour
-        }),
-        cookie: {maxAge: 3600000},
-    })
-);
-
-
-// Session config
+// import MongoStore from "connect-mongo";
+//
 // app.use(
 //     session({
 //         name: "Scholario",
 //         secret: "top secret",
 //         saveUninitialized: false,
 //         resave: false,
-//         cookie: {maxAge: 3600000}, // session expires after one hour
+//         store: MongoStore.create({
+//             mongoUrl: "mongodb://localhost:27017/scholarioSession", // your MongoDB session DB
+//             ttl: 60 * 60, // 1 hour
+//         }),
+//         cookie: {maxAge: 3600000},
 //     })
 // );
+
+
+// Session config
+app.use(
+    session({
+        name: "Scholario",
+        secret: "top secret",
+        saveUninitialized: false,
+        resave: false,
+        cookie: {maxAge: 3600000}, // session expires after one hour
+    })
+);
 
 // Flash messages / local variables
 app.use((req, res, next) => {

@@ -207,6 +207,19 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             console.error("Error getting enrolled students:", e);
         }
 
+        const scheduleMap = {};
+        if (course.courseMeetingDays && course.courseMeetingTime &&
+            course.courseMeetingDays.length === course.courseMeetingTime.length) {
+            for (let i = 0; i < course.courseMeetingDays.length; i++) {
+                const day = course.courseMeetingDays[i].day;
+                const time = course.courseMeetingTime[i];
+                scheduleMap[day] = {
+                    startTime: time.startTime,
+                    endTime: time.endTime
+                };
+            }
+        }
+
         const averageAttendance = await attendanceData.averageAttendance(courseId);
 
         let totalPresent = 0;
@@ -253,6 +266,7 @@ router.route("/course/:id/analytics").get(async (req, res) => {
                 totalAbsent: totalAbsent || 0,
                 totalExcused: totalExcused || 0,
                 hasAttendanceData, // Add this flag,
+                scheduleMap,
                 weekdays: ['M', 'T', 'W', 'Th', 'F'],
             });
         } catch (e) {
@@ -268,69 +282,68 @@ router.route("/course/:id/analytics").get(async (req, res) => {
 });
 
 router.post('/course/:courseId/set-schedule', async (req, res) => {
-  const { courseId } = req.params;
-  const { schedule } = req.body;
+    const {courseId} = req.params;
+    const {schedule} = req.body;
 
-  if (!schedule || typeof schedule !== 'object') {
-    return res.status(400).json({ error: 'Invalid schedule data' });
-  }
-
-  try {
-    const meetingDays = [];
-    const meetingTimes = [];
-
-    for (const shortDay in schedule) {
-      const { startTime, endTime } = schedule[shortDay];
-
-      // Validation: all fields required for active days
-      if (!startTime || !endTime) {
-        return res.status(400).json({
-          error: `Missing start or end time for ${dayMap(shortDay)}`
-        });
-      }
-
-      // Validation: valid time format HH:MM (24-hour)
-      if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
-        return res.status(400).json({
-          error: `Invalid time format for ${dayMap(shortDay)}. Use HH:MM (24-hour).`
-        });
-      }
-
-      // Validation: start < end
-      const [sh, sm] = startTime.split(':').map(Number);
-      const [eh, em] = endTime.split(':').map(Number);
-      const startMinutes = sh * 60 + sm;
-      const endMinutes = eh * 60 + em;
-
-      if (endMinutes <= startMinutes) {
-        return res.status(400).json({
-          error: `End time must be after start time for ${dayMap(shortDay)}.`
-        });
-      }
-
-      // Passed validation
-      meetingDays.push({ day: dayMap(shortDay) });
-      meetingTimes.push({ startTime, endTime });
+    if (!schedule || typeof schedule !== 'object') {
+        return res.status(400).json({error: 'Invalid schedule data'});
     }
 
-    const courseCollection = await courses();
-    await courseCollection.updateOne(
-      { _id: new ObjectId(courseId) },
-      {
-        $set: {
-          courseMeetingDays: meetingDays,
-          courseMeetingTime: meetingTimes
+    try {
+        const meetingDays = [];
+        const meetingTimes = [];
+
+        for (const shortDay in schedule) {
+            const {startTime, endTime} = schedule[shortDay];
+
+            // Validation: all fields required for active days
+            if (!startTime || !endTime) {
+                return res.status(400).json({
+                    error: `Missing start or end time for ${dayMap(shortDay)}`
+                });
+            }
+
+            // Validation: valid time format HH:MM (24-hour)
+            if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
+                return res.status(400).json({
+                    error: `Invalid time format for ${dayMap(shortDay)}. Use HH:MM (24-hour).`
+                });
+            }
+
+            // Validation: start < end
+            const [sh, sm] = startTime.split(':').map(Number);
+            const [eh, em] = endTime.split(':').map(Number);
+            const startMinutes = sh * 60 + sm;
+            const endMinutes = eh * 60 + em;
+
+            if (endMinutes <= startMinutes) {
+                return res.status(400).json({
+                    error: `End time must be after start time for ${dayMap(shortDay)}.`
+                });
+            }
+
+            // Passed validation
+            meetingDays.push({day: dayMap(shortDay)});
+            meetingTimes.push({startTime, endTime});
         }
-      }
-    );
 
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Error validating or updating schedule:', err);
-    res.status(500).json({ error: 'Internal server error while saving schedule' });
-  }
+        const courseCollection = await courses();
+        await courseCollection.updateOne(
+            {_id: new ObjectId(courseId)},
+            {
+                $set: {
+                    courseMeetingDays: meetingDays,
+                    courseMeetingTime: meetingTimes
+                }
+            }
+        );
+
+        res.json({success: true});
+    } catch (err) {
+        console.error('Error validating or updating schedule:', err);
+        res.status(500).json({error: 'Internal server error while saving schedule'});
+    }
 });
-
 
 
 // Utility to map short day to full name
