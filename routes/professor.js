@@ -394,10 +394,27 @@ router
 
       if (!course) throw "Course not found!";
 
+      // fetch TA names for display
+      const usersCollection = await users();
+      const taMap = {};
+      for (const hour of course.taOfficeHours || []) {
+        const taId = hour.taId.toString();
+        if (!taMap[taId]) {
+          const taUser = await usersCollection.findOne({
+            _id: new ObjectId(taId),
+          });
+          taMap[taId] = taUser
+            ? `${taUser.firstName} ${taUser.lastName}`
+            : "Unknown TA";
+        }
+        hour.taName = taMap[taId];
+      }
+
       return res.render("professorDashboard/viewOfficeHours", {
         layout: "main",
         courseId: course._id.toString(),
         professorOfficeHours: course.professorOfficeHours || [],
+        taOfficeHours: course.taOfficeHours || [],
       });
     } catch (error) {
       return res.status(500).render("error", {

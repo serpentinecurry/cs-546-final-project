@@ -1,4 +1,4 @@
-<h2 class="text-xl font-bold mb-4">Current Professor Office Hours</h2>
+<h2 class="text-xl font-bold mb-4">Professor Office Hours</h2>
 
 {{#if professorOfficeHours.length}}
   <table class="table table-bordered table-striped">
@@ -37,12 +37,46 @@
 {{else}}
   <div class="text-muted">No office hours added yet.</div>
 {{/if}}
-
 <div class="mt-4 text-end">
   <a href="/professor/course/{{courseId}}/add-office-hour" class="btn btn-success">
     <i class="bi bi-calendar-plus me-1"></i> Add Office Hour
   </a>
 </div>
+<h2 class="text-xl font-bold mb-4">TA Office Hours</h2>
+{{#if taOfficeHours.length}}
+  <div class="mt-5">
+    <h2 class="h5 mb-3">TA Office Hours</h2>
+    <table class="table table-bordered">
+      <thead class="table-light">
+        <tr>
+          <th>TA Name</th>
+          <th>Day</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Location</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each taOfficeHours}}
+          <tr>
+            <td>{{this.taName}}</td>
+            <td>{{this.day}}</td>
+            <td>{{this.startTime}}</td>
+            <td>{{this.endTime}}</td>
+            <td>{{this.location}}</td>
+            <td>{{this.notes}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+{{else}}
+  <p class="text-muted mt-4">No TA office hours added yet.</p>
+{{/if}}
+
+
+
 <div class="mt-4">
   <a href="/professor/course/{{courseId}}/analytics" class="btn btn-secondary">
     <i class="bi bi-arrow-left-circle me-1"></i> Back to Analytics
