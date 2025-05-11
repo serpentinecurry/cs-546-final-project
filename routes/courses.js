@@ -145,6 +145,7 @@ router.route("/delete/:id").post(async (req, res) => {
     let courseId = req.params.id;
     courseId = stringValidate(courseId);
     if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
+    const objectCourseId = new ObjectId(courseId);
 
     const usersCollection = await users();
 
