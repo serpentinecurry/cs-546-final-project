@@ -1,6 +1,20 @@
 import { ObjectId } from "mongodb";
 import { users, courses, lectures } from "../config/mongoCollections.js";
 
+const checkEnrollment = (course, studentId) => {
+  let studentEnrollments = course.studentEnrollments;
+  let enrollment;
+
+  for (let x of studentEnrollments) {
+    if (x.studentId.toString() === studentId) {
+      enrollment = x;
+      break;
+    }
+  }
+
+  return enrollment.status === 'active';
+}
+
 // function that returns an array of all lectures for a given student
 const getStudentLectures = async (studentId) => {
   const userCollection = await users();
@@ -14,8 +28,7 @@ const getStudentLectures = async (studentId) => {
   // get courses that the student is in
   const studentCourses = await courseCollection
     .find({
-      "studentEnrollments.studentId": new ObjectId(studentId),
-      "studentEnrollments.status": "active",
+      "studentEnrollments.studentId": new ObjectId(studentId)
     })
     .toArray();
 
@@ -24,16 +37,18 @@ const getStudentLectures = async (studentId) => {
   const lectureCollection = await lectures();
 
   for (let course of studentCourses) {
-    let courseId = course._id;
+    if (checkEnrollment(course, studentId)) {
+      let courseId = course._id;
 
-    let courseLectures = await lectureCollection
-      .find({ courseId: courseId })
-      .toArray();
-    for (let lecture of courseLectures) {
-      lecture.courseCode = course.courseCode;
+      let courseLectures = await lectureCollection
+        .find({ courseId: courseId })
+        .toArray();
+      for (let lecture of courseLectures) {
+        lecture.courseCode = course.courseCode;
+      }
+
+      studentLectures = studentLectures.concat(courseLectures);
     }
-
-    studentLectures = studentLectures.concat(courseLectures);
   }
 
   return lecturesToEventObjects(studentLectures);
@@ -97,28 +112,30 @@ const getOfficeHours = async (studentId) => {
   let officeHours = [];
 
   for (let course of studentCourses) {
-    let professorOfficeHours = course.professorOfficeHours;
-    const professor = await userCollection.findOne({
-      _id: course.professorId
-    });
-
-    for (let item of professorOfficeHours) {
-      item.name = professor.firstName + " " + professor.lastName;
-      item.color = " #0168dc ";
-    }
-
-    let taOfficeHours = course.taOfficeHours;
-
-    for (let item of taOfficeHours) {
-      const ta = await userCollection.findOne({
-        _id: item.taId
+    if (checkEnrollment(course, studentId)) {
+      let professorOfficeHours = course.professorOfficeHours;
+      const professor = await userCollection.findOne({
+        _id: course.professorId
       });
 
-      item.name = ta.firstName + " " + ta.lastName;
-      item.color = " #53b656 ";
-    }
+      for (let item of professorOfficeHours) {
+        item.name = professor.firstName + " " + professor.lastName;
+        item.color = " #0168dc ";
+      }
 
-    officeHours = officeHours.concat(course.professorOfficeHours, course.taOfficeHours);
+      let taOfficeHours = course.taOfficeHours;
+
+      for (let item of taOfficeHours) {
+        const ta = await userCollection.findOne({
+          _id: item.taId
+        });
+
+        item.name = ta.firstName + " " + ta.lastName;
+        item.color = " #53b656 ";
+      }
+
+      officeHours = officeHours.concat(course.professorOfficeHours, course.taOfficeHours);
+    }
   }
 
   return officeHoursToEventObjects(officeHours);
