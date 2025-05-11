@@ -6,6 +6,7 @@
         font-family: "Segoe UI", sans-serif;
     }
 
+
     .dashboard-container {
         padding: 2rem 3rem;
     }
@@ -78,20 +79,26 @@
     <div class="dashboard-header">
         <h1>Data Analytics of your class: {{course.courseCode}} {{course.courseName}}</h1>
     </div>
+    {{#if successMessage}}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{successMessage}}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {{/if}}
 
     <div class="card mb-4 shadow-sm">
-    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-        <h4 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i> Anonymous Feedback Survey</h4>
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i> Anonymous Feedback Survey</h4>
+        </div>
+        <div class="card-body">
+            <form action="/professor/course/{{course._id}}/feedback/create" method="POST">
+                <button type="submit" class="btn btn-success" {{#if surveyExists}}disabled{{/if}}>
+                    <i class="bi bi-envelope-paper me-1"></i>
+                    {{#if surveyExists}}Survey Already Sent{{else}}Create Anonymous Survey{{/if}}
+                </button>
+            </form>
+        </div>
     </div>
-    <div class="card-body">
-        <form action="/professor/course/{{course._id}}/feedback/create" method="POST">
-            <p>Trigger an anonymous survey for students to evaluate this course.</p>
-            <button type="submit" class="btn btn-success">
-                <i class="bi bi-envelope-paper me-1"></i> Create Anonymous Survey
-            </button>
-        </form>
-    </div>
-</div>
 
 
     <!-- Set Course Schedule Section -->
@@ -146,13 +153,6 @@
             </form>
         </div>
     </div>
-
-    {{#if successMessage}}
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{successMessage}}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    {{/if}}
 
     <!-- Absence Requests Section (Added at the top) -->
     {{#if absenceRequests.length}}
@@ -478,6 +478,55 @@
             console.error("Error creating chart:", err);
         }
     };
+
+    document.getElementById("scheduleForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const courseId = form.dataset.courseId;
+        const formData = new FormData(form);
+        const schedule = {};
+
+        for (const [key, value] of formData.entries()) {
+            const [day, type] = key.split("_");
+            if (!schedule[day]) schedule[day] = {};
+            if (type !== "active") schedule[day][type] = value;
+        }
+
+        const activeDays = Object.keys(schedule).filter(day =>
+                formData.get(`${day}_active`)
+        );
+
+        const activeSchedule = {};
+        for (const day of activeDays) {
+            activeSchedule[day] = schedule[day];
+        }
+
+        const response = await fetch(`/professor/course/${courseId}/set-schedule`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({schedule: activeSchedule})
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            const alert = document.createElement("div");
+            alert.className = "alert alert-success alert-dismissible fade show mt-3";
+            alert.setAttribute("role", "alert");
+            alert.innerHTML = `
+        ✅ Schedule saved successfully!
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      `;
+            document.querySelector(".dashboard-header").after(alert);
+
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        } else {
+            alert("❌ Failed to save schedule: " + (result.error || "Unknown error."));
+        }
+    });
+
 </script>
 
 
