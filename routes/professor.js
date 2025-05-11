@@ -469,7 +469,7 @@ router
         location,
         notes,
       });
-      return res.redirect(`/professor/course/${courseId}/analytics`);
+      return res.redirect(`/professor/course/${courseId}/view-office-hours`);
     } catch (error) {
       return res.status(400).render("professorDashboard/addOfficeHour", {
         courseId: req.params.courseId,

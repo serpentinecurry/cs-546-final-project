@@ -1,4 +1,81 @@
-<div>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #f1f5f9;
+    font-family: "Segoe UI", sans-serif;
+  }
+
+  .dashboard-container {
+    padding: 2rem 3rem;
+  }
+
+  .dashboard-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #1f2937;
+  }
+
+  .card {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 1.5rem;
+  }
+
+  .card-header {
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .table th,
+  .table td {
+    vertical-align: middle !important;
+  }
+
+  .analytics-grid {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .analytics-card {
+    flex: 1 1 200px;
+    background-color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .analytics-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: #6b7280;
+  }
+
+  .analytics-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  .btn {
+    font-weight: 500;
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-container {
+      padding: 1.5rem;
+    }
+
+    .analytics-grid {
+      flex-direction: column;
+    }
+  }
+</style>
+<div class="dashboard-container">
+<div class="dashboard-header">
     <h1>Data Analytics of your class: {{course.courseCode}} {{course.courseName}}</h1>
 </div>
 
@@ -236,69 +313,86 @@
 </div>
 
 {{!-- Enrolled Students Section --}}
-<div class="enrolled-students-section mt-4">
-    <h2>Enrolled Students</h2>
-
-
+<!-- Enrolled Students -->
+<div class="card mb-4">
+  <div class="card-header bg-light fw-bold">Enrolled Students</div>
+  <div class="card-body p-0">
     {{#if enrolledStudents.length}}
-        <table class="table">
-            <thead>
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Major</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each enrolledStudents}}
             <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Major</th>
+              <td>{{this.firstName}} {{this.lastName}}</td>
+              <td>{{this.email}}</td>
+              <td>{{this.major}}</td>
             </tr>
-            </thead>
-            <tbody>
-            {{#each enrolledStudents}}
-                <tr>
-                    <td>{{this.firstName}} {{this.lastName}}</td>
-                    <td>{{this.email}}</td>
-                    <td>{{this.major}}</td>
-                </tr>
-            {{/each}}
-            </tbody>
-        </table>
+          {{/each}}
+        </tbody>
+      </table>
     {{else}}
-        <p>No students enrolled in this course yet.</p>
+      <p class="m-3 text-muted">No students enrolled in this course yet.</p>
     {{/if}}
+  </div>
 </div>
 
-{{!-- All lecture attendance sections --}}
-<div class="recent-attendance mt-4">
-    <h2>Recent lecture attendance:</h2>
+<!-- Lecture Attendance -->
+<div class="card mb-4">
+  <div class="card-header bg-light fw-bold">
+    <i class="bi bi-easel2 me-2"></i> Recent Lecture Attendance
+  </div>
+  <div class="card-body">
     {{#if lectures.length}}
-        <div class="lecture-list">
-            {{#each lectures}}
-                <div class="lecture-item">
-                    <a href="/professor/course/{{../course._id}}/lecture/{{this._id}}">{{this.lectureTitle}}
-                        ({{this.lectureDate}})</a>
-                    <p class="mt-2"><strong>Lecture rating:</strong> {{averageRating}} / 5</p>
-                </div>
-            {{/each}}
+      {{#each lectures}}
+        <div class="d-flex justify-content-between align-items-center border rounded p-3 mb-3 bg-light">
+          <div>
+            <a href="/professor/course/{{../course._id}}/lecture/{{this._id}}" class="h6 mb-0 d-block text-primary text-decoration-none">
+              {{this.lectureTitle}}
+            </a>
+            <small class="text-muted">{{this.lectureDate}}</small>
+          </div>
+          <div>
+            <span class="badge bg-secondary">
+              {{#if (eq this.averageRating "No ratings yet")}}
+                No ratings yet
+              {{else}}
+                {{this.averageRating}} / 5
+              {{/if}}
+            </span>
+          </div>
         </div>
+      {{/each}}
     {{else}}
-        <p>No lectures found for this course.</p>
+      <p class="text-muted mb-0">No lectures found for this course.</p>
     {{/if}}
+  </div>
+</div>
 </div>
 
-{{!-- Show the create Lecture button --}}
-<div class="create-Lecture-Button">
-    <a href="/professor/course/{{course._id}}/lecture/create" class="btn btn-primary">Create Lecture</a>
-</div>
+<!-- Action Buttons -->
+<div class="d-flex justify-content-between flex-wrap gap-2">
+  <a href="/professor/course/{{course._id}}/lecture/create" class="btn btn-primary">
+    <i class="bi bi-plus-circle me-1"></i> Create Lecture
+  </a>
 
-<div class="text-end mt-3">
-    <a href="/professor/course/{{course._id}}/analytics/manage-tas" class="btn btn-warning">
-        <i class="bi bi-person-gear me-1"></i> Manage TAs
-    </a>
-</div>
-<div class="text-end mt-3">
+  <a href="/professor/course/{{course._id}}/analytics/manage-tas" class="btn btn-warning">
+    <i class="bi bi-person-gear me-1"></i> Manage TAs
+  </a>
+
   <a href="/professor/course/{{course._id}}/view-office-hours" class="btn btn-info">
     <i class="bi bi-clock-history me-1"></i> Office Hours
   </a>
-</div>
 
-<a href="/professor" class="btn btn-primary mt-4">Back to Dashboard</a>
+  <a href="/professor" class="btn btn-outline-primary ms-auto">
+    <i class="bi bi-arrow-left-circle me-1"></i> Back to Dashboard
+  </a>
+</div>
 
 
 <script>

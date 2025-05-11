@@ -27,7 +27,7 @@ const createUser = async (
   lastName = stringValidate(lastName);
   azAZLenValidate(lastName, 2, 20);
   let age = calculateAge(dateOfBirth);
-  if (age<15) throw "Minimum age 15 to signup!"
+  if (age < 15) throw "Minimum age 15 to signup!";
   if (!["male", "female", "other"].includes(gender)) throw "Invalid gender";
   email = validateEmail(email);
   passwordValidate(password);
@@ -72,8 +72,8 @@ const createUser = async (
     newUser.absenceRequests = [];
     newUser.lectureNotes = [];
   }
-  if (role==="professor"){
-    if(major.trim()!=="") throw "Major field is only for students!"
+  if (role === "professor") {
+    if (major.trim() !== "") throw "Major field is only for students!";
   }
   const insertResult = await usersCollection.insertOne(newUser);
   if (!insertResult.acknowledged) throw "Failed to create user";
@@ -222,39 +222,37 @@ const getPendingEnrollmentRequests = async (courseId) => {
     _id: new ObjectId(courseId),
   });
   if (!course) throw "Course not found";
-  
+
   console.log("Looking for pending enrollments for course:", courseId);
- 
+
   if (!course.studentEnrollments || course.studentEnrollments.length === 0) {
     console.log("No student enrollments found in course");
     return [];
   }
 
- 
   const pendingStudentIds = course.studentEnrollments
-    .filter(enrollment => enrollment.status === "pending")
-    .map(enrollment => enrollment.studentId);
+    .filter((enrollment) => enrollment.status === "pending")
+    .map((enrollment) => enrollment.studentId);
 
   if (pendingStudentIds.length === 0) {
     console.log("No pending enrollments found");
     return [];
   }
-  
+
   console.log(`Found ${pendingStudentIds.length} pending enrollment requests`);
-  
+
   const pendingStudents = await usersCollection
     .find({ _id: { $in: pendingStudentIds } })
     .toArray();
-  
+
   console.log(`Found ${pendingStudents.length} matching student records`);
   return pendingStudents;
 };
 
 const approveEnrollmentRequest = async (studentId, courseId) => {
-  
   if (!studentId) throw "Student ID is required";
   if (!courseId) throw "Course ID is required";
-  
+
   studentId = stringValidate(studentId);
   courseId = stringValidate(courseId);
 
@@ -264,19 +262,18 @@ const approveEnrollmentRequest = async (studentId, courseId) => {
   const userCollection = await users();
   const courseCollection = await courses();
 
-
-  console.log("Approving enrollment for:", { 
+  console.log("Approving enrollment for:", {
     studentId: new ObjectId(studentId),
-    courseId: new ObjectId(courseId)
+    courseId: new ObjectId(courseId),
   });
 
   // Update user document
   const updateResult = await userCollection.updateOne(
-    { 
-      _id: new ObjectId(studentId)
+    {
+      _id: new ObjectId(studentId),
     },
-    { 
-      $push: { enrolledCourses: new ObjectId(courseId) }
+    {
+      $push: { enrolledCourses: new ObjectId(courseId) },
     }
   );
 
@@ -284,14 +281,17 @@ const approveEnrollmentRequest = async (studentId, courseId) => {
   const courseUpdateResult = await courseCollection.updateOne(
     {
       _id: new ObjectId(courseId),
-      "studentEnrollments.studentId": new ObjectId(studentId)
+      "studentEnrollments.studentId": new ObjectId(studentId),
     },
     {
-      $set: { "studentEnrollments.$.status": "active" }
+      $set: { "studentEnrollments.$.status": "active" },
     }
   );
 
-  if (updateResult.modifiedCount === 0 && courseUpdateResult.modifiedCount === 0) {
+  if (
+    updateResult.modifiedCount === 0 &&
+    courseUpdateResult.modifiedCount === 0
+  ) {
     throw "Failed to approve enrollment request";
   }
 
@@ -308,23 +308,24 @@ const rejectEnrollmentRequest = async (studentId, courseId) => {
   const userCollection = await users();
   const courseCollection = await courses();
 
-  console.log("Rejecting enrollment for:", { 
+  console.log("Rejecting enrollment for:", {
     studentId: new ObjectId(studentId),
-    courseId: new ObjectId(courseId)
+    courseId: new ObjectId(courseId),
   });
 
   // Update course document
   const courseUpdateResult = await courseCollection.updateOne(
     {
       _id: new ObjectId(courseId),
-      "studentEnrollments.studentId": new ObjectId(studentId)
+      "studentEnrollments.studentId": new ObjectId(studentId),
     },
     {
-      $set: { "studentEnrollments.$.status": "rejected" }
+      $set: { "studentEnrollments.$.status": "rejected" },
     }
   );
 
-  if (courseUpdateResult.modifiedCount === 0) throw "Failed to reject enrollment request";
+  if (courseUpdateResult.modifiedCount === 0)
+    throw "Failed to reject enrollment request";
 
   return { enrollmentRejected: true };
 };
