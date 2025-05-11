@@ -91,21 +91,21 @@ const getOfficeHours = async (studentId) => {
     })
     .toArray();
 
-  const officeHours = [];
+  let officeHours = [];
 
-  for (let course in studentCourses) {
+  for (let course of studentCourses) {
     let professorOfficeHours = course.professorOfficeHours;
     const professor = await userCollection.findOne({
       _id: course.professorId
     });
 
-    for (item in professorOfficeHours) {
+    for (let item of professorOfficeHours) {
       item.name = professor.firstName + " " + professor.lastName;
     }
 
     let taOfficeHours = course.taOfficeHours;
 
-    for (let item in taOfficeHours) {
+    for (let item of taOfficeHours) {
       const ta = await userCollection.findOne({
         _id: item.taId
       });
@@ -134,7 +134,7 @@ const officeHoursToEventObjects = (officeHours) => {
     events.push(JSON.stringify(eventObject));
   }
   
-  return [];
+  return events;
 }
 
 export default { getStudentLectures, getOfficeHours };
