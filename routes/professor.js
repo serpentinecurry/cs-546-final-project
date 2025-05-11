@@ -247,7 +247,7 @@ router.route("/course/:id/analytics").get(verifyProfessorOwnsCourse, async (req,
       let totalExcused = 0;
 
       try {
-        // Get attendance data using the provided functions
+        
         const absentStudents = await attendanceData.getAllAbsentStudents(
           courseId
         );
@@ -1169,11 +1169,10 @@ router.route("/course/:courseId/lecture/:lectureId/discussions").get(verifyProfe
     }
   });
   
-router.route("/course/:courseId/lecture/:lectureId/discussions/create").get(verifyProfessorOwnsCourse, async (req, res) => {
+router.route("/course/:courseId/lecture/:lectureId/discussions/create")
+  .get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const { courseId, lectureId } = req.params;
-      const authorId = req.session.user._id;
-      
       
       let lecture;
       try {
@@ -1186,9 +1185,30 @@ router.route("/course/:courseId/lecture/:lectureId/discussions/create").get(veri
       }
       
       
-      const postTitle = `Discussion for ${lecture.lectureTitle}`;
-      const postContent = "Use this discussion forum to ask questions and share insights about this lecture.";
-      
+      res.render("professorDashboard/createDiscussion", {
+        layout: "main",
+        courseId,
+        lectureId,
+        lecture,
+        title: `Create Discussion for ${lecture.lectureTitle}`,
+        formData: {
+          postTitle: `Discussion for ${lecture.lectureTitle}`,
+          postContent: "Use this discussion forum to ask questions and share insights about this lecture."
+        }
+      });
+    } catch (error) {
+      console.error("Error loading discussion form:", error);
+      return res.status(400).render("error", {
+        layout: "main",
+        error: "Error loading discussion form: " + error
+      });
+    }
+  })
+  .post(verifyProfessorOwnsCourse, async (req, res) => {
+    try {
+      const { courseId, lectureId } = req.params;
+      const { postTitle, postContent } = req.body;
+      const authorId = req.session.user._id;
       
       const newDiscussion = await discussionsData.createDiscussion(
         lectureId,
@@ -1198,21 +1218,36 @@ router.route("/course/:courseId/lecture/:lectureId/discussions/create").get(veri
         postContent
       );
       
-      
       if (newDiscussion.alreadyExists) {
         req.session.successMessage = "Viewing existing discussion";
       } else {
         req.session.successMessage = "Discussion created successfully!";
       }
       
-      
       res.redirect(`/professor/course/${courseId}/lecture/${lectureId}/discussions/${newDiscussion._id}`);
     } catch (error) {
       console.error("Error creating discussion:", error);
-      return res.status(400).render("error", {
-        layout: "main",
-        error: "Error creating discussion: " + error
-      });
+      
+      
+      try {
+        const lecture = await lectureData.getLectureById(req.params.lectureId);
+        return res.status(400).render("professorDashboard/createDiscussion", {
+          layout: "main",
+          courseId: req.params.courseId,
+          lectureId: req.params.lectureId,
+          lecture,
+          error: "Error creating discussion: " + error,
+          formData: {
+            postTitle: req.body.postTitle,
+            postContent: req.body.postContent
+          }
+        });
+      } catch (e) {
+        return res.status(400).render("error", {
+          layout: "main",
+          error: "Error creating discussion: " + error
+        });
+      }
     }
   });
 
@@ -1279,10 +1314,10 @@ router.route("/course/:courseId/lecture/:lectureId/discussions/:discussionId").g
           discussionData.comments.forEach(c => {
             c.commenterName = c.isAnonymous ? "Anonymous" : 
               commenterMap[c.commenterId] || "Unknown User";
+            c.timestamp = new Date(c.timestamp).toLocaleString();
           });
         }
       }
-      
       
       const lecture = await lectureData.getLectureById(lectureId);
       
@@ -1294,7 +1329,6 @@ router.route("/course/:courseId/lecture/:lectureId/discussions/:discussionId").g
         title: discussionData.postTitle,
         successMessage: req.session.successMessage
       });
-      
       
       req.session.successMessage = null;
     } catch (error) {
