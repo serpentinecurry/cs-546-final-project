@@ -1350,7 +1350,7 @@ router.route("/course/:courseId/lecture/:lectureId/discussions/:discussionId").g
         courseId,
         commenterId,
         commentText,
-        isAnonymous === 'on'
+        isAnonymous === 'off'
       );
       
       req.session.successMessage = "Comment added successfully";

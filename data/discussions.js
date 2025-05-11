@@ -194,7 +194,7 @@ const addAComment = async (discussionId, courseId, commenterId, commentText, isA
     const comment = {
         _id: new ObjectId(),
         commenterId: new ObjectId(commenterId),
-        isAnonymous: isAnonymous,
+        isAnonymous: false,
         commentText: commentText,
         timestamp: new Date()
     };
@@ -222,7 +222,7 @@ const addAComment = async (discussionId, courseId, commenterId, commentText, isA
     return {
         _id: comment._id.toString(),
         commenterId: comment.commenterId.toString(),
-        isAnonymous: comment.isAnonymous,
+        isAnonymous: false,
         commentText: comment.commentText,
         timestamp: comment.timestamp
     };
