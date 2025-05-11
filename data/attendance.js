@@ -147,8 +147,53 @@ let averageAttendance = async (courseId) => {
 
 }
 
+const getAllPresentStudents = async (studentId) => {
+    studentId = stringValidate(studentId);
+    if (!ObjectId.isValid(studentId)) {
+        throw "Invalid student ID"
+    }
+
+    const attendanceCollection = await attendance();
+
+    const presentRecords = await attendanceCollection.find(
+        {studentId: new ObjectId(studentId), status: "present"}).toArray();
+
+    return presentRecords;
+}
+
+const getAllAbsentStudents = async (courseId) => {
+    courseId = stringValidate(courseId);
+    if (!ObjectId.isValid(courseId)) {
+        throw "Invalid course ID"
+    }
+
+    const attendanceCollection = await attendance();
+
+    const absentRecords = await attendanceCollection.find(
+        {courseId: new ObjectId(courseId), status: "absent"}).toArray();
+
+    return absentRecords;
+}
+
+const getAllExcusedStudents = async (courseId) => {
+    courseId = stringValidate(courseId);
+    if (!ObjectId.isValid(courseId)) {
+        throw "Invalid course ID"
+    }
+
+    const attendanceCollection = await attendance();
+
+    const excusedRecords = await attendanceCollection.find(
+        {courseId: new ObjectId(courseId), status: "excused"}).toArray();
+
+    return excusedRecords;
+}
+
 export default {
     createAttendance,
     updateAttendance,
     averageAttendance,
+    getAllAbsentStudents,
+    getAllPresentStudents,
+    getAllExcusedStudents
 }
