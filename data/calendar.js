@@ -120,7 +120,21 @@ const getOfficeHours = async (studentId) => {
 }
 
 const officeHoursToEventObjects = (officeHours) => {
+  let events = [];
+  let weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  for (let oh of officeHours) {
+    const eventObject = {};
+
+    eventObject.title = `${oh.name}'s Office Hours in ${oh.location}`;
+    eventObject.daysOfWeek = [weekDays.indexOf(oh.day)];
+    eventObject.startTime = oh.startTime;
+    eventObject.endTime = oh.endTime;
+
+    events.push(JSON.stringify(eventObject));
+  }
+  
   return [];
 }
 
-export default { getStudentLectures };
+export default { getStudentLectures, getOfficeHours };
