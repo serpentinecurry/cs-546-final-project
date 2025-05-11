@@ -184,6 +184,13 @@ router.post("/unenroll/:courseId", async (req, res) => {
 
   try {
     const courseCollection = await courses();
+    const userCollection = await users()
+        // Check if user is a TA for the course
+    const user = await userCollection.findOne({ _id: new ObjectId(studentId) });
+
+    if (user?.taForCourses?.some(id => id.toString() === courseId)) {
+      throw "You cannot un-enroll from a course you're a TA for.";
+    }
 
     const updateResult = await courseCollection.updateOne(
       {
@@ -1058,6 +1065,165 @@ router.route("/calendar").get(async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.render("error", { error: error });
+  }
+});
+
+router.route("/ta/officeHour").get(async(req,res)=>{
+  try {
+    const userId = new ObjectId(req.session.user._id);
+    const userCollection = await users();
+    const courseCollection = await courses();
+
+    // Get the list of courseIds the TA is assigned to
+    const user = await userCollection.findOne({ _id: userId });
+    const courseIds = (user.taForCourses || []).map((id) => new ObjectId(id));
+
+    // Fetch those courses
+    const taCourses = await courseCollection
+      .find({ _id: { $in: courseIds } })
+      .project({
+        courseName: 1,
+        courseCode: 1,
+        professorId: 1,
+        taOfficeHours: 1
+      })
+      .toArray();
+
+    // Get professor names
+    const professorIds = taCourses.map((c) => c.professorId).filter(Boolean);
+    const professors = await userCollection
+      .find({ _id: { $in: professorIds } })
+      .project({ firstName: 1, lastName: 1 })
+      .toArray();
+    const profMap = {};
+    professors.forEach((prof) => {
+      profMap[prof._id.toString()] = `${prof.firstName} ${prof.lastName}`;
+    });
+
+    // Format course data with filtered TA-specific office hours
+    const formattedCourses = taCourses.map((course) => ({
+      _id: course._id.toString(),
+      courseName: course.courseName,
+      courseCode: course.courseCode,
+      professorName: profMap[course.professorId?.toString()] || "Unknown",
+      officeHours: (course.taOfficeHours || []).filter(
+        (entry) => entry.taId?.toString() === userId.toString()
+      ),
+    }));
+
+    return res.render("student/student", {
+      layout: "main",
+      partialToRender: "taOfficeHours",
+      user: {
+        ...req.session.user,
+        fullName: `${req.session.user.firstName} ${req.session.user.lastName}`,
+      },
+      currentPage: "taOfficeHours",
+      taCourses: formattedCourses,
+    });
+  } catch (error) {
+    
+  }
+})
+
+router.route("/ta/officeHour/add").post(async(req,res)=>{
+  try {
+    const { courseId, day, startTime, endTime, location, notes } = req.body;
+    const userId = new ObjectId(req.session.user._id);
+    const courseObjectId = new ObjectId(courseId);
+    if (!ObjectId.isValid(courseId)) throw "Invalid course ID";
+    if (!day || !startTime || !endTime || !location)
+      throw "All fields except notes are required.";
+    const courseCollection = await courses();
+    const userCollection = await users();
+
+    // Check if user is actually a TA for this course
+    const user = await userCollection.findOne({ _id: userId });
+    if (!user || !user.taForCourses?.some(id => id.toString() === courseObjectId.toString())) {
+      return res.status(403).render("error", {
+        layout: "main",
+        error: "You are not authorized to modify office hours for this course.",
+      });
+    }
+
+    const newOfficeHour = {
+      _id: new ObjectId(),
+      taId: userId,
+      day: day.trim(),
+      startTime,
+      endTime,
+      location: location.trim(),
+      notes: notes?.trim() || "",
+    };
+
+    const updateResult = await courseCollection.updateOne(
+      { _id: new ObjectId(courseId) },
+      { $push: { taOfficeHours: newOfficeHour } }
+    );
+
+    if (updateResult.modifiedCount === 0) {
+      throw "Failed to add office hour.";
+    }
+
+    return res.redirect("/student/ta/officeHour");
+  } catch (error) {
+      res.status(400).render("error", {
+      layout: "main",
+      error: typeof err === "string" ? err : "Could not add office hour.",
+    });
+  }
+})
+
+router.post("/ta/officeHour/delete", async (req, res) => {
+  try {
+    const { courseId, officeHourId } = req.body;
+    const userId = new ObjectId(req.session.user._id);
+
+    if (!ObjectId.isValid(courseId) || !ObjectId.isValid(officeHourId)) {
+      throw "Invalid course or office hour ID.";
+    }
+
+    const courseCollection = await courses();
+    const userCollection = await users();
+
+    const user = await userCollection.findOne({ _id: userId });
+
+    if (
+      !user ||
+      !user.taForCourses?.some(
+        (id) => id.toString() === courseId.toString()
+      )
+    ) {
+      return res.status(403).render("error", {
+        layout: "main",
+        error: "You are not authorized to delete office hours for this course.",
+      });
+    }
+
+    // Remove the TA’s office hour that matches officeHourId and taId
+    const updateResult = await courseCollection.updateOne(
+      { _id: new ObjectId(courseId) },
+      {
+        $pull: {
+          taOfficeHours: {
+            _id: new ObjectId(officeHourId),
+            taId: userId,
+          },
+        },
+      }
+    );
+
+    if (updateResult.modifiedCount === 0) {
+      throw "No matching office hour was found to delete.";
+    }
+
+    res.redirect("/student/ta/officeHour");
+  } catch (error) {
+    console.error("❌ Delete Office Hour Error:", error);
+    res.status(400).render("error", {
+      layout: "main",
+      error: typeof error === "string" ? error : "Could not delete office hour.",
+    });
   }
 });
 
