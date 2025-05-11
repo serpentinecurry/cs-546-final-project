@@ -1,231 +1,273 @@
 <div>
-  <h1>Data Analytics of your class: {{course.courseCode}} {{course.courseName}}</h1>
+    <h1>Data Analytics of your class: {{course.courseCode}} {{course.courseName}}</h1>
+</div>
+
+<!-- Set Course Schedule Section -->
+<div class="card my-4 shadow-sm">
+    <div class="card-header bg-secondary text-white">
+        <h4 class="mb-0">Set Weekly Course Schedule</h4>
+    </div>
+    <div class="card-body">
+        <form id="scheduleForm" data-course-id="{{course._id}}">
+            <table class="table table-bordered text-center align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>Day</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Active</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{#each weekdays}}
+                    <tr>
+                        <td>{{this}}</td>
+                        <td><input type="time" class="form-control" name="{{this}}_startTime"/></td>
+                        <td><input type="time" class="form-control" name="{{this}}_endTime"/></td>
+                        <td><input type="checkbox" name="{{this}}_active"/></td>
+                    </tr>
+                {{/each}}
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-primary mt-2">Save Schedule</button>
+        </form>
+    </div>
 </div>
 
 {{#if successMessage}}
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-  {{successMessage}}
-  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{successMessage}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 {{/if}}
 
 <!-- Absence Requests Section (Added at the top) -->
 {{#if absenceRequests.length}}
-<div class="card mb-4 shadow-sm">
-  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-    <h4 class="mb-0"><i class="bi bi-calendar-x me-2"></i> Student Absence Requests</h4>
-    <span class="badge bg-light text-primary rounded-pill">{{absenceRequests.length}}</span>
-  </div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Student</th>
-            <th>Reason</th>
-            <th>Documentation</th>
-            <th>Requested</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each absenceRequests}}
-          <tr>
-            <td>{{this.studentName}}</td>
-            <td>
-              {{#if (gt this.reason.length 50)}}
-                {{substr this.reason 0 50}}...
-              {{else}}
-                {{this.reason}}
-              {{/if}}
-            </td>
-            <td>
-              {{#if this.proofLink}}
-                <a href="{{this.proofLink}}" target="_blank" class="btn btn-sm btn-outline-primary">
-                  <i class="bi bi-file-earmark-text me-1"></i> View Proof
-                </a>
-              {{else}}
-                <span class="text-muted">No document</span>
-              {{/if}}
-            </td>
-            <td>{{this.requestedAt}}</td>
-            <td>
-              <span class="badge rounded-pill bg-{{#if (eq this.status 'approved')}}success{{else if (eq this.status 'rejected')}}danger{{else}}warning{{/if}}">
-                {{this.status}}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-calendar-x me-2"></i> Student Absence Requests</h4>
+            <span class="badge bg-light text-primary rounded-pill">{{absenceRequests.length}}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Student</th>
+                        <th>Reason</th>
+                        <th>Documentation</th>
+                        <th>Requested</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{#each absenceRequests}}
+                        <tr>
+                            <td>{{this.studentName}}</td>
+                            <td>
+                                {{#if (gt this.reason.length 50)}}
+                                    {{substr this.reason 0 50}}...
+                                {{else}}
+                                    {{this.reason}}
+                                {{/if}}
+                            </td>
+                            <td>
+                                {{#if this.proofLink}}
+                                    <a href="{{this.proofLink}}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-file-earmark-text me-1"></i> View Proof
+                                    </a>
+                                {{else}}
+                                    <span class="text-muted">No document</span>
+                                {{/if}}
+                            </td>
+                            <td>{{this.requestedAt}}</td>
+                            <td>
+              <span class="badge rounded-pill bg-{{#if
+                      (eq this.status 'approved')}}success{{else if (eq this.status 'rejected')}}danger{{else}}warning{{/if}}">
+                  {{this.status}}
               </span>
-            </td>
-            <td>
-              {{#if (eq this.status "pending")}}
-                <div class="d-flex gap-1">
-                  <form method="POST" action="/professor/absence-request/update/{{this.studentId}}/{{../course._id}}/approve">
-                    <input type="hidden" name="requestIndex" value="{{this.requestIndex}}">
-                    <button type="submit" class="btn btn-sm btn-success">Approve</button>
-                  </form>
-                  <form method="POST" action="/professor/absence-request/update/{{this.studentId}}/{{../course._id}}/reject">
-                    <input type="hidden" name="requestIndex" value="{{this.requestIndex}}">
-                    <button type="submit" class="btn btn-sm btn-danger">Reject</button>
-                  </form>
-                </div>
-              {{/if}}
-            </td>
-          </tr>
-          {{/each}}
-        </tbody>
-      </table>
+                            </td>
+                            <td>
+                                {{#if (eq this.status "pending")}}
+                                    <div class="d-flex gap-1">
+                                        <form method="POST"
+                                              action="/professor/absence-request/update/{{this.studentId}}/{{../course._id}}/approve">
+                                            <input type="hidden" name="requestIndex" value="{{this.requestIndex}}">
+                                            <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                        </form>
+                                        <form method="POST"
+                                              action="/professor/absence-request/update/{{this.studentId}}/{{../course._id}}/reject">
+                                            <input type="hidden" name="requestIndex" value="{{this.requestIndex}}">
+                                            <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                        </form>
+                                    </div>
+                                {{/if}}
+                            </td>
+                        </tr>
+                    {{/each}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 {{/if}}
 
 <h1>Data Analytics Dashboard</h1>
 
 {{!-- Pending Enrollment Requests Section --}}
 {{#if pendingStudents.length}}
-<div class="pending-requests-section">
-  <h2>Pending Enrollment Requests</h2>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Email</th>
-        <th>Major</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each pendingStudents}}
-        <tr>
-          <td>{{this.firstName}} {{this.lastName}}</td>
-          <td>{{this.email}}</td>
-          <td>{{this.major}}</td>
-          <td>
-            <div class="action-buttons">
-              <form action="/professor/enrollment/approve" method="POST">
-                <input type="hidden" name="studentId" value="{{this._id}}">
-                <input type="hidden" name="courseId" value="{{../course._id}}">
-                <button type="submit" class="btn btn-success">Approve</button>
-              </form>
-              
-              <form action="/professor/enrollment/reject" method="POST">
-                <input type="hidden" name="studentId" value="{{this._id}}">
-                <input type="hidden" name="courseId" value="{{../course._id}}">
-                <button type="submit" class="btn btn-danger">Reject</button>
-              </form>
-            </div>
-          </td>
-        </tr>
-      {{/each}}
-    </tbody>
-  </table>
-</div>
+    <div class="pending-requests-section">
+        <h2>Pending Enrollment Requests</h2>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Major</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{#each pendingStudents}}
+                <tr>
+                    <td>{{this.firstName}} {{this.lastName}}</td>
+                    <td>{{this.email}}</td>
+                    <td>{{this.major}}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <form action="/professor/enrollment/approve" method="POST">
+                                <input type="hidden" name="studentId" value="{{this._id}}">
+                                <input type="hidden" name="courseId" value="{{../course._id}}">
+                                <button type="submit" class="btn btn-success">Approve</button>
+                            </form>
+
+                            <form action="/professor/enrollment/reject" method="POST">
+                                <input type="hidden" name="studentId" value="{{this._id}}">
+                                <input type="hidden" name="courseId" value="{{../course._id}}">
+                                <button type="submit" class="btn btn-danger">Reject</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {{/each}}
+            </tbody>
+        </table>
+    </div>
 {{else}}
-<div class="no-pending-requests">
-  <p>No pending enrollment requests for this course.</p>
-</div>
+    <div class="no-pending-requests">
+        <p>No pending enrollment requests for this course.</p>
+    </div>
 {{/if}}
 
 <div class="Classanalytics">
-  <h2>Class analytics</h2>
-  
-  <div class="analytics-grid">
-    <div class="analytics-card">
-      <h3>Total Students:</h3>
-      <div class="analytics-value" id="total-students">{{totalStudents}}</div>
-    </div>
+    <h2>Class analytics</h2>
 
-    <div class="analytics-card">
-      <h3>Total Lectures:</h3>
-      <div class="analytics-value">{{totalLectures}}</div>
-    </div>
+    <div class="analytics-grid">
+        <div class="analytics-card">
+            <h3>Total Students:</h3>
+            <div class="analytics-value" id="total-students">{{totalStudents}}</div>
+        </div>
 
-    <div class="analytics-card">
-      <h3>Average Attendance:</h3>
-      <div class="analytics-value">{{averageAttendance}}%</div>
+        <div class="analytics-card">
+            <h3>Total Lectures:</h3>
+            <div class="analytics-value">{{totalLectures}}</div>
+        </div>
+
+        <div class="analytics-card">
+            <h3>Average Attendance:</h3>
+            <div class="analytics-value">{{averageAttendance}}%</div>
+        </div>
     </div>
-  </div>
 </div>
 
 {{!-- Attendance Pie Chart --}}
 <div class="card mt-4">
-  <div class="card-header">
-    <h3>Attendance Overview</h3>
-  </div>
-  <div class="card-body">
-    {{#if hasAttendanceData}}
-      <div class="row">
-        <div class="col-md-6">
-          <canvas id="attendanceChart" width="300" height="300"></canvas>
-        </div>
-        <div class="col-md-6 d-flex align-items-center">
-          <div class="attendance-legend">
-            <div class="mb-2"><span class="badge bg-success me-2">&nbsp;</span> Present: <span id="presentCount">{{totalPresent}}</span> students</div>
-            <div class="mb-2"><span class="badge bg-danger me-2">&nbsp;</span> Absent: <span id="absentCount">{{totalAbsent}}</span> students</div>
-            <div><span class="badge bg-warning me-2">&nbsp;</span> Excused: <span id="excusedCount">{{totalExcused}}</span> students</div>
-          </div>
-        </div>
-      </div>
-    {{else}}
-      <p><strong>No attendance data now</strong></p>
-    {{/if}}
-  </div>
+    <div class="card-header">
+        <h3>Attendance Overview</h3>
+    </div>
+    <div class="card-body">
+        {{#if hasAttendanceData}}
+            <div class="row">
+                <div class="col-md-6">
+                    <canvas id="attendanceChart" width="300" height="300"></canvas>
+                </div>
+                <div class="col-md-6 d-flex align-items-center">
+                    <div class="attendance-legend">
+                        <div class="mb-2"><span class="badge bg-success me-2">&nbsp;</span> Present: <span
+                                id="presentCount">{{totalPresent}}</span> students
+                        </div>
+                        <div class="mb-2"><span class="badge bg-danger me-2">&nbsp;</span> Absent: <span
+                                id="absentCount">{{totalAbsent}}</span> students
+                        </div>
+                        <div><span class="badge bg-warning me-2">&nbsp;</span> Excused: <span
+                                id="excusedCount">{{totalExcused}}</span> students
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {{else}}
+            <p><strong>No attendance data now</strong></p>
+        {{/if}}
+    </div>
 </div>
 
 {{!-- Enrolled Students Section --}}
 <div class="enrolled-students-section mt-4">
-  <h2>Enrolled Students</h2>
+    <h2>Enrolled Students</h2>
 
-  
-  {{#if enrolledStudents.length}}
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Major</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{#each enrolledStudents}}
-          <tr>
-            <td>{{this.firstName}} {{this.lastName}}</td>
-            <td>{{this.email}}</td>
-            <td>{{this.major}}</td>
-          </tr>
-        {{/each}}
-      </tbody>
-    </table>
-  {{else}}
-    <p>No students enrolled in this course yet.</p>
-  {{/if}}
+
+    {{#if enrolledStudents.length}}
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Major</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{#each enrolledStudents}}
+                <tr>
+                    <td>{{this.firstName}} {{this.lastName}}</td>
+                    <td>{{this.email}}</td>
+                    <td>{{this.major}}</td>
+                </tr>
+            {{/each}}
+            </tbody>
+        </table>
+    {{else}}
+        <p>No students enrolled in this course yet.</p>
+    {{/if}}
 </div>
 
 {{!-- All lecture attendance sections --}}
 <div class="recent-attendance mt-4">
-  <h2>Recent lecture attendance:</h2>
-  {{#if lectures.length}}
-    <div class="lecture-list">
-      {{#each lectures}}
-        <div class="lecture-item">
-          <a href="/professor/course/{{../course._id}}/lecture/{{this._id}}">{{this.lectureTitle}} ({{this.lectureDate}})</a>
-          <p class="mt-2"><strong>Lecture rating:</strong> {{averageRating}} / 5</p>
+    <h2>Recent lecture attendance:</h2>
+    {{#if lectures.length}}
+        <div class="lecture-list">
+            {{#each lectures}}
+                <div class="lecture-item">
+                    <a href="/professor/course/{{../course._id}}/lecture/{{this._id}}">{{this.lectureTitle}}
+                        ({{this.lectureDate}})</a>
+                    <p class="mt-2"><strong>Lecture rating:</strong> {{averageRating}} / 5</p>
+                </div>
+            {{/each}}
         </div>
-      {{/each}}
-    </div>
-  {{else}}
-    <p>No lectures found for this course.</p>
-  {{/if}}
+    {{else}}
+        <p>No lectures found for this course.</p>
+    {{/if}}
 </div>
 
 {{!-- Show the create Lecture button --}}
 <div class="create-Lecture-Button">
-  <a href="/professor/course/{{course._id}}/lecture/create" class="btn btn-primary">Create Lecture</a>
+    <a href="/professor/course/{{course._id}}/lecture/create" class="btn btn-primary">Create Lecture</a>
 </div>
 
 <div class="text-end mt-3">
-  <a href="/professor/course/{{course._id}}/analytics/manage-tas" class="btn btn-warning">
-    <i class="bi bi-person-gear me-1"></i> Manage TAs
-  </a>
+    <a href="/professor/course/{{course._id}}/analytics/manage-tas" class="btn btn-warning">
+        <i class="bi bi-person-gear me-1"></i> Manage TAs
+    </a>
 </div>
 
 
@@ -233,61 +275,149 @@
 
 {{!-- Add this small script at the bottom of the page --}}
 <script>
-  document.getElementById('searchBtn').addEventListener('click', filterStudents);
-  document.getElementById('studentSearchInput').addEventListener('keyup', function(e) {
-    if (e.key === 'Enter') filterStudents();
-  });
-  
-  function filterStudents() {
-    const searchText = document.getElementById('studentSearchInput').value.toLowerCase();
-    const tableRows = document.querySelectorAll('.enrolled-students-section tbody tr');
-    
-    tableRows.forEach(row => {
-      const text = row.textContent.toLowerCase();
-      row.style.display = text.includes(searchText) ? '' : 'none';
+    document.getElementById('searchBtn').addEventListener('click', filterStudents);
+    document.getElementById('studentSearchInput').addEventListener('keyup', function (e) {
+        if (e.key === 'Enter') filterStudents();
     });
-  }
+
+    function filterStudents() {
+        const searchText = document.getElementById('studentSearchInput').value.toLowerCase();
+        const tableRows = document.querySelectorAll('.enrolled-students-section tbody tr');
+
+        tableRows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchText) ? '' : 'none';
+        });
+    }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-  // Use window.onload instead of DOMContentLoaded for better reliability
-  window.onload = function() {
-    try {
-      // Get the canvas element
-      const ctx = document.getElementById('attendanceChart');
-      
-      if (!ctx) {
-        console.error("Canvas element not found!");
-        return;
-      }
-      
-      // Add fallback values in case they're undefined
-      const presentCount = {{totalPresent}} || 1;
-      const absentCount = {{totalAbsent}} || 0;
-      const excusedCount = {{totalExcused}} || 0;
-      
-      console.log("Chart data:", presentCount, absentCount, excusedCount);
-      
-      // Create the chart with basic options
-      new Chart(ctx, {
-        type: 'pie',
-        data: {
-          labels: ['Present', 'Absent', 'Excused'],
-          datasets: [{
-            data: [presentCount, absentCount, excusedCount],
-            backgroundColor: ['#198754', '#dc3545', '#ffc107']
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false
+    // Use window.onload instead of DOMContentLoaded for better reliability
+    window.onload = function () {
+        try {
+            // Get the canvas element
+            const ctx = document.getElementById('attendanceChart');
+
+            if (!ctx) {
+                console.error("Canvas element not found!");
+                return;
+            }
+
+            // Add fallback values in case they're undefined
+            const presentCount = {{totalPresent}} ||
+            1;
+            const absentCount = {{totalAbsent}} ||
+            0;
+            const excusedCount = {{totalExcused}} ||
+            0;
+
+            console.log("Chart data:", presentCount, absentCount, excusedCount);
+
+            // Create the chart with basic options
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Present', 'Absent', 'Excused'],
+                    datasets: [{
+                        data: [presentCount, absentCount, excusedCount],
+                        backgroundColor: ['#198754', '#dc3545', '#ffc107']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        } catch (err) {
+            console.error("Error creating chart:", err);
         }
-      });
-    } catch(err) {
-      console.error("Error creating chart:", err);
-    }
-  };
+    };
+
+    window.onload = function () {
+        const form = document.getElementById('scheduleForm');
+        if (!form) return;
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const schedule = {};
+            const days = ['M', 'T', 'W', 'Th', 'F'];
+            const errors = [];
+
+            days.forEach(day => {
+                const active = formData.get(`${day}_active`) === 'on';
+                const start = formData.get(`${day}_startTime`);
+                const end = formData.get(`${day}_endTime`);
+
+                if (active) {
+                    // Require both times
+                    if (!start || !end) {
+                        errors.push(`${dayMap(day)}: Start and end time are required.`);
+                        return;
+                    }
+
+                    // Validate time format
+                    const timePattern = /^\d{2}:\d{2}$/;
+                    if (!timePattern.test(start) || !timePattern.test(end)) {
+                        errors.push(`${dayMap(day)}: Invalid time format. Use HH:MM.`);
+                        return;
+                    }
+
+                    // Compare times
+                    const [sh, sm] = start.split(':').map(Number);
+                    const [eh, em] = end.split(':').map(Number);
+                    const startMinutes = sh * 60 + sm;
+                    const endMinutes = eh * 60 + em;
+
+                    if (endMinutes <= startMinutes) {
+                        errors.push(`${dayMap(day)}: End time must be after start time.`);
+                        return;
+                    }
+
+                    schedule[day] = {startTime: start, endTime: end};
+                }
+            });
+
+            if (errors.length > 0) {
+                alert('Please fix the following errors:\n\n' + errors.join('\n'));
+                return;
+            }
+
+            const courseId = form.dataset.courseId;
+
+            fetch(`/professor/course/${courseId}/set-schedule`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({schedule})
+            })
+                    .then(res => {
+                        if (!res.ok) throw new Error("Failed to save schedule.");
+                        return res.json();
+                    })
+                    .then(data => {
+                        alert('Schedule saved successfully!');
+                        console.log('Server response:', data);
+                    })
+                    .catch(err => {
+                        console.error('Schedule save failed:', err);
+                        alert('Error saving schedule.');
+                    });
+        });
+
+        function dayMap(short) {
+            const map = {
+                M: 'Monday',
+                T: 'Tuesday',
+                W: 'Wednesday',
+                Th: 'Thursday',
+                F: 'Friday'
+            };
+            return map[short] || short;
+        }
+    };
 </script>
+
 

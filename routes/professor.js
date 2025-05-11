@@ -93,7 +93,7 @@ router.route("/course/:id").get(async (req, res) => {
 router.route("/course/:id/analytics").get(async (req, res) => {
     try {
         const courseId = req.params.id;
-        
+
 
         const courseCollection = await courses();
         const course = await courseCollection.findOne({
@@ -155,7 +155,7 @@ router.route("/course/:id/analytics").get(async (req, res) => {
             courseId: new ObjectId(courseId)
         }).toArray();
 
-        
+
         for (let lecture of courseLectures) {
             try {
                 lecture.averageRating = await lectureData.getAverageRating(lecture._id);
@@ -216,27 +216,27 @@ router.route("/course/:id/analytics").get(async (req, res) => {
         try {
             // Get attendance data using the provided functions
             const absentStudents = await attendanceData.getAllAbsentStudents(courseId);
-            
+
             // Note: getAllPresentStudents takes studentId not courseId (this is inconsistent)
             // Fix this by getting attendance for the course instead
             const attendanceCollection = await attendance();
             const presentRecords = await attendanceCollection.find({
-                courseId: new ObjectId(courseId), 
+                courseId: new ObjectId(courseId),
                 status: "present"
             }).toArray();
-            
+
             const excusedStudents = await attendanceData.getAllExcusedStudents(courseId);
-            
+
             // Count the records
             totalPresent = presentRecords.length;
             totalAbsent = absentStudents.length;
             totalExcused = excusedStudents.length;
-            
+
             // Set flag to determine if we should show the chart
             const hasAttendanceData = (totalPresent > 0 || totalAbsent > 0 || totalExcused > 0);
-            
+
             console.log(`Attendance counts: Present=${totalPresent}, Absent=${totalAbsent}, Excused=${totalExcused}`);
-            
+
             // Pass this to the template
             res.render("professorDashboard/DataAnalyticsView", {
                 layout: "main",
@@ -252,7 +252,8 @@ router.route("/course/:id/analytics").get(async (req, res) => {
                 totalPresent: totalPresent || 0,
                 totalAbsent: totalAbsent || 0,
                 totalExcused: totalExcused || 0,
-                hasAttendanceData // Add this flag
+                hasAttendanceData, // Add this flag,
+                weekdays: ['M', 'T', 'W', 'Th', 'F'],
             });
         } catch (e) {
             console.error("Error fetching attendance data:", e);
@@ -266,109 +267,182 @@ router.route("/course/:id/analytics").get(async (req, res) => {
     }
 });
 
-router.route("/course/:id/analytics/manage-tas").get(async(req,res)=>{
-    try {
-         const courseId = req.params.id;
+router.post('/course/:courseId/set-schedule', async (req, res) => {
+  const { courseId } = req.params;
+  const { schedule } = req.body;
+
+  if (!schedule || typeof schedule !== 'object') {
+    return res.status(400).json({ error: 'Invalid schedule data' });
+  }
+
+  try {
+    const meetingDays = [];
+    const meetingTimes = [];
+
+    for (const shortDay in schedule) {
+      const { startTime, endTime } = schedule[shortDay];
+
+      // Validation: all fields required for active days
+      if (!startTime || !endTime) {
+        return res.status(400).json({
+          error: `Missing start or end time for ${dayMap(shortDay)}`
+        });
+      }
+
+      // Validation: valid time format HH:MM (24-hour)
+      if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
+        return res.status(400).json({
+          error: `Invalid time format for ${dayMap(shortDay)}. Use HH:MM (24-hour).`
+        });
+      }
+
+      // Validation: start < end
+      const [sh, sm] = startTime.split(':').map(Number);
+      const [eh, em] = endTime.split(':').map(Number);
+      const startMinutes = sh * 60 + sm;
+      const endMinutes = eh * 60 + em;
+
+      if (endMinutes <= startMinutes) {
+        return res.status(400).json({
+          error: `End time must be after start time for ${dayMap(shortDay)}.`
+        });
+      }
+
+      // Passed validation
+      meetingDays.push({ day: dayMap(shortDay) });
+      meetingTimes.push({ startTime, endTime });
+    }
+
     const courseCollection = await courses();
-    const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+    await courseCollection.updateOne(
+      { _id: new ObjectId(courseId) },
+      {
+        $set: {
+          courseMeetingDays: meetingDays,
+          courseMeetingTime: meetingTimes
+        }
+      }
+    );
 
-    if (!course) throw "Course not found";
-
-    const studentIds = (course.studentEnrollments || [])
-      .filter(e => e.status === "active")
-      .map(e => new ObjectId(e.studentId));
-
-    const usersCollection = await users();
-    const students = await usersCollection.find({ _id: { $in: studentIds } }).toArray();
-    students.forEach((student) => {
-  student.isTAForThisCourse = (student.taForCourses || []).some(cid =>
-    cid.toString() === course._id.toString()
-  );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error validating or updating schedule:', err);
+    res.status(500).json({ error: 'Internal server error while saving schedule' });
+  }
 });
 
 
-    return res.render("professorDashboard/manageTAs", {
-      layout: "main",
-      course,
-      students
-    });
+
+// Utility to map short day to full name
+function dayMap(short) {
+    const map = {M: 'Monday', T: 'Tuesday', W: 'Wednesday', Th: 'Thursday', F: 'Friday'};
+    return map[short] || short;
+}
+
+
+router.route("/course/:id/analytics/manage-tas").get(async (req, res) => {
+    try {
+        const courseId = req.params.id;
+        const courseCollection = await courses();
+        const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
+
+        if (!course) throw "Course not found";
+
+        const studentIds = (course.studentEnrollments || [])
+            .filter(e => e.status === "active")
+            .map(e => new ObjectId(e.studentId));
+
+        const usersCollection = await users();
+        const students = await usersCollection.find({_id: {$in: studentIds}}).toArray();
+        students.forEach((student) => {
+            student.isTAForThisCourse = (student.taForCourses || []).some(cid =>
+                cid.toString() === course._id.toString()
+            );
+        });
+
+
+        return res.render("professorDashboard/manageTAs", {
+            layout: "main",
+            course,
+            students
+        });
     } catch (error) {
         console.error("Error loading TA management:", error);
         res.status(500).render("error", {
-        layout: "main",
-        error: error.message || "Error loading TA management page."
-    });
+            layout: "main",
+            error: error.message || "Error loading TA management page."
+        });
     }
 })
 
-router.route("/course/:courseId/analytics/manage-tas/promote/:studentId").post(async(req,res)=>{
+router.route("/course/:courseId/analytics/manage-tas/promote/:studentId").post(async (req, res) => {
     try {
-    const { studentId, courseId } = req.params;
+        const {studentId, courseId} = req.params;
 
-    const usersCollection = await users();
-    const student = await usersCollection.findOne({ _id: new ObjectId(studentId) });
+        const usersCollection = await users();
+        const student = await usersCollection.findOne({_id: new ObjectId(studentId)});
 
-    if (!student) throw "User not found";
+        if (!student) throw "User not found";
 
-    const updates = {
-      $addToSet: { taForCourses: new ObjectId(courseId) }
-    };
+        const updates = {
+            $addToSet: {taForCourses: new ObjectId(courseId)}
+        };
 
-    // Only update role if the user isn't already a TA
-    if (student.role === "student") {
-      updates.$set = { role: "ta" };
-    }
+        // Only update role if the user isn't already a TA
+        if (student.role === "student") {
+            updates.$set = {role: "ta"};
+        }
 
-    await usersCollection.updateOne(
-      { _id: new ObjectId(studentId) },
-      updates
-    );
+        await usersCollection.updateOne(
+            {_id: new ObjectId(studentId)},
+            updates
+        );
 
-    req.session.successMessage = "Student promoted to TA successfully!";
-    return res.redirect(`/professor/course/${courseId}/analytics/manage-tas`);
+        req.session.successMessage = "Student promoted to TA successfully!";
+        return res.redirect(`/professor/course/${courseId}/analytics/manage-tas`);
     } catch (error) {
-         console.error("Promotion error:", error);
-    res.status(400).render("error", {
-      layout: "main",
-      error: error.message || error
-    });
+        console.error("Promotion error:", error);
+        res.status(400).render("error", {
+            layout: "main",
+            error: error.message || error
+        });
     }
 })
 
 router.post("/course/:courseId/analytics/manage-tas/demote/:studentId", async (req, res) => {
-  try {
-    const { courseId, studentId } = req.params;
+    try {
+        const {courseId, studentId} = req.params;
 
-    const usersCollection = await users();
-    const user = await usersCollection.findOne({ _id: new ObjectId(studentId) });
-    if (!user) throw "User not found";
+        const usersCollection = await users();
+        const user = await usersCollection.findOne({_id: new ObjectId(studentId)});
+        if (!user) throw "User not found";
 
-    // Remove course from taForCourses
-    await usersCollection.updateOne(
-      { _id: new ObjectId(studentId) },
-      {
-        $pull: { taForCourses: new ObjectId(courseId) }
-      }
-    );
+        // Remove course from taForCourses
+        await usersCollection.updateOne(
+            {_id: new ObjectId(studentId)},
+            {
+                $pull: {taForCourses: new ObjectId(courseId)}
+            }
+        );
 
-    // If this was the only course, change role back to student
-    const updated = await usersCollection.findOne({ _id: new ObjectId(studentId) });
-    if (!updated.taForCourses || updated.taForCourses.length === 0) {
-      await usersCollection.updateOne(
-        { _id: new ObjectId(studentId) },
-        { $set: { role: "student" } }
-      );
+        // If this was the only course, change role back to student
+        const updated = await usersCollection.findOne({_id: new ObjectId(studentId)});
+        if (!updated.taForCourses || updated.taForCourses.length === 0) {
+            await usersCollection.updateOne(
+                {_id: new ObjectId(studentId)},
+                {$set: {role: "student"}}
+            );
+        }
+
+        req.session.successMessage = "TA successfully demoted to student.";
+        return res.redirect(`/professor/course/${courseId}/analytics/manage-tas`);
+    } catch (error) {
+        console.error("Demotion error:", error);
+        res.status(400).render("error", {
+            layout: "main",
+            error: error.message || error
+        });
     }
-
-    req.session.successMessage = "TA successfully demoted to student.";
-    return res.redirect(`/professor/course/${courseId}/analytics/manage-tas`);
-  } catch (error) {
-    console.error("Demotion error:", error);
-    res.status(400).render("error", {
-      layout: "main",
-      error: error.message || error
-    });
-  }
 });
 
 
@@ -564,37 +638,37 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
 
         course._id = course._id.toString();
 
-        const activeEnrollments = course.studentEnrollments?.filter(enrollment => 
+        const activeEnrollments = course.studentEnrollments?.filter(enrollment =>
             enrollment.status === "active"
         ) || [];
-        
-        const activeStudentIds = activeEnrollments.map(enrollment => 
+
+        const activeStudentIds = activeEnrollments.map(enrollment =>
             new ObjectId(enrollment.studentId)
         );
-        
+
         let students = [];
         if (activeStudentIds.length > 0) {
             const usersCollection = await users();
             students = await usersCollection.find({
-                _id: { $in: activeStudentIds }
+                _id: {$in: activeStudentIds}
             }).toArray();
-            
+
             students = students.map(s => ({
                 ...s,
                 _id: s._id.toString()
             }));
         }
-        
+
         const attendanceCollection = await attendance();
         const attendanceRecords = await attendanceCollection.find({
             lectureId: new ObjectId(lectureId)
         }).toArray();
-        
+
         const attendanceMap = {};
         for (const record of attendanceRecords) {
             attendanceMap[record.studentId.toString()] = record.status;
         }
-        
+
         const studentAttendanceHistory = students.map(student => ({
             ...student,
             attendanceStatus: attendanceMap[student._id] || ""
@@ -603,14 +677,13 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
         let startDateTime = dayjs(`${lecture.lectureDate}T${lecture.lectureStartTime}`);
         let endDateTime = dayjs(`${lecture.lectureDate}T${lecture.lectureEndTime}`);
         if (endDateTime.isBefore(startDateTime)) {
-            endDateTime = endDateTime.add(1, 'day'); 
+            endDateTime = endDateTime.add(1, 'day');
         }
 
-        
-    
+
         const averageRating = await lectureData.getAverageRating(lectureId);
         const ratingCount = lecture.ratings ? lecture.ratings.length : 0;
-    
+
 
         res.render("professorDashboard/LectureViews", {
             layout: "main",
@@ -636,7 +709,7 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
 router.route("/course/:courseId/lecture/:lectureId/attendance").post(async (req, res) => {
     try {
         const {courseId, lectureId} = req.params;
-        
+
         // Change this line - validate attendanceData instead of attendance
         const attendanceFormData = req.body.attendanceData;
 
@@ -764,7 +837,14 @@ router.route("/course/:courseId/lecture/:lectureId/edit")
     .post(async (req, res) => {
         try {
             const {courseId, lectureId} = req.params;
-            const {lectureTitle, lectureDate, lectureStartTime, lectureEndTime, lectureDescription, lectureMaterials} = req.body;
+            const {
+                lectureTitle,
+                lectureDate,
+                lectureStartTime,
+                lectureEndTime,
+                lectureDescription,
+                lectureMaterials
+            } = req.body;
 
             const updates = {
                 lectureTitle: lectureTitle,
