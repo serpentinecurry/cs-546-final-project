@@ -12,7 +12,7 @@ import { stringValidate } from "../validation.js";
 //     "createdAt": "timestamp"  
 // }
 
-// uses createAttendance, updateAttendance, it will be adding 1 point for each class missed, for now excused does not add points
+// uses createAttendance, updateAttendance; it will be adding 1 point for each class missed, for now excused does not add points
 let createAttendance = async (lectureId, courseId, studentId, status) => {
 
     if (!lectureId || !courseId || !studentId || !status) {

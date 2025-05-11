@@ -449,28 +449,31 @@ router.get("/courses/:courseId/members", async (req, res) => {
 });
 
 router.get('/:courseId/attendance', async (req, res) => {
-    const {courseId} = req.params;
+    const { courseId } = req.params;
     const studentId = new ObjectId(req.session.user._id);
 
     const attendanceCollection = await attendance();
     const lectureCollection = await lectures();
     const courseCollection = await courses();
 
-    const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
+    const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
 
     const records = await attendanceCollection.find({
         courseId: new ObjectId(courseId),
         studentId
     }).toArray();
 
-    const totalLectures = await lectureCollection.countDocuments({courseId: new ObjectId(courseId)});
-
-    // Count excused lectures separately
+    // Count excused separately
     const excusedCount = records.filter(r => r.status === 'excused').length;
-    const presentCount = records.filter(r => r.status === 'present').length;
-    const absentCount = records.filter(r => r.status === 'absent').length;
 
-    const effectiveLectures = totalLectures - excusedCount;
+    // Only include non-excused records for attendance
+    const relevantRecords = records.filter(r => r.status !== 'excused');
+    const presentCount = relevantRecords.filter(r => r.status === 'present').length;
+    const absentCount = relevantRecords.filter(r => r.status === 'absent').length;
+
+    // Use only records with actual attendance status as the "effective lectures"
+    const effectiveLectures = relevantRecords.length;
+
     const attendancePercentage = effectiveLectures > 0
         ? Math.round((presentCount / effectiveLectures) * 100)
         : 0;
@@ -482,11 +485,10 @@ router.get('/:courseId/attendance', async (req, res) => {
         progressBarClass = "bg-warning text-dark";
     }
 
-
-    // Format records with readable date
+    // Format records with readable lecture info
     const formattedRecords = await Promise.all(
-        records.map(async record => {
-            const lecture = await lectureCollection.findOne({_id: new ObjectId(record.lectureId)});
+        records.map(async (record) => {
+            const lecture = await lectureCollection.findOne({ _id: new ObjectId(record.lectureId) });
             return {
                 date: lecture?.lectureDate || 'Unknown',
                 status: record.status,
@@ -503,13 +505,14 @@ router.get('/:courseId/attendance', async (req, res) => {
         course,
         attendancePercentage,
         presentCount,
-        totalLectures,
+        totalLectures: records.length, // Total records for this student
         excusedCount,
         absentCount,
         progressBarClass,
         attendanceRecords: formattedRecords
     });
 });
+
 
 
 // Absence Request - GET + POST
