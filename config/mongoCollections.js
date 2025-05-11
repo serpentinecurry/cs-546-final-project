@@ -19,3 +19,4 @@ export const lectures = getCollectionFn('lectures');
 export const attendance = getCollectionFn('attendance');
 export const discussions = getCollectionFn('discussions');
 export const changeRequests = getCollectionFn("ChangeRequests");
+export const feedback = getCollectionFn("feedback");

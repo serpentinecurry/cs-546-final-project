@@ -5,6 +5,7 @@ import courseData from "../data/courses.js";
 import attendanceData from "../data/attendance.js";
 import lectureData from "../data/lectures.js";
 import discussionsData from "../data/discussions.js";
+import { createFeedbackSurvey } from "../data/feedback.js";
 import dayjs from "dayjs";
 
 const router = Router();
@@ -96,9 +97,7 @@ router.route("/course/:id").get(verifyProfessorOwnsCourse, async (req, res) => {
   }
 });
 
-router
-  .route("/course/:id/analytics")
-  .get(verifyProfessorOwnsCourse, async (req, res) => {
+router.route("/course/:id/analytics").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const courseId = req.params.id;
 
@@ -305,10 +304,21 @@ router
     }
   });
 
-router.post(
-  "/course/:courseId/set-schedule",
-  verifyProfessorOwnsCourse,
-  async (req, res) => {
+
+router.post("/course/:courseId/feedback/create", async (req, res) => {
+  try {
+    const courseId = req.params.courseId;
+    const professorId = req.session.user._id; // adjust if your session stores differently
+
+    const result = await createFeedbackSurvey(courseId, professorId);
+    return res.redirect(`/professor/course/${courseId}`); // or wherever you want to show a success
+  } catch (e) {
+    console.error(e);
+    return res.status(500).render("error", { error: "Could not create survey" });
+  }
+});
+
+router.post("/course/:courseId/set-schedule", verifyProfessorOwnsCourse, async (req, res) => {
     const { courseId } = req.params;
     const { schedule } = req.body;
 
@@ -377,12 +387,9 @@ router.post(
         .status(500)
         .json({ error: "Internal server error while saving schedule" });
     }
-  }
-);
+  });
 
-router
-  .route("/course/:courseId/view-office-hours")
-  .get(verifyProfessorOwnsCourse, async (req, res) => {
+router.route("/course/:courseId/view-office-hours").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       let { courseId } = req.params;
       courseId = stringValidate(courseId);
@@ -395,27 +402,10 @@ router
 
       if (!course) throw "Course not found!";
 
-      // fetch TA names for display
-      const usersCollection = await users();
-      const taMap = {};
-      for (const hour of course.taOfficeHours || []) {
-        const taId = hour.taId.toString();
-        if (!taMap[taId]) {
-          const taUser = await usersCollection.findOne({
-            _id: new ObjectId(taId),
-          });
-          taMap[taId] = taUser
-            ? `${taUser.firstName} ${taUser.lastName}`
-            : "Unknown TA";
-        }
-        hour.taName = taMap[taId];
-      }
-
       return res.render("professorDashboard/viewOfficeHours", {
         layout: "main",
         courseId: course._id.toString(),
         professorOfficeHours: course.professorOfficeHours || [],
-        taOfficeHours: course.taOfficeHours || [],
       });
     } catch (error) {
       return res.status(500).render("error", {
@@ -427,10 +417,7 @@ router
     }
   });
 
-router.post(
-  "/course/:courseId/delete-office-hour",
-  verifyProfessorOwnsCourse,
-  async (req, res) => {
+router.post("/course/:courseId/delete-office-hour", verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const { courseId } = req.params;
       const { day, startTime, endTime } = req.body;
@@ -450,12 +437,9 @@ router.post(
             : e.message || "Failed to delete office hour.",
       });
     }
-  }
-);
+  });
 
-router
-  .route("/course/:courseId/add-office-hour")
-  .get(verifyProfessorOwnsCourse, async (req, res) => {
+router.route("/course/:courseId/add-office-hour").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       let courseId = req.params.courseId;
       courseId = stringValidate(courseId);
@@ -511,9 +495,7 @@ function dayMap(short) {
   return map[short] || short;
 }
 
-router
-  .route("/course/:id/analytics/manage-tas")
-  .get(verifyProfessorOwnsCourse, async (req, res) => {
+router.route("/course/:id/analytics/manage-tas").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const courseId = req.params.id;
       const courseCollection = await courses();
@@ -551,9 +533,7 @@ router
     }
   });
 
-router
-  .route("/course/:courseId/analytics/manage-tas/promote/:studentId")
-  .post(verifyProfessorOwnsCourse, async (req, res) => {
+router.route("/course/:courseId/analytics/manage-tas/promote/:studentId").post(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const { studentId, courseId } = req.params;
 
@@ -589,10 +569,7 @@ router
     }
   });
 
-router.post(
-  "/course/:courseId/analytics/manage-tas/demote/:studentId",
-  verifyProfessorOwnsCourse,
-  async (req, res) => {
+router.post("/course/:courseId/analytics/manage-tas/demote/:studentId", verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const { courseId, studentId } = req.params;
 
@@ -601,16 +578,6 @@ router.post(
         _id: new ObjectId(studentId),
       });
       if (!user) throw "User not found";
-      const coursesCollection = await courses()
-      // Remove TA office hours from the course
-      await coursesCollection.updateOne(
-        { _id: new ObjectId(courseId) },
-        {
-          $pull: {
-            taOfficeHours: { taId: new ObjectId(studentId) },
-          },
-        }
-      );
 
       // Remove course from taForCourses
       await usersCollection.updateOne(
@@ -640,8 +607,7 @@ router.post(
         error: error.message || error,
       });
     }
-  }
-);
+  });
 
 router.route("/lectures/analytics/:id").get(async (req, res) => {
   try {
@@ -713,6 +679,7 @@ router.post("/enrollment/reject", async (req, res) => {
     const studentId = stringValidate(req.body.studentId);
     const courseId = stringValidate(req.body.courseId);
 
+    
     await userData.rejectEnrollmentRequest(studentId, courseId);
 
     req.session.successMessage = "Enrollment request rejected successfully";
@@ -751,9 +718,7 @@ router.post("/enrollment/approve", async (req, res) => {
 });
 
 // lecture creation route
-router
-  .route("/course/:courseId/lecture/create")
-  .get(async (req, res) => {
+router.route("/course/:courseId/lecture/create").get(async (req, res) => {
     try {
       const courseId = req.params.courseId;
       const course = await courseData.getCourseById(courseId);
@@ -820,9 +785,7 @@ router
     }
   });
 
-router
-  .route("/course/:courseId/lecture/:lectureId")
-  .get(verifyProfessorOwnsCourse, async (req, res) => {
+router.route("/course/:courseId/lecture/:lectureId").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const { courseId, lectureId } = req.params;
       const lecturesCollection = await lectures();
@@ -902,6 +865,7 @@ router
       const averageRating = await lectureData.getAverageRating(lectureId);
       const ratingCount = lecture.ratings ? lecture.ratings.length : 0;
 
+      
       let hasDiscussion = false;
       let discussionId = null;
 
@@ -954,14 +918,14 @@ router
   });
 
 //attendance submission route
-router
-  .route("/course/:courseId/lecture/:lectureId/attendance")
-  .post(verifyProfessorOwnsCourse, async (req, res) => {
+router.route("/course/:courseId/lecture/:lectureId/attendance").post(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const { courseId, lectureId } = req.params;
 
+      
       const attendanceFormData = req.body.attendanceData;
 
+      
       if (!attendanceFormData) {
         return res.status(400).render("error", {
           layout: "main",
@@ -969,6 +933,7 @@ router
         });
       }
 
+      
       for (const [studentId, status] of Object.entries(attendanceFormData)) {
         await attendanceData.createAttendance(
           lectureId,
@@ -990,11 +955,8 @@ router
     }
   });
 
-// absence request approve or reject route - doesn't mark as absent
-router.post(
-  "/absence-request/update/:studentId/:courseId/:action",
-  verifyProfessorOwnsCourse,
-  async (req, res) => {
+// absence request approve or reject route - doesn't mark as absent 
+router.post("/absence-request/update/:studentId/:courseId/:action", verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const { studentId, courseId, action } = req.params;
       const { requestIndex } = req.body;
@@ -1053,13 +1015,10 @@ router.post(
         error: "An error occurred while processing the request: " + e.message,
       });
     }
-  }
-);
+  });
 
 // lecture Routes
-router
-  .route("/course/:courseId/lecture/:lectureId/edit")
-  .get(verifyProfessorOwnsCourse, async (req, res) => {
+router.route("/course/:courseId/lecture/:lectureId/edit").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const { courseId, lectureId } = req.params;
 
@@ -1128,57 +1087,58 @@ router
 
 // Use this for discussion routes - copy and paste for student discussion routes
 router.route("/Discussion").get(async (req, res) => {
-  try {
-    if (!req.session.user || req.session.user.role !== "professor") {
-      return res.status(403).render("error", {
+    try {
+        
+      if (!req.session.user || req.session.user.role !== 'professor') {
+        return res.status(403).render('error', {
+          layout: 'main', 
+          error: 'You must be logged in as a professor to access discussions'
+        });
+      }
+      
+      
+      res.render("professorDashboard/discussions", {
         layout: "main",
-        error: "You must be logged in as a professor to access discussions",
+        title: "Course Discussions",
+        course: req.query.courseId ? { _id: req.query.courseId } : null
+      });
+    } catch (error) {
+      console.error("Error accessing discussions:", error);
+      res.status(500).render("error", {
+        layout: "main",
+        error: "Error loading discussions. Please try again later."
       });
     }
+  });
 
-    res.render("professorDashboard/discussions", {
-      layout: "main",
-      title: "Course Discussions",
-      course: req.query.courseId ? { _id: req.query.courseId } : null,
-    });
-  } catch (error) {
-    console.error("Error accessing discussions:", error);
-    res.status(500).render("error", {
-      layout: "main",
-      error: "Error loading discussions. Please try again later.",
-    });
-  }
-});
-
-router
-  .route("/course/:courseId/lecture/:lectureId/discussions")
-  .get(verifyProfessorOwnsCourse, async (req, res) => {
+router.route("/course/:courseId/lecture/:lectureId/discussions").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const { courseId, lectureId } = req.params;
-
+      
+      
       const lecture = await lectureData.getLectureById(lectureId);
       if (!lecture) {
         return res.status(404).render("error", {
           layout: "main",
-          error: "Lecture not found",
+          error: "Lecture not found"
         });
       }
-
+      
+      
       const course = await courseData.getCourseById(courseId);
-
+      
+      
       let discussions = [];
       try {
-        discussions = await discussionsData.getDiscussionsLecture(
-          lectureId,
-          courseId
-        );
-
+        discussions = await discussionsData.getDiscussionsLecture(lectureId, courseId);
+        
+        
         const usersCollection = await users();
         for (const discussion of discussions) {
           const author = await usersCollection.findOne({
-            _id: new ObjectId(discussion.authorId),
+            _id: new ObjectId(discussion.authorId)
           });
-
+          
           if (author) {
             discussion.authorName = `${author.firstName} ${author.lastName}`;
             discussion.authorRole = author.role;
@@ -1187,160 +1147,161 @@ router
           }
         }
       } catch (e) {
+        
         if (e !== "No discussions found for this lecture") {
           console.error("Error fetching discussions:", e);
         }
       }
-
+      
       res.render("professorDashboard/lectureDiscussions", {
         layout: "main",
         course,
         lecture,
         discussions,
-        title: `Discussions for ${lecture.lectureTitle}`,
+        title: `Discussions for ${lecture.lectureTitle}`
       });
     } catch (error) {
       console.error("Error fetching lecture discussions:", error);
       res.status(500).render("error", {
         layout: "main",
-        error: "Error loading discussions: " + error.message,
+        error: "Error loading discussions: " + error.message
       });
     }
   });
-
-router
-  .route("/course/:courseId/lecture/:lectureId/discussions/create")
-  .get(verifyProfessorOwnsCourse, async (req, res) => {
+  
+router.route("/course/:courseId/lecture/:lectureId/discussions/create").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const { courseId, lectureId } = req.params;
       const authorId = req.session.user._id;
-
+      
+      
       let lecture;
       try {
         lecture = await lectureData.getLectureById(lectureId);
       } catch (error) {
         return res.status(404).render("error", {
           layout: "main",
-          error: "Lecture not found",
+          error: "Lecture not found"
         });
       }
-
+      
+      
       const postTitle = `Discussion for ${lecture.lectureTitle}`;
-      const postContent =
-        "Use this discussion forum to ask questions and share insights about this lecture.";
-
+      const postContent = "Use this discussion forum to ask questions and share insights about this lecture.";
+      
+      
       const newDiscussion = await discussionsData.createDiscussion(
         lectureId,
         courseId,
         authorId,
-        postTitle,
+        postTitle, 
         postContent
       );
-
+      
+      
       if (newDiscussion.alreadyExists) {
         req.session.successMessage = "Viewing existing discussion";
       } else {
         req.session.successMessage = "Discussion created successfully!";
       }
-
-      res.redirect(
-        `/professor/course/${courseId}/lecture/${lectureId}/discussions/${newDiscussion._id}`
-      );
+      
+      
+      res.redirect(`/professor/course/${courseId}/lecture/${lectureId}/discussions/${newDiscussion._id}`);
     } catch (error) {
       console.error("Error creating discussion:", error);
       return res.status(400).render("error", {
         layout: "main",
-        error: "Error creating discussion: " + error,
+        error: "Error creating discussion: " + error
       });
     }
   });
 
-router
-  .route("/course/:courseId/lecture/:lectureId/discussions/:discussionId")
-  .get(verifyProfessorOwnsCourse, async (req, res) => {
+router.route("/course/:courseId/lecture/:lectureId/discussions/:discussionId").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
       const { courseId, lectureId, discussionId } = req.params;
-
+      
+      
       const courseCollection = await courses();
       const course = await courseCollection.findOne({
-        _id: new ObjectId(courseId),
+        _id: new ObjectId(courseId)
       });
-
+      
       if (!course) {
         throw "Course not found";
       }
-
+      
+      
       const discussion = course.discussions?.find(
-        (d) => d._id.toString() === discussionId
+        d => d._id.toString() === discussionId
       );
-
+      
       if (!discussion) {
         throw "Discussion not found";
       }
-
+      
+      
       const usersCollection = await users();
       const author = await usersCollection.findOne({
-        _id: new ObjectId(discussion.authorId),
+        _id: new ObjectId(discussion.authorId)
       });
-
+      
+      
       const discussionData = {
         ...discussion,
         _id: discussion._id.toString(),
         lectureId: discussion.lectureId.toString(),
         authorId: discussion.authorId.toString(),
-        authorName: author
-          ? `${author.firstName} ${author.lastName}`
-          : "Unknown User",
-        comments:
-          discussion.comments?.map((c) => ({
-            ...c,
-            _id: c._id.toString(),
-            commenterId: c.commenterId.toString(),
-          })) || [],
+        authorName: author ? `${author.firstName} ${author.lastName}` : "Unknown User",
+        comments: discussion.comments?.map(c => ({
+          ...c,
+          _id: c._id.toString(),
+          commenterId: c.commenterId.toString()
+        })) || []
       };
-
+      
+      
       if (discussionData.comments.length > 0) {
         const commenterIds = discussionData.comments
-          .filter((c) => !c.isAnonymous)
-          .map((c) => new ObjectId(c.commenterId));
-
+          .filter(c => !c.isAnonymous)
+          .map(c => new ObjectId(c.commenterId));
+          
         if (commenterIds.length > 0) {
-          const commenters = await usersCollection
-            .find({
-              _id: { $in: commenterIds },
-            })
-            .toArray();
-
+          const commenters = await usersCollection.find({
+            _id: { $in: commenterIds }
+          }).toArray();
+          
           const commenterMap = {};
-          commenters.forEach((u) => {
+          commenters.forEach(u => {
             commenterMap[u._id.toString()] = `${u.firstName} ${u.lastName}`;
           });
-
-          discussionData.comments.forEach((c) => {
-            c.commenterName = c.isAnonymous
-              ? "Anonymous"
-              : commenterMap[c.commenterId] || "Unknown User";
+          
+          
+          discussionData.comments.forEach(c => {
+            c.commenterName = c.isAnonymous ? "Anonymous" : 
+              commenterMap[c.commenterId] || "Unknown User";
           });
         }
       }
-
+      
+      
       const lecture = await lectureData.getLectureById(lectureId);
-
+      
       res.render("professorDashboard/DiscussionView", {
         layout: "main",
         course,
-        lecture,
+        lecture, 
         discussion: discussionData,
         title: discussionData.postTitle,
-        successMessage: req.session.successMessage,
+        successMessage: req.session.successMessage
       });
-
+      
+      
       req.session.successMessage = null;
     } catch (error) {
       console.error("Error viewing discussion:", error);
       res.status(500).render("error", {
         layout: "main",
-        error: "Error viewing discussion: " + error,
+        error: "Error viewing discussion: " + error
       });
     }
   })
@@ -1349,26 +1310,25 @@ router
       const { courseId, lectureId, discussionId } = req.params;
       const { commentText, isAnonymous } = req.body;
       const commenterId = req.session.user._id;
-
+      
       await discussionsData.addAComment(
         discussionId,
         courseId,
         commenterId,
         commentText,
-        isAnonymous === "on"
+        isAnonymous === 'on'
       );
-
+      
       req.session.successMessage = "Comment added successfully";
-      res.redirect(
-        `/professor/course/${courseId}/lecture/${lectureId}/discussions/${discussionId}`
-      );
+      res.redirect(`/professor/course/${courseId}/lecture/${lectureId}/discussions/${discussionId}`);
     } catch (error) {
       console.error("Error adding comment:", error);
       res.status(400).render("error", {
         layout: "main",
-        error: "Error adding comment: " + error.message,
+        error: "Error adding comment: " + error.message
       });
     }
   });
 
 export default router;
+
