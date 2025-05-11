@@ -48,6 +48,9 @@ const lecturesToEventObjects = (lectures) => {
     eventObject.id = l.courseCode + "-" + l.lectureDate;
     // CS-546 - Learn AJAX
     eventObject.title = l.courseCode + " - " + l.lectureTitle;
+    // event color
+    eventObject.backgroundColor = " #d00000 ";
+    eventObject.borderColor = " #d00000 ";
 
     // get individual parts of the date
     let date = l.lectureDate.split("-");
@@ -101,6 +104,7 @@ const getOfficeHours = async (studentId) => {
 
     for (let item of professorOfficeHours) {
       item.name = professor.firstName + " " + professor.lastName;
+      item.color = " #0168dc ";
     }
 
     let taOfficeHours = course.taOfficeHours;
@@ -111,6 +115,7 @@ const getOfficeHours = async (studentId) => {
       });
 
       item.name = ta.firstName + " " + ta.lastName;
+      item.color = " #53b656 ";
     }
 
     officeHours = officeHours.concat(course.professorOfficeHours, course.taOfficeHours);
@@ -130,6 +135,8 @@ const officeHoursToEventObjects = (officeHours) => {
     eventObject.daysOfWeek = [weekDays.indexOf(oh.day)];
     eventObject.startTime = oh.startTime;
     eventObject.endTime = oh.endTime;
+    eventObject.backgroundColor = oh.color;
+    eventObject.borderColor = oh.color;
 
     events.push(JSON.stringify(eventObject));
   }
