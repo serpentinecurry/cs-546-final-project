@@ -270,9 +270,10 @@ router.route("/course/:id/analytics").get(verifyProfessorOwnsCourse, async (req,
                 courseId: new ObjectId(courseId)
             });
 
+            const studentFeedbackResponses = existingSurvey?.studentResponses || [];
+
             const successMessage = req.session.successMessage || null;
             req.session.successMessage = null;
-            console.log("🧪 successMessage on render:", req.session.successMessage);
 
             // Pass this to the template
             res.render("professorDashboard/DataAnalyticsView", {
@@ -293,6 +294,7 @@ router.route("/course/:id/analytics").get(verifyProfessorOwnsCourse, async (req,
                 scheduleMap,
                 weekdays: ["M", "T", "W", "Th", "F"],
                 surveyExists: !!existingSurvey,
+                feedbackResponses: studentFeedbackResponses
             });
 
         } catch (e) {
@@ -311,26 +313,25 @@ router.route("/course/:id/analytics").get(verifyProfessorOwnsCourse, async (req,
 
 
 router.post("/course/:courseId/feedback/create", async (req, res) => {
-  try {
-    const courseId = req.params.courseId;
-    const professorId = req.session.user._id;
+    try {
+        const courseId = req.params.courseId;
+        const professorId = req.session.user._id;
 
-    await createFeedbackSurvey(courseId, professorId);
+        await createFeedbackSurvey(courseId, professorId);
 
-    req.session.successMessage = "✅ Course survey created and sent out to students!";
+        req.session.successMessage = "✅ Course survey created and sent out to students!";
 
-    // 👇 Ensure the session is saved before redirect
-    req.session.save(() => {
-      res.redirect(`/professor/course/${courseId}/analytics`);
-    });
-  } catch (e) {
-    console.error(e);
-    return res.status(500).render("error", {
-      error: "Could not create survey. It may already exist.",
-    });
-  }
+        // 👇 Ensure the session is saved before redirect
+        req.session.save(() => {
+            res.redirect(`/professor/course/${courseId}/analytics`);
+        });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).render("error", {
+            error: "Could not create survey. It may already exist.",
+        });
+    }
 });
-
 
 
 router.post("/course/:courseId/set-schedule", verifyProfessorOwnsCourse, async (req, res) => {

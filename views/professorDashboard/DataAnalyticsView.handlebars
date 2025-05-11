@@ -2,103 +2,170 @@
     body {
         margin: 0;
         padding: 0;
-        background-color: #f1f5f9;
+        background-color: #f8fafc;
         font-family: "Segoe UI", sans-serif;
-    }
-
-
-    .dashboard-container {
-        padding: 2rem 3rem;
-    }
-
-    .dashboard-header h1 {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
         color: #1f2937;
     }
 
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+    }
+
+    .dashboard-header h1 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        color: #1e3a8a;
+    }
+
     .card {
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        margin-bottom: 1.5rem;
+        border-radius: 1rem;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
     }
 
     .card-header {
-        border-bottom: 1px solid #e2e8f0;
         font-weight: 600;
-        font-size: 1.1rem;
+        font-size: 1.125rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #e5e7eb;
     }
 
-    .table th,
-    .table td {
-        vertical-align: middle !important;
+    .card-body {
+        padding: 1.25rem;
     }
 
     .analytics-grid {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 1rem;
-        flex-wrap: wrap;
     }
 
     .analytics-card {
-        flex: 1 1 200px;
         background-color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        padding: 1rem 1.25rem;
+        border-radius: 1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        border-left: 4px solid #2563eb;
     }
 
     .analytics-card h3 {
-        font-size: 1rem;
-        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
         color: #6b7280;
+        margin-bottom: 0.25rem;
     }
 
     .analytics-value {
         font-size: 1.5rem;
-        font-weight: 600;
+        font-weight: 700;
         color: #111827;
+    }
+
+    .alert {
+        margin-bottom: 2rem;
+    }
+
+    .feedback-card {
+        border-left: 4px solid #2563eb;
+        background-color: #ffffff;
+        border-radius: 1rem;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .feedback-card h5 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #2563eb;
+    }
+
+    .feedback-section p {
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .section-heading {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
     }
 
     .btn {
         font-weight: 500;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1.25rem;
+    }
+
+    .btn-outline-primary,
+    .btn-outline-secondary,
+    .btn-outline-success,
+    .btn-outline-warning,
+    .btn-outline-info {
+        border-width: 2px;
     }
 
     @media (max-width: 768px) {
         .dashboard-container {
-            padding: 1.5rem;
-        }
-
-        .analytics-grid {
-            flex-direction: column;
+            padding: 1.5rem 1rem;
         }
     }
 </style>
 <div class="dashboard-container">
     <div class="dashboard-header">
-        <h1>Data Analytics of your class: {{course.courseCode}} {{course.courseName}}</h1>
+        <h1>📊 Class Dashboard – {{course.courseCode}} {{course.courseName}}</h1>
     </div>
+
     {{#if successMessage}}
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{successMessage}}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> {{successMessage}}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
     {{/if}}
 
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-            <h4 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i> Anonymous Feedback Survey</h4>
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <i class="bi bi-bar-chart-fill me-2"></i> Anonymous Feedback Survey
         </div>
         <div class="card-body">
             <form action="/professor/course/{{course._id}}/feedback/create" method="POST">
-                <button type="submit" class="btn btn-success" {{#if surveyExists}}disabled{{/if}}>
+                <button type="submit" class="btn btn-primary" {{#if surveyExists}}disabled{{/if}}>
                     <i class="bi bi-envelope-paper me-1"></i>
                     {{#if surveyExists}}Survey Already Sent{{else}}Create Anonymous Survey{{/if}}
                 </button>
             </form>
         </div>
     </div>
+
+    {{#if feedbackResponses.length}}
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <i class="bi bi-chat-dots me-2"></i> Anonymous Feedback ({{feedbackResponses.length}})
+        </div>
+        <div class="card-body">
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                {{#each feedbackResponses}}
+                <div class="col">
+                    <div class="feedback-card">
+                        <h5><i class="bi bi-star-fill text-warning me-1"></i> {{this.rating}} / 10</h5>
+                        <div class="feedback-section">
+                            <p><strong>✅ What went well:</strong> {{this.q1answer}}</p>
+                            <p><strong>🛠️ What went Wrong:</strong> {{this.q2answer}}</p>
+                            <p><strong>💬 Improvements:</strong> {{this.q3answer}}</p>
+                        </div>
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+    </div>
+    {{else}}
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-info-circle me-2"></i> No anonymous feedback submitted yet.
+    </div>
+    {{/if}}
 
 
     <!-- Set Course Schedule Section -->

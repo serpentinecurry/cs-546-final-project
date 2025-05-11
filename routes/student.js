@@ -302,6 +302,10 @@ router.route("/courses/:id").get(checkActiveEnrollment, async (req, res) => {
             "studentResponses.studentId": {$ne: studentId}
         });
 
+
+        const successMessage = req.session.successMessage || null;
+        req.session.successMessage = null; // ✅ clear before rendering
+
         return res.render("student/student", {
             layout: "main",
             partialToRender: "course-details",
@@ -309,9 +313,11 @@ router.route("/courses/:id").get(checkActiveEnrollment, async (req, res) => {
             professor,
             lectures: formattedLectures,
             user: withUser(req),
-            feedbackSurvey: activeSurvey || null
+            feedbackSurvey: activeSurvey || null,
+            successMessage
         });
-        req.session.successMessage = null; // Clear after showing once
+
+
     } catch (error) {
         console.error("❌ ERROR in /student/courses/:id →", error);
         return res.status(400).render("error", {
@@ -323,36 +329,36 @@ router.route("/courses/:id").get(checkActiveEnrollment, async (req, res) => {
 });
 
 router.route("/course/:courseId/feedback").get(async (req, res) => {
-        try {
-            const courseId = req.params.courseId;
-            const studentId = req.session.user._id;
+    try {
+        const courseId = req.params.courseId;
+        const studentId = req.session.user._id;
 
-            const feedbackCollection = await feedback();
-            const feedbackSurvey = await feedbackCollection.findOne({
-                courseId: new ObjectId(courseId),
-                addedAt: {$gte: dayjs().subtract(5, "day").toDate()},
-                "studentResponses.studentId": {$ne: studentId}
+        const feedbackCollection = await feedback();
+        const feedbackSurvey = await feedbackCollection.findOne({
+            courseId: new ObjectId(courseId),
+            addedAt: {$gte: dayjs().subtract(5, "day").toDate()},
+            "studentResponses.studentId": {$ne: studentId}
+        });
+
+        if (!feedbackSurvey) {
+            return res.status(403).render("error", {
+                error: "Survey not available or already submitted."
             });
-
-            if (!feedbackSurvey) {
-                return res.status(403).render("error", {
-                    error: "Survey not available or already submitted."
-                });
-            }
-
-            const content = feedbackSurvey.content[0];
-
-            res.render("student/feedbackForm", {
-                layout: "main",
-                courseId,
-                feedbackId: feedbackSurvey._id.toString(),
-                content
-            });
-        } catch (e) {
-            console.error("GET feedback error:", e);
-            res.status(500).render("error", {error: "Failed to load survey."});
         }
-    })
+
+        const content = feedbackSurvey.content[0];
+
+        res.render("student/feedbackForm", {
+            layout: "main",
+            courseId,
+            feedbackId: feedbackSurvey._id.toString(),
+            content
+        });
+    } catch (e) {
+        console.error("GET feedback error:", e);
+        res.status(500).render("error", {error: "Failed to load survey."});
+    }
+})
     .post(async (req, res) => {
         try {
             const {feedbackId, rating, q1answer, q2answer, q3answer} = req.body;
