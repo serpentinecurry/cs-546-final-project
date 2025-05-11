@@ -74,4 +74,53 @@ const lecturesToEventObjects = (lectures) => {
   return events;
 };
 
+const getOfficeHours = async (studentId) => {
+  const userCollection = await users();
+  const student = await userCollection.findOne({
+    _id: new ObjectId(studentId),
+  });
+
+  if (!student) throw `Student with ID ${studentId} not found`;
+
+  const courseCollection = await courses();
+  // get courses that the student is in
+  const studentCourses = await courseCollection
+    .find({
+      "studentEnrollments.studentId": new ObjectId(studentId),
+      "studentEnrollments.status": "active",
+    })
+    .toArray();
+
+  const officeHours = [];
+
+  for (let course in studentCourses) {
+    let professorOfficeHours = course.professorOfficeHours;
+    const professor = await userCollection.findOne({
+      _id: course.professorId
+    });
+
+    for (item in professorOfficeHours) {
+      item.name = professor.firstName + " " + professor.lastName;
+    }
+
+    let taOfficeHours = course.taOfficeHours;
+
+    for (let item in taOfficeHours) {
+      const ta = await userCollection.findOne({
+        _id: item.taId
+      });
+
+      item.name = ta.firstName + " " + ta.lastName;
+    }
+
+    officeHours = officeHours.concat(course.professorOfficeHours, course.taOfficeHours);
+  }
+
+  return officeHoursToEventObjects(officeHours);
+}
+
+const officeHoursToEventObjects = (officeHours) => {
+  return [];
+}
+
 export default { getStudentLectures };
