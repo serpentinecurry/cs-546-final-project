@@ -1308,4 +1308,60 @@ router.post("/ta/officeHour/delete", async (req, res) => {
     }
 });
 
+router.get("/contact-tas", async (req, res) => {
+  try {
+    const user = req.session.user;
+    const studentCourses = user.enrolledCourses || [];
+    const allCourses = await coursesData.getAllCourses();
+    const usersCollection = await users();
+    const taList = [];
+
+    for (const course of allCourses) {
+      if (studentCourses.some((id) => id.toString() === course._id.toString())) {
+        if (Array.isArray(course.taOfficeHours)) {
+          for (const taEntry of course.taOfficeHours) {
+            const taUser = await usersCollection.findOne({ _id: new ObjectId(taEntry.taId) });
+            if (taUser) {
+              taList.push({
+                _id: taUser._id,
+                fullName: `${taUser.firstName} ${taUser.lastName}`,
+                courseName: course.courseName,
+                courseId: course._id.toString(),
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return res.render("student/student", {
+      layout: "main",
+      user,
+      currentPage: "contactTas",
+      partialToRender: "contactTas",
+      taList,
+    });
+  } catch (e) {
+    return res.status(500).render("error", { error: "Error loading TA contact page." });
+  }
+});
+//
+// router.route("/messages").get(async (req, res) => {
+//     res.render("student/student", {
+//         layout: "main",
+//         partialToRender: "messages",
+//         user: withUser(req),
+//         currentPage: "messages"
+//     });
+// });
+//
+// router.route("/settings").get(async (req, res) => {
+//     res.render("student/student", {
+//         layout: "main",
+//         partialToRender:"settings",
+//         user: withUser(req),
+//         currentPage: "settings"
+//     });
+// });
+
 export default router;

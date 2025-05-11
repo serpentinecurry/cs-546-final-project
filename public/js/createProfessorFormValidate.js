@@ -99,6 +99,7 @@
         if (!isValidDateString(dateOfBirth.value)) {
           throw "Invalid date of birth";
         }
+        createProfessorForm.submit();
       } catch (error) {
         errorContainer.hidden = false;
         errorContainer.textContent =

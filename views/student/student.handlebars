@@ -364,6 +364,11 @@
           <i class="bi bi-gear"></i> Request Changes
         </a>
       </li>
+<li class="nav-item">
+  <a href="/student/contact-tas" class="nav-link {{#ifEquals currentPage 'contactTAs'}}active{{/ifEquals}}">
+    <i class="bi bi-chat-dots"></i> Contact TAs
+  </a>
+</li>
       {{#ifEquals user.role "ta"}}
         <li class="nav-item">
         <a href="/student/ta/officeHour" class="nav-link {{#ifEquals currentPage 'taOfficeHours'}}active{{/ifEquals}}">

@@ -1,0 +1,42 @@
+<h2>Contact TAs</h2>
+
+{{#each taList}}
+  <div class="ta-chat-card" style="margin-bottom: 1rem; border: 1px solid #ccc; padding: 1rem; border-radius: 8px;">
+    <h4>{{this.fullName}} <small style="font-weight: normal;">({{this.courseName}})</small></h4>
+    <div id="chatBox-{{@index}}" style="height: 200px; overflow-y: scroll; background: #f9f9f9; padding: 0.5rem; border-radius: 5px; margin-bottom: 0.5rem;"></div>
+    <input type="text" id="input-{{@index}}" placeholder="Type message..." style="width: 75%; padding: 0.5rem;">
+    <button class="submit-btn" onclick="sendMsg({{@index}}, '{{this.courseId}}', '{{this._id}}')">Send</button>
+  </div>
+{{/each}}
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  {{#each taList}}
+    socket.emit('join-room', '{{this.courseId}}');
+  {{/each}}
+
+  function sendMsg(index, courseId, taId) {
+    const input = document.getElementById(`input-${index}`);
+    const chatBox = document.getElementById(`chatBox-${index}`);
+    const msg = input.value.trim();
+    if (msg) {
+      socket.emit("student-message", { courseId, taId, message: msg, sender: "Student" });
+      const p = document.createElement("p");
+      p.textContent = `You: ${msg}`;
+      chatBox.appendChild(p);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      input.value = "";
+    }
+  }
+
+  socket.on("ta-receive", (data) => {
+    const index = {{taList.length}}; // rough fallback if needed
+    const chatBox = document.getElementById(`chatBox-${index}`);
+    const p = document.createElement("p");
+    p.textContent = `TA: ${data.message}`;
+    chatBox.appendChild(p);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+</script>
