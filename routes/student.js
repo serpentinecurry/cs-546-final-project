@@ -1044,7 +1044,10 @@ router.route("/calendar").get(async (req, res) => {
   console.log(">>> Session user in /calendar:", req.session.user);
 
   try {
-    const events = await calendarData.getStudentLectures(req.session.user._id);
+    const lectures = await calendarData.getStudentLectures(req.session.user._id);
+    const officeHours = await calendarData.getOfficeHours(req.session.user._id);
+    let events = lectures.concat(officeHours);
+    
     return res.render("student/student", {
       layout: "main",
       partialToRender: "calendar",
