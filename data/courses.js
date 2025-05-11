@@ -1,5 +1,5 @@
 import {ObjectId} from "mongodb";
-import {stringValidate, parse12HourTime} from "../validation.js";
+import {stringValidate, parse12HourTime, isStartBeforeEnd, isValid24Hour} from "../validation.js";
 import {users, courses} from "../config/mongoCollections.js";
 
 const createCourse = async (courseName, courseCode, professorId) => {
@@ -330,22 +330,55 @@ const updateCourseInfo = async (courseId, newName, newCode) => {
 const addProfessorOfficeHour = async(courseId, officeHourObj) =>{
     courseId = stringValidate(courseId);
     if (typeof officeHourObj !== "object") throw "Missing or invalid inputs.";
-    const { day, startTime, endTime, location, notes } = officeHourObj;
-    const validDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    let { day, startTime, endTime, location, notes } = officeHourObj;
+    let validDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
     if (!validDays.includes(day)) throw "Invalid day. Must be a valid weekday no weekends!";
-    const convertedStart = parse12HourTime(startTime);
-    const convertedEnd = parse12HourTime(endTime);
-    if (!convertedStart || !convertedEnd)  throw "Invalid time format. Use HH:MM AM/PM (e.g., 2:30 PM).";
+    if (!isValid24Hour(startTime) || !isValid24Hour(endTime))
+  throw "Invalid time format. Must be HH:MM (24-hour format).";
+
+if (!isStartBeforeEnd(startTime, endTime))
+  throw "Start time must be earlier than end time.";
+
     location = stringValidate(location)
     const courseCollection = await courses()
+    // Get the professorId from the current course
+    const currentCourse = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+    if (!currentCourse) throw "Course not found.";
+    const professorId = currentCourse.professorId;
+    const allCourses = await courseCollection
+  .find({ professorId: professorId })
+  .toArray();
+    const allOfficeHoursSameDay = [];
+
+for (const course of allCourses) {
+  for (const oh of course.professorOfficeHours || []) {
+    if (oh.day === day) {
+      allOfficeHoursSameDay.push({
+        startTime: oh.startTime,
+        endTime: oh.endTime,
+        courseId: course._id
+      });
+    }
+  }
+}
+const timesOverlap = (startA, endA, startB, endB) => {
+  return startA < endB && startB < endA;
+};
+
+    for (const oh of allOfficeHoursSameDay) {
+  if (timesOverlap(startTime, endTime, oh.startTime, oh.endTime)) {
+    throw `Time conflict with existing office hours for course from ${oh.startTime} to ${oh.endTime} on ${day}`;
+  }
+}
+
     const updateResult = await courseCollection.updateOne(
     { _id: new ObjectId(courseId) },
     {
       $push: {
         professorOfficeHours: {
           day,
-          startTime: convertedStart,
-          endTime: convertedEnd,
+          startTime,
+          endTime,
           location: location.trim(),
           notes: notes?.toString().trim() || "",
         },
@@ -354,6 +387,32 @@ const addProfessorOfficeHour = async(courseId, officeHourObj) =>{
   );
     if (updateResult.modifiedCount === 0) throw "Failed to add office hour. Course may not exist.";
     return { added: true };
+}
+
+const deleteProfessorOfficeHour = async (courseId, officeHourObj) => {
+    if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
+
+  const { day, startTime, endTime } = officeHourObj;
+  if (!day || !startTime || !endTime) throw "Missing office hour info.";
+
+  const courseCollection = await courses();
+
+  const updateResult = await courseCollection.updateOne(
+    { _id: new ObjectId(courseId) },
+    {
+      $pull: {
+        professorOfficeHours: {
+          day,
+          startTime,
+          endTime
+        }
+      }
+    }
+  );
+
+  if (updateResult.modifiedCount === 0) throw "Failed to delete office hour.";
+
+  return { deleted: true };
 }
 
 export default {
@@ -367,5 +426,7 @@ export default {
     NumOfStudentsInCourse,
     requestEnrollment,
     getStudentEnrolledCourses,
-    updateCourseInfo
+    updateCourseInfo,
+    addProfessorOfficeHour,
+    deleteProfessorOfficeHour
 };

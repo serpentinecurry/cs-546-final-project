@@ -1,0 +1,51 @@
+<h2 class="text-xl font-bold mb-4">Current Professor Office Hours</h2>
+
+{{#if professorOfficeHours.length}}
+  <table class="table table-bordered table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>Day</th>
+        <th>Start Time</th>
+        <th>End Time</th>
+        <th>Location</th>
+        <th>Notes</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each professorOfficeHours}}
+        <tr>
+          <td>{{this.day}}</td>
+          <td>{{this.startTime}}</td>
+          <td>{{this.endTime}}</td>
+          <td>{{this.location}}</td>
+          <td>{{this.notes}}</td>
+          <td>
+  <form method="POST" action="/professor/course/{{../courseId}}/delete-office-hour" onsubmit="return confirm('Are you sure you want to delete this office hour?');">
+    <input type="hidden" name="day" value="{{this.day}}" />
+    <input type="hidden" name="startTime" value="{{this.startTime}}" />
+    <input type="hidden" name="endTime" value="{{this.endTime}}" />
+    <button type="submit" class="btn btn-sm btn-danger">
+      <i class="bi bi-trash3"></i> Delete
+    </button>
+  </form>
+        </td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+{{else}}
+  <div class="text-muted">No office hours added yet.</div>
+{{/if}}
+
+<div class="mt-4 text-end">
+  <a href="/professor/course/{{courseId}}/add-office-hour" class="btn btn-success">
+    <i class="bi bi-calendar-plus me-1"></i> Add Office Hour
+  </a>
+</div>
+<div class="mt-4">
+  <a href="/professor/course/{{courseId}}/analytics" class="btn btn-secondary">
+    <i class="bi bi-arrow-left-circle me-1"></i> Back to Analytics
+  </a>
+</div>
+

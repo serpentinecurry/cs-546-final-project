@@ -99,6 +99,16 @@ const parse12HourTime = (timeStr) => {
   return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
 };
 
+const isValid24Hour = (timeStr) => {
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(timeStr);
+};
+
+const isStartBeforeEnd = (start, end) => {
+  let [sh, sm] = start.split(":").map(Number);
+  let [eh, em] = end.split(":").map(Number);
+  return sh < eh || (sh === eh && sm < em);
+};
+
 export {
   stringValidate,
   azAZLenValidate,
@@ -106,5 +116,7 @@ export {
   passwordValidate,
   isValidDateString,
   calculateAge,
-  parse12HourTime
+  parse12HourTime,
+  isValid24Hour,
+  isStartBeforeEnd
 };

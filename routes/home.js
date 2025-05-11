@@ -145,7 +145,7 @@ router.route("/logout").get(async (req, res) => {
 
 router
   .route("/forgot-password")
-  .get(preventDoubleLogin,async (req, res) => {
+  .get(preventDoubleLogin, async (req, res) => {
     res.render("forgotPassword", { error: null });
   })
   .post(async (req, res) => {
@@ -194,11 +194,14 @@ router
     const { token } = req.params;
     const { newPassword, confirmPassword } = req.body;
     try {
-      passwordValidate(newPassword)
+      passwordValidate(newPassword);
     } catch (error) {
       return res.render("resetPassword", {
         token,
-        error: typeof error === "string" ? error : error.message || "Invalid Password!",
+        error:
+          typeof error === "string"
+            ? error
+            : error.message || "Invalid Password!",
       });
     }
     if (newPassword !== confirmPassword) {

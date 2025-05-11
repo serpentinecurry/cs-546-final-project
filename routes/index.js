@@ -14,7 +14,7 @@ const constructorMethod = (app) => {
 
   // Student routes
   app.use("/student", studentRoutes);
-  app.use("/professor", professorRoutes)
+  app.use("/professor", professorRoutes);
 
   // 404 handler for unmatched routes
   app.use(/(.*)/, (req, res) => {
