@@ -63,11 +63,35 @@
         padding: 1.5rem;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
     }
+
+    .schedule-card {
+        border-left: 5px solid #4f46e5;
+        background: #f9fafe;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+        transition: all 0.3s ease;
+    }
+
+    .schedule-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .badge-day {
+        background: #dbeafe;
+        color: #1d4ed8;
+        font-size: 0.85rem;
+        margin: 3px;
+        padding: 6px 14px;
+        border-radius: 50px;
+        font-weight: 600;
+        display: inline-block;
+    }
 </style>
 
 <div class="container py-4">
-    <!-- Header -->
-    <div class="course-header mb-5">
+    <!-- 🔷 Header -->
+    <div class="course-header mb-4">
         <h1><i class="bi bi-book-half me-2"></i> {{course.courseName}}</h1>
         <p class="mb-1">
             <i class="bi bi-code-slash me-1"></i> <strong>Course Code:</strong> {{course.courseCode}}
@@ -82,19 +106,42 @@
         {{/if}}
     </div>
 
-    <!-- Quick Action Buttons -->
+    <!-- 🗓️ Schedule -->
+    <div class="shadow-card mb-5 schedule-card">
+        <h4 class="mb-3 text-primary text-center"><i class="bi bi-calendar-event me-2"></i>Schedule</h4>
+        <div class="text-center">
+            {{#if course.courseMeetingDays.length}}
+                <p class="mb-2">
+                    <strong>Days:</strong>
+                    {{#each course.courseMeetingDays}}
+                        <span class="badge-day">{{this.day}}</span>
+                    {{/each}}
+                </p>
+            {{/if}}
+
+            {{#if course.courseMeetingTime.length}}
+                <p class="mb-0">
+                    <strong>Times:</strong><br />
+                    {{#each course.courseMeetingTime}}
+                        <span class="d-block">{{this.startTime}} – {{this.endTime}}</span>
+                    {{/each}}
+                </p>
+            {{/if}}
+        </div>
+    </div>
+
+    <!-- 🎯 Action Buttons -->
     <div class="course-section text-center d-flex justify-content-center gap-3 flex-wrap">
         <a href="/student/courses/{{course._id}}/members" class="btn btn-outline-primary btn-tubular btn-icon">
             <i class="bi bi-people-fill"></i> Class Members
         </a>
 
-        <a href="/student/{{course._id}}/attendance"
-           class="btn btn-outline-success btn-tubular btn-icon">
+        <a href="/student/{{course._id}}/attendance" class="btn btn-outline-success btn-tubular btn-icon">
             <i class="bi bi-journal-text fs-5"></i> Attendance Record
         </a>
     </div>
 
-    <!-- Announcements -->
+    <!-- 📢 Announcements -->
     <div class="course-section">
         <div class="shadow-card">
             <h4 class="mb-3 text-primary"><i class="bi bi-megaphone-fill me-2"></i>Announcements</h4>
@@ -110,7 +157,7 @@
         </div>
     </div>
 
-    <!-- Lectures -->
+    <!-- 📚 Lectures -->
     <div class="course-section">
         <div class="shadow-card">
             <h4 class="mb-3 text-primary"><i class="bi bi-easel2-fill me-2"></i>Lectures</h4>
@@ -118,28 +165,28 @@
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle">
                         <thead class="table-light">
-                        <tr>
-                            <th>#</th>
-                            <th>Title</th>
-                            <th>Date</th>
-                            <th>Time</th>
-                            <th>Actions</th>
-                        </tr>
+                            <tr>
+                                <th>#</th>
+                                <th>Title</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Actions</th>
+                            </tr>
                         </thead>
                         <tbody>
-                        {{#each lectures}}
-                            <tr>
-                                <td>{{inc @index}}</td>
-                                <td>{{this.title}}</td>
-                                <td>{{this.date}}</td>
-                                <td>{{this.time.start}} - {{this.time.end}}</td>
-                                <td>
-                                    <a href="/student/courses/{{../course._id}}/lectures/{{this._id}}" class="btn btn-sm btn-outline-primary">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
-                        {{/each}}
+                            {{#each lectures}}
+                                <tr>
+                                    <td>{{inc @index}}</td>
+                                    <td>{{this.title}}</td>
+                                    <td>{{this.date}}</td>
+                                    <td>{{this.time.start}} - {{this.time.end}}</td>
+                                    <td>
+                                        <a href="/student/courses/{{../course._id}}/lectures/{{this._id}}" class="btn btn-sm btn-outline-primary">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            {{/each}}
                         </tbody>
                     </table>
                 </div>
@@ -149,7 +196,7 @@
         </div>
     </div>
 
-    <!-- Back Button -->
+    <!-- 🔙 Back -->
     <div class="text-center mt-5">
         <a href="/student/my-courses" class="btn btn-outline-secondary btn-back shadow-sm">
             <i class="bi bi-arrow-left me-2"></i> Back to My Courses

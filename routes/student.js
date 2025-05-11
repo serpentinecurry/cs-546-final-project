@@ -146,16 +146,19 @@ router.route("/enroll/:courseId").post(async (req, res) => {
         req.session.successMessage = "✅ Enrollment request sent successfully!";
         res.redirect("/student/all-courses");
     } catch (e) {
+        const allCourses = await coursesData.getAllCoursesForStudent(req.session.user._id);
         res.status(400).render("student/student", {
             layout: "main",
             partialToRender: "all-courses",
             error: e,
-            courses: await coursesData.getAllCoursesForStudent(req.session.user._id),
+            errorCourseId: req.params.courseId,
+            courses: allCourses,
             searchQuery: "",
             user: withUser(req),
         });
     }
 });
+
 
 router.post("/unenroll/:courseId", async (req, res) => {
     const studentId = req.session.user._id;

@@ -92,79 +92,121 @@ const deleteCourse = async (courseId) => {
 
 
 const getEnrolledStudents = async (courseId) => {
-  courseId = stringValidate(courseId);
-  if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
+    courseId = stringValidate(courseId);
+    if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
 
-  const coursesCollection = await courses();
-  const usersCollection = await users();
+    const coursesCollection = await courses();
+    const usersCollection = await users();
 
-  const course = await coursesCollection.findOne({ _id: new ObjectId(courseId) });
-  if (!course) throw "Course not found.";
+    const course = await coursesCollection.findOne({_id: new ObjectId(courseId)});
+    if (!course) throw "Course not found.";
 
-  const activeRequests = course.studentEnrollments?.filter(
-    (req) => req.status === "active"
-  ) || [];
+    const activeRequests = course.studentEnrollments?.filter(
+        (req) => req.status === "active"
+    ) || [];
 
-  const studentIds = activeRequests.map((req) => new ObjectId(req.studentId));
+    const studentIds = activeRequests.map((req) => new ObjectId(req.studentId));
 
-  const enrolledStudents = await usersCollection.find({
-    _id: { $in: studentIds },
-    user_role: "student",
-  }).toArray();
+    const enrolledStudents = await usersCollection.find({
+        _id: {$in: studentIds},
+        user_role: "student",
+    }).toArray();
 
-  return enrolledStudents;
+    return enrolledStudents;
 };
 
 
 const NumOfStudentsInCourse = async (courseId) => {
-  const students = await getEnrolledStudents(courseId);
-  return students.length;
+    const students = await getEnrolledStudents(courseId);
+    return students.length;
 };
 
 
 const requestEnrollment = async (courseId, studentId) => {
     courseId = stringValidate(courseId);
     studentId = stringValidate(studentId);
-    if (!ObjectId.isValid(courseId) || !ObjectId.isValid(studentId)) throw "Invalid IDs.";
+
+    if (!ObjectId.isValid(courseId) || !ObjectId.isValid(studentId)) {
+        throw "Invalid course or student ID.";
+    }
 
     const coursesCollection = await courses();
+    const targetCourse = await coursesCollection.findOne({_id: new ObjectId(courseId)});
 
-    const course = await coursesCollection.findOne({_id: new ObjectId(courseId)});
-    if (!course) throw "Course not found.";
+    if (!targetCourse) throw "Course not found.";
 
-    // Block if already active or pending
-    const alreadyRequested = course.studentEnrollments?.some(
+    // 🟡 Schedule Conflict Check
+    const studentActiveCourses = await coursesCollection.find({
+        studentEnrollments: {
+            $elemMatch: {
+                studentId: new ObjectId(studentId),
+                status: "active"
+            }
+        }
+    }).toArray();
+
+    for (const enrolledCourse of studentActiveCourses) {
+        for (const enrolledDay of enrolledCourse.courseMeetingDays || []) {
+            for (const enrolledTime of enrolledCourse.courseMeetingTime || []) {
+                const enrolledStart = parseMilitaryTime(enrolledTime.startTime);
+                const enrolledEnd = parseMilitaryTime(enrolledTime.endTime);
+
+                for (const targetDay of targetCourse.courseMeetingDays || []) {
+                    if (enrolledDay.day === targetDay.day) {
+                        for (const targetTime of targetCourse.courseMeetingTime || []) {
+                            const targetStart = parseMilitaryTime(targetTime.startTime);
+                            const targetEnd = parseMilitaryTime(targetTime.endTime);
+
+                            if (timesOverlap(enrolledStart, enrolledEnd, targetStart, targetEnd)) {
+                                throw `Schedule conflict: ${enrolledCourse.courseCode} - ${enrolledCourse.courseName} on ${enrolledDay.day} (${enrolledTime.startTime} – ${enrolledTime.endTime})`;
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 🟡 Check if already applied or enrolled
+    const alreadyRequested = targetCourse.studentEnrollments?.some(
         (r) =>
             r.studentId.toString() === studentId &&
             (r.status === "pending" || r.status === "active")
     );
-    if (alreadyRequested) throw "⚠️ You have already requested enrollment for this course.";
 
-    // If the status is inactive, reactivate it
-    const inactiveRequestIndex = course.studentEnrollments?.findIndex(
+    if (alreadyRequested) {
+        throw "⚠️ You have already requested enrollment for this course.";
+    }
+
+    // 🟡 Reactivate if previously inactive
+    const inactiveIndex = targetCourse.studentEnrollments?.findIndex(
         (r) =>
             r.studentId.toString() === studentId &&
             r.status === "inactive"
     );
 
-    if (inactiveRequestIndex !== -1) {
+    if (inactiveIndex !== -1) {
         const updateInfo = await coursesCollection.updateOne(
             {
                 _id: new ObjectId(courseId),
-                [`studentEnrollments.${inactiveRequestIndex}.studentId`]: new ObjectId(studentId),
+                [`studentEnrollments.${inactiveIndex}.studentId`]: new ObjectId(studentId)
             },
             {
                 $set: {
-                    [`studentEnrollments.${inactiveRequestIndex}.status`]: "pending",
-                },
+                    [`studentEnrollments.${inactiveIndex}.status`]: "pending"
+                }
             }
         );
 
-        if (updateInfo.modifiedCount === 0) throw "Failed to re-request enrollment.";
+        if (updateInfo.modifiedCount === 0) {
+            throw "Failed to re-request enrollment.";
+        }
+
         return {enrollmentReRequested: true};
     }
 
-    // New request
+    // 🟢 New Enrollment Request
     const updateInfo = await coursesCollection.updateOne(
         {_id: new ObjectId(courseId)},
         {
@@ -172,15 +214,29 @@ const requestEnrollment = async (courseId, studentId) => {
                 studentEnrollments: {
                     studentId: new ObjectId(studentId),
                     status: "pending",
-                },
-            },
+                    appliedAt: new Date()
+                }
+            }
         }
     );
 
-    if (updateInfo.modifiedCount === 0) throw "Failed to request enrollment.";
+    if (updateInfo.modifiedCount === 0) {
+        throw "Failed to request enrollment.";
+    }
 
     return {enrollmentRequested: true};
 };
+
+// ⏰ Converts "HH:mm" to minutes from midnight
+function parseMilitaryTime(timeStr) {
+    const [h, m] = timeStr.split(":").map(Number);
+    return h * 60 + m;
+}
+
+// 📆 Checks if time intervals overlap
+function timesOverlap(start1, end1, start2, end2) {
+    return Math.max(start1, start2) < Math.min(end1, end2);
+}
 
 
 const getAllCoursesForStudent = async (studentId) => {
@@ -257,18 +313,18 @@ const getStudentEnrolledCourses = async (studentId) => {
     return enrolledCourses;
 };
 
-const updateCourseInfo = async(courseId, newName, newCode) => {
-  if (!ObjectId.isValid(courseId)) throw "Invalid course ID";
-  newName = stringValidate(newName);
-  newCode = stringValidate(newCode);
+const updateCourseInfo = async (courseId, newName, newCode) => {
+    if (!ObjectId.isValid(courseId)) throw "Invalid course ID";
+    newName = stringValidate(newName);
+    newCode = stringValidate(newCode);
 
-  const courseCollection = await courses();
-  const updateResult = await courseCollection.updateOne(
-    { _id: new ObjectId(courseId) },
-    { $set: { courseName: newName, courseCode: newCode } }
-  );
+    const courseCollection = await courses();
+    const updateResult = await courseCollection.updateOne(
+        {_id: new ObjectId(courseId)},
+        {$set: {courseName: newName, courseCode: newCode}}
+    );
 
-  if (updateResult.modifiedCount === 0) throw "No changes made to course info.";
+    if (updateResult.modifiedCount === 0) throw "No changes made to course info.";
 }
 
 export default {

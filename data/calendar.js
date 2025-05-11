@@ -1,6 +1,5 @@
 import { ObjectId } from 'mongodb';
 import { users, courses, lectures } from '../config/mongoCollections.js';
-// import { courseData } from './index.js';
 
 
 // function that returns an array of all lectures for a given student
