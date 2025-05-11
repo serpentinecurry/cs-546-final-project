@@ -1,35 +1,11 @@
 <style>
-  .profile-card {
-    background: linear-gradient(145deg, #ffffff, #f0f0f0);
-    border-radius: 1rem;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-    padding: 2.5rem;
-    max-width: 900px;
-    margin: auto;
-    transition: 0.3s ease;
-  }
-
-  .profile-card:hover {
-    transform: scale(1.01);
-    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.15);
-  }
-
-  .label {
-    font-weight: 500;
-    color: #6b7280;
-  }
-
-  .value {
-    color: #111827;
-  }
-
-  .btn-group-custom button {
-    min-width: 150px;
-  }
-
-  p{
-      font-size: 1.4rem;
-  }
+  .profile-card { background: linear-gradient(145deg, #ffffff, #f0f0f0);
+  border-radius: 1rem; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1); padding:
+  2.5rem; max-width: 900px; margin: auto; transition: 0.3s ease; }
+  .profile-card:hover { transform: scale(1.01); box-shadow: 0 14px 35px rgba(0,
+  0, 0, 0.15); } .label { font-weight: 500; color: #6b7280; } .value { color:
+  #111827; } .btn-group-custom button { min-width: 150px; } p{ font-size:
+  1.4rem; }
 
 </style>
 
@@ -39,44 +15,57 @@
   <div class="profile-card mb-5">
     <div class="row mb-3">
       <div class="col-md-6">
-        <p class="mb-1"><span class="label">👨‍💼 Name:</span> <span class="value">{{user.firstName}} {{user.lastName}}</span></p>
+        <p class="mb-1"><span class="label">👨‍💼 Name:</span>
+          <span class="value">{{user.firstName}} {{user.lastName}}</span></p>
       </div>
       <div class="col-md-6">
-        <p class="mb-1"><span class="label">📧 Email:</span> <span class="value">{{user.email}}</span></p>
+        <p class="mb-1"><span class="label">📧 Email:</span>
+          <span class="value">{{user.email}}</span></p>
       </div>
     </div>
 
     {{#if (eq user.role "student")}}
-    <div class="row mb-3">
-      <div class="col-md-6">
-        <p class="mb-1"><span class="label">📚 Major:</span> <span class="value">{{user.major}}</span></p>
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <p class="mb-1"><span class="label">📚 Major:</span>
+            <span class="value">{{user.major}}</span></p>
+        </div>
+        <div class="col-md-6">
+          <p class="mb-1"><span class="label">📝 Courses Enrolled:</span>
+            <span class="value">{{#each enrolledCourseCodes}}
+                <span class="badge bg-secondary me-1">{{this}}</span>
+              {{/each}}</span></p>
+        </div>
+
       </div>
-      <div class="col-md-6">
-        <p class="mb-1"><span class="label">📝 Courses Enrolled:</span> <span class="value">{{user.enrolledCourses}}</span></p>
-      </div>
-    </div>
     {{/if}}
 
     <div class="row mb-3">
       <div class="col-md-6">
-        <p class="mb-1"><span class="label">🎓 Role:</span> <span class="value text-capitalize">{{user.role}}</span></p>
+        <p class="mb-1"><span class="label">🎓 Role:</span>
+          <span class="value text-capitalize">{{user.role}}</span></p>
       </div>
       <div class="col-md-6">
-        <p class="mb-1"><span class="label">🎂 Age:</span> <span class="value">{{user.age}}</span></p>
+        <p class="mb-1"><span class="label">🎂 Age:</span>
+          <span class="value">{{user.age}}</span></p>
       </div>
     </div>
 
     <div class="row">
       <div class="col-md-6">
-        <p class="mb-1"><span class="label">⚧️ Gender:</span> <span class="value text-capitalize">{{user.gender}}</span></p>
+        <p class="mb-1"><span class="label">⚧️ Gender:</span>
+          <span class="value text-capitalize">{{user.gender}}</span></p>
       </div>
       <div class="col-md-6">
-        <p class="mb-1"><span class="label">📅 Signup Request:</span> <span class="value">{{user.userCreatedAt}}</span></p>
+        <p class="mb-1"><span class="label">📅 Signup Request:</span>
+          <span class="value">{{user.userCreatedAt}}</span></p>
       </div>
     </div>
   </div>
 
-  <div class="btn-group-custom d-flex flex-wrap justify-content-center gap-3 mb-4">
+  <div
+    class="btn-group-custom d-flex flex-wrap justify-content-center gap-3 mb-4"
+  >
     {{#if (eq user.accessStatus "Pending")}}
       <form method="POST" action="/admin/approve/{{user._id}}">
         <button type="submit" class="btn btn-success">✅ Approve</button>
@@ -90,7 +79,11 @@
       <form method="POST" action="/admin/approve/{{user._id}}">
         <button type="submit" class="btn btn-success">✅ Approve</button>
       </form>
-      <form method="POST" action="/admin/delete/{{user._id}}" onsubmit="return confirm('⚠️ Are you sure you want to delete this user? This action cannot be undone!');">
+      <form
+        method="POST"
+        action="/admin/delete/{{user._id}}"
+        onsubmit="return confirm('⚠️ Are you sure you want to delete this user? This action cannot be undone!');"
+      >
         <button type="submit" class="btn btn-outline-danger">🗑️ Delete</button>
       </form>
     {{/if}}
@@ -100,17 +93,18 @@
         <button type="submit" class="btn btn-danger">❌ Reject</button>
       </form>
 
-      {{#if (eq user.role "student")}}
+      {{!-- {{#if (eq user.role "student")}}
         <form method="POST" action="/admin/promote/{{user._id}}">
-          <button type="submit" class="btn btn-warning text-white">🎓 Promote to TA</button>
+          <button type="submit" class="btn btn-warning text-white">🎓 Promote to
+            TA</button>
         </form>
-      {{/if}}
+      {{/if}} --}}
 
-      {{#if (eq user.role "ta")}}
+      {{!-- {{#if (eq user.role "ta")}}
         <form method="POST" action="/admin/demote/{{user._id}}">
           <button type="submit" class="btn btn-secondary">⬇️ Demote to Student</button>
         </form>
-      {{/if}}
+      {{/if}} --}}
     {{/if}}
   </div>
 

@@ -1,100 +1,183 @@
-<form id="absenceForm" action="/student/absence-request" method="POST" enctype="multipart/form-data" class="p-4 shadow-sm rounded bg-white">
-  <h2 class="mb-4">Submit Absence Request</h2>
+<form id="absenceForm" action="/student/absence-request" method="POST" enctype="multipart/form-data"
+      class="p-4 shadow-sm rounded bg-white">
+    <h2 class="mb-4">Submit Absence Request</h2>
 
-  <div class="mb-3">
-    <label for="courseId" class="form-label">Select Course</label>
-    <select class="form-select" id="courseId" name="courseId" required>
-      <option disabled selected value="">-- Select a course --</option>
-      {{#each enrolledCourses}}
-        <option value="{{this._id}}">{{this.courseName}} ({{this.courseCode}})</option>
-      {{/each}}
-    </select>
-  </div>
+    {{#if error}}
+        <div class="alert alert-danger">{{error}}</div>
+    {{/if}}
 
-  <div class="mb-3">
-    <label for="reason" class="form-label">Reason</label>
-    <textarea class="form-control" id="reason" name="reason" rows="3" minlength="10" required></textarea>
-    <div class="form-text">Minimum 10 characters</div>
-  </div>
+    <div class="mb-3">
+        <label for="courseId" class="form-label">Select Course</label>
+        <select class="form-select {{#if error}}is-invalid{{/if}}" id="courseId" name="courseId" required>
+            <option disabled {{#unless selectedCourseId}}selected{{/unless}} value="">-- Select a course --</option>
+            {{#each enrolledCourses}}
+                <option value="{{this._id}}" {{#ifEquals ../selectedCourseId this._id}}selected{{/ifEquals}}>
+                    {{this.courseName}} ({{this.courseCode}})
+                </option>
+            {{/each}}
+        </select>
+    </div>
 
-  <div class="mb-3">
-    <label for="proofType" class="form-label">Proof Type</label>
-    <input type="text" class="form-control" id="proofType" name="proofType" placeholder="e.g. Doctor's note" required>
-  </div>
+    <div class="mb-3">
+        <label for="lectureId" class="form-label">Select Lecture</label>
+        <select class="form-select {{#if error}}is-invalid{{/if}}" id="lectureId" name="lectureId" required disabled>
+            <option disabled {{#unless selectedLectureId}}selected{{/unless}} value="">-- Select a lecture --</option>
+        </select>
+    </div>
 
-  <div class="mb-3">
-    <label for="proof" class="form-label">Upload Proof (PDF/Image)</label>
-    <input class="form-control" type="file" id="proof" name="proof" accept=".jpg,.jpeg,.png,.pdf" required />
-    <div class="form-text">Accepted formats: jpg, png, pdf</div>
-    <div id="preview" class="mt-3"></div>
-  </div>
+    <div class="mb-3">
+        <label for="reason" class="form-label">Reason</label>
+        <textarea class="form-control" id="reason" name="reason" rows="3" minlength="10"
+                  required>{{selectedReason}}</textarea>
+        <div class="form-text">Minimum 10 characters</div>
+        <div class="invalid-feedback">Reason must be at least 10 characters and not empty.</div>
+    </div>
 
-  <div class="d-grid">
-    <button type="submit" class="btn btn-primary btn-lg">Submit Request</button>
-  </div>
+    <div class="mb-3">
+        <label for="proofType" class="form-label">Proof Type</label>
+        <input type="text" class="form-control" id="proofType" name="proofType"
+               value="{{selectedProofType}}" placeholder="e.g. Doctor's note" required>
+        <div class="invalid-feedback">Proof type is required and must not be blank.</div>
+    </div>
+
+    <div class="mb-3">
+        <label for="proof" class="form-label">Upload Proof (PDF/Image)</label>
+        <input class="form-control" type="file" id="proof" name="proof" accept=".jpg,.jpeg,.png,.pdf" required/>
+        <div class="form-text">Accepted formats: jpg, png, pdf</div>
+        <div id="preview" class="mt-3"></div>
+    </div>
+
+    <div class="d-grid">
+        <button type="submit" class="btn btn-primary btn-lg">Submit Request</button>
+    </div>
 </form>
 
 {{#if user.absenceRequests.length}}
-  <h5 class="mt-5">Submitted Absence Requests</h5>
-  <div class="row row-cols-1 row-cols-md-2 g-4 mt-3">
-    {{#each user.absenceRequests}}
-      <div class="col">
-        <div class="card h-100 shadow-sm border-primary">
-          <div class="card-body">
-            <h5 class="card-title text-primary">{{this.courseDisplayName}}</h5>
-            <p class="card-text"><strong>Reason:</strong> {{this.reason}}</p>
-            <p class="card-text"><strong>Proof Type:</strong> {{this.proofType}}</p>
-            <p class="card-text">
-              <strong>Status:</strong>
-              {{#ifEquals this.accessStatus "pending"}}
-                <span class="badge bg-warning text-dark">Pending</span>
-              {{else ifEquals this.accessStatus "approved"}}
-                <span class="badge bg-success">Approved</span>
-              {{else}}
-                <span class="badge bg-danger">Rejected</span>
-              {{/ifEquals}}
-            </p>
-            <p class="card-text">
-              <small class="text-muted">Submitted on: {{this.requestedAt}}</small>
-            </p>
-          </div>
-          <div class="card-footer bg-transparent border-top-0">
-            <a href="{{this.proofDocumentLink}}" target="_blank" class="btn btn-outline-primary btn-sm w-100">
-              <i class="bi bi-file-earmark-text"></i> View Proof
-            </a>
-          </div>
-        </div>
-      </div>
-    {{/each}}
-  </div>
+    <h5 class="mt-5">Submitted Absence Requests</h5>
+    <div class="row row-cols-1 row-cols-md-2 g-4 mt-3">
+        {{#each user.absenceRequests}}
+            <div class="col">
+                <div class="card h-100 shadow-sm border-primary">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">{{this.courseDisplayName}}</h5>
+                        <h5 class="card-title text-secondary">{{this.lectureDisplayName}}</h5>
+                        <p class="card-text"><strong>Reason:</strong> {{this.reason}}</p>
+                        <p class="card-text"><strong>Proof Type:</strong> {{this.proofType}}</p>
+                        <p class="card-text">
+                            <strong>Status:</strong>
+                            {{#ifEquals this.status "pending"}}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {{else ifEquals this.status "approved"}}
+                                <span class="badge bg-success">Approved</span>
+                            {{else}}
+                                <span class="badge bg-danger">Rejected</span>
+                            {{/ifEquals}}
+                        </p>
+                        <p class="card-text">
+                            <small class="text-muted">Submitted on: {{this.requestedAt}}</small>
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <a href="{{this.proofDocumentLink}}" target="_blank"
+                           class="btn btn-outline-primary btn-sm w-100">
+                            <i class="bi bi-file-earmark-text"></i> View Proof
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {{/each}}
+    </div>
 {{/if}}
 
-
-
 <script>
-  document.getElementById('proof').addEventListener('change', function () {
-    const file = this.files[0];
-    const preview = document.getElementById('preview');
-    preview.innerHTML = '';
+    document.getElementById('proof').addEventListener('change', function () {
+        const file = this.files[0];
+        const preview = document.getElementById('preview');
+        preview.innerHTML = '';
 
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const img = document.createElement('img');
-        img.src = e.target.result;
-        img.classList.add('img-thumbnail', 'mt-2');
-        img.style.maxHeight = '150px';
-        preview.appendChild(img);
-      };
-      reader.readAsDataURL(file);
-    }
-  });
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.classList.add('img-thumbnail', 'mt-2');
+                img.style.maxHeight = '150px';
+                preview.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
-  document.getElementById('absenceForm').addEventListener('submit', function (e) {
-    const reason = document.getElementById('reason').value.trim();
-    if (reason.length < 10) {
-      e.preventDefault();
-      alert('Reason must be at least 10 characters long.');
-    }
-  });
+    document.getElementById('absenceForm').addEventListener('submit', function (e) {
+        const reasonInput = document.getElementById('reason');
+        const proofTypeInput = document.getElementById('proofType');
+        const reason = reasonInput.value.trim();
+        const proofType = proofTypeInput.value.trim();
+
+        reasonInput.value = reason;
+        proofTypeInput.value = proofType;
+
+        if (reason.length < 10) {
+            e.preventDefault();
+            reasonInput.classList.add('is-invalid');
+            reasonInput.focus();
+            return;
+        } else {
+            reasonInput.classList.remove('is-invalid');
+        }
+
+        if (proofType.length === 0) {
+            e.preventDefault();
+            proofTypeInput.classList.add('is-invalid');
+            proofTypeInput.focus();
+            return;
+        } else {
+            proofTypeInput.classList.remove('is-invalid');
+        }
+    });
+
+    document.getElementById("courseId").addEventListener("change", async function () {
+        const courseId = this.value;
+        const lectureSelect = document.getElementById("lectureId");
+        lectureSelect.innerHTML = '<option disabled selected value="">Loading...</option>';
+        lectureSelect.disabled = true;
+
+        try {
+            const res = await fetch(`/student/lectures/${courseId}`);
+            const lectures = await res.json();
+
+            lectureSelect.innerHTML = '<option disabled selected value="">-- Select a lecture --</option>';
+            lectures.forEach(lec => {
+                const option = document.createElement("option");
+                option.value = lec._id;
+                option.textContent = `${lec.lectureTitle} - ${lec.lectureDate}`;
+                if (lec.isDisabled) {
+                    option.disabled = true;
+                    option.textContent += " (Already Requested)";
+                }
+                lectureSelect.appendChild(option);
+            });
+
+            lectureSelect.disabled = false;
+        } catch (err) {
+            lectureSelect.innerHTML = '<option disabled value="">Failed to load lectures</option>';
+        }
+    });
+
+    // Trigger change immediately if a course already selected (server error response)
+    window.addEventListener("DOMContentLoaded", () => {
+        const selectedCourse = document.getElementById("courseId").value;
+        if (selectedCourse) {
+            document.getElementById("courseId").dispatchEvent(new Event("change"));
+        }
+    });
+
+    document.getElementById("courseId").addEventListener("change", function () {
+        this.classList.remove("is-invalid");
+    });
+
+    document.getElementById("lectureId").addEventListener("change", function () {
+        this.classList.remove("is-invalid");
+    });
+
 </script>

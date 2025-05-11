@@ -1,0 +1,43 @@
+<div class="container py-4">
+  <h1>Edit Lecture</h1>
+  <h3>Course: {{course.courseCode}} - {{course.courseName}}</h3>
+
+  <form action="/professor/course/{{course._id}}/lecture/{{lecture._id}}/edit" method="POST" class="mt-4">
+    <div class="mb-3">
+      <label for="lectureTitle" class="form-label">Lecture Title</label>
+      <input type="text" class="form-control" id="lectureTitle" name="lectureTitle" value="{{lecture.lectureTitle}}" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="lectureDate" class="form-label">Date</label>
+      <input type="date" class="form-control" id="lectureDate" name="lectureDate" value="{{lecture.lectureDate}}" required>
+    </div>
+
+    <div class="mb-3 row">
+      <div class="col">
+        <label for="lectureStartTime" class="form-label">Start Time</label>
+        <input type="time" class="form-control" id="lectureStartTime" name="lectureStartTime" value="{{lecture.lectureStartTime}}" required>
+      </div>
+      <div class="col">
+        <label for="lectureEndTime" class="form-label">End Time</label>
+        <input type="time" class="form-control" id="lectureEndTime" name="lectureEndTime" value="{{lecture.lectureEndTime}}" required>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label for="lectureDescription" class="form-label">Description</label>
+      <textarea class="form-control" id="lectureDescription" name="lectureDescription" rows="4">{{lecture.lectureDescription}}</textarea>
+    </div>
+
+    <div class="mb-3">
+      <label for="lectureMaterials" class="form-label">Materials URL</label>
+      <input type="url" class="form-control" id="lectureMaterials" name="lectureMaterials" value="{{lecture.lectureMaterials}}">
+      <div class="form-text">Link to slides, documents or other resources</div>
+    </div>
+
+    <div class="mt-4">
+      <button type="submit" class="btn btn-primary">Update Lecture</button>
+      <a href="/professor/course/{{course._id}}/lecture/{{lecture._id}}" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+  </form>
+</div>

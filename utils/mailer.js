@@ -35,8 +35,61 @@ const sendChangeApprovalEmail = async (toEmail, fullName, field, newValue) => {
            <br><h3>– Scholario Admin Team</h3>
            <br><h4>The final project for CS546: Web Programming I (Group_32)</h4>`,
   };
+  await transporter.sendMail(mailOptions);
+};
+
+const sendCredentialsEmail = async (toEmail, fullName, role, password) => {
+  const mailOptions = {
+    from: '"Scholario Admin" <no-reply@scholario.edu>',
+    to: toEmail,
+    subject: `Your Scholario account has been created`,
+    html: `
+      <h2>Welcome to Scholario, ${fullName}!</h2>
+      <p>An account has been created for you with the following credentials:</p>
+      <ul>
+        <li><strong>Email:</strong> ${toEmail}</li>
+        <li><strong>Password:</strong> ${password}</li>
+        <li><strong>Role:</strong> ${role}</li>
+      </ul>
+      <p>Please log in and change your password as soon as possible.</p>
+      <br>
+      <p>– Scholario Admin Team</p>
+    `,
+  };
 
   await transporter.sendMail(mailOptions);
 };
 
-export { sendApprovalEmail, sendChangeApprovalEmail };
+const sendResetEmail = async (toEmail, name, resetLink) => {
+  const mailOptions = {
+    from: `"Scholario Support" <${process.env.MAIL_USER}>`,
+    to: toEmail,
+    subject: "🔐 Reset Your Scholario Password",
+    html: `
+      <h2>Hey ${name},</h2>
+      <p>We received a request to reset your Scholario password.</p>
+      <p>Click the button below to reset it:</p>
+      <a href="${resetLink}" style="
+        background-color: #4f46e5;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 8px;
+        display: inline-block;
+        margin: 10px 0;
+      ">Reset Password</a>
+      <p>This link will expire in 15 minutes.</p>
+      <p>If you didn't request this, you can safely ignore this email.</p>
+      <br/>
+      <small>© Scholario Team</small>
+    `,
+  };
+  await transporter.sendMail(mailOptions);
+};
+
+export {
+  sendApprovalEmail,
+  sendChangeApprovalEmail,
+  sendCredentialsEmail,
+  sendResetEmail,
+};

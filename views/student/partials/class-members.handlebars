@@ -1,0 +1,114 @@
+<style>
+  .member-avatar {
+    width: 52px;
+    height: 52px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 50%;
+    background-color: rgba(180, 43, 234, 0.91);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+  }
+
+  .member-card .card {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .member-card .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  }
+
+  .member-info h5 {
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .member-info p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.95rem;
+  }
+
+  #noMatchMessage {
+    display: none;
+  }
+</style>
+
+<div class="mb-5">
+  <h2 class="mb-4 text-center text-primary fw-bold">
+    <i class="bi bi-people-fill me-2 fs-4"></i> Class Members
+  </h2>
+
+  <!-- Search Input -->
+  <div class="input-group mb-4 shadow-sm">
+    <span class="input-group-text bg-white border-end-0">
+      <i class="bi bi-search text-secondary"></i>
+    </span>
+    <input type="text" id="memberSearch" class="form-control border-start-0"
+           placeholder="Search by name or major..." aria-label="Search members">
+  </div>
+
+  {{#if classMembers.length}}
+    <!-- Members Grid -->
+    <div class="row row-cols-1 row-cols-md-2 g-3" id="membersList">
+      {{#each classMembers}}
+        <div class="col member-card">
+          <div class="card h-100 border-0 shadow-sm p-3 d-flex flex-row align-items-center gap-3">
+            <!-- Avatar -->
+            <div class="member-avatar">
+              {{this.initials}}
+            </div>
+
+            <!-- Info -->
+            <div class="member-info">
+              <h5 class="member-name">{{this.fullName}}</h5>
+              <p class="member-major fw-bold">{{this.major}}</p>
+            </div>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+
+    <!-- No Match Message -->
+    <div id="noMatchMessage" class="text-center text-muted mt-4">
+      <i class="bi bi-search me-2"></i> No matches found.
+    </div>
+  {{else}}
+    <div class="text-center text-muted mt-4">
+      <i class="bi bi-exclamation-circle me-2"></i>
+      No students enrolled in this class yet.
+    </div>
+  {{/if}}
+</div>
+
+<!-- Back Button -->
+<div class="text-center mt-4">
+  <a href="/student/courses/{{courseId}}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
+    <i class="bi bi-arrow-left me-2"></i> Back to Course Page
+  </a>
+</div>
+
+<!-- Inline Search Script -->
+<script>
+  document.getElementById('memberSearch').addEventListener('input', function () {
+    const search = this.value.toLowerCase();
+    const cards = document.querySelectorAll('#membersList .member-card');
+    let anyVisible = false;
+
+    cards.forEach(card => {
+      const name = card.querySelector('.member-name').textContent.toLowerCase();
+      const major = card.querySelector('.member-major').textContent.toLowerCase();
+      const match = name.includes(search) || major.includes(search);
+      card.style.display = match ? '' : 'none';
+      if (match) anyVisible = true;
+    });
+
+    document.getElementById('noMatchMessage').style.display = anyVisible ? 'none' : 'block';
+  });
+</script>

@@ -1,0 +1,79 @@
+<h2 class="mb-4 text-danger">Create New Professor</h2>
+
+{{#if error}}
+  <div class="alert alert-danger">{{error}}</div>
+{{/if}}
+<div class="alert alert-danger" id="error" hidden></div>
+<form action="/admin/create-user" method="POST" class="admin-create-form" id="admin-create-formm">
+  <div class="row g-3 mb-3">
+    <div class="col-md-6">
+      <label for="firstName" class="form-label">First Name</label>
+      <input type="text" name="firstName" id="firstName" class="form-control" required value="{{formData.firstName}}">
+    </div>
+    <div class="col-md-6">
+      <label for="lastName" class="form-label">Last Name</label>
+      <input type="text" name="lastName" id="lastName" class="form-control" required value="{{formData.lastName}}">
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="email" class="form-label">Email (User ID)</label>
+    <input type="email" name="email" id="email" class="form-control" required value="{{formData.email}}">
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-6">
+      <label for="dateOfBirth" class="form-label">Date of Birth</label>
+      <input type="date" name="dateOfBirth" id="dateOfBirth" class="form-control" required value="{{formData.dateOfBirth}}">
+    </div>
+    <div class="col-md-6">
+      <label for="gender" class="form-label">Gender</label>
+      <select name="gender" id="gender" class="form-select" required>
+        <option value="">Select</option>
+        <option value="male" {{#ifEquals formData.gender "male"}}selected{{/ifEquals}}>Male</option>
+        <option value="female" {{#ifEquals formData.gender "female"}}selected{{/ifEquals}}>Female</option>
+        <option value="other" {{#ifEquals formData.gender "other"}}selected{{/ifEquals}}>Other</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    {{!-- <div class="col-md-6">
+      <label for="role" class="form-label">Role</label>
+      <select name="role" id="role" class="form-select" required>
+        <option value="">Select</option>
+        <option value="student" {{#ifEquals formData.role "student"}}selected{{/ifEquals}}>Student</option>
+        <option value="professor" {{#ifEquals formData.role "professor"}}selected{{/ifEquals}}>Professor</option>
+        <option value="ta" {{#ifEquals formData.role "ta"}}selected{{/ifEquals}}>TA</option>
+      </select>
+    </div> --}}
+    <input type="hidden" name="role" id="role" value="professor" />
+    {{!-- <div class="col-md-6">
+      <label for="major" class="form-label">Major (if student)</label>
+      <input type="text" name="major" id="major" class="form-control" value="{{formData.major}}">
+    </div> --}}
+    <input type="hidden" name="major" id="major" value="" />
+  </div>
+
+  <div class="mb-3">
+    <label for="password" class="form-label">Password</label>
+    <input type="password" name="password" id="password" class="form-control" required>
+  </div>
+
+  <div class="mb-3">
+    <label for="confirmPassword" class="form-label">Confirm Password</label>
+    <input type="password" name="confirmPassword" id="confirmPassword" class="form-control" required>
+  </div>
+
+  <div class="d-grid mt-4">
+    <button type="submit" class="btn btn-danger">
+      <i class="bi bi-person-plus-fill me-2"></i> Create User
+    </button>
+  </div>
+</form>
+
+<div class="text-center mt-5">
+  <a href="/admin" class="btn btn-outline-secondary btn-animated">⬅️ Back to Admin Dashboard</a>
+</div>
+
+<script src="/public/js/createProfessorFormValidate.js"></script>

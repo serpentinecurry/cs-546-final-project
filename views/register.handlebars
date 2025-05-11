@@ -173,7 +173,7 @@
   <!-- Title -->
   <div class="register-title">
     <h1><i class="bi bi-person-plus-fill me-2"></i> Register for Scholario</h1>
-    <p class="text-muted">Create your Scholario account and join the future of learning</p>
+    <p class="text-muted">Create your Scholario Student account and join the future of learning</p>
   </div>
 
   <!-- Error Message -->
@@ -182,7 +182,8 @@
   {{/if}}
 
   <!-- Form -->
-  <form id="registerForm" method="POST" action="/register">
+  <form id="registerForm" novalidate>
+    <div id="registerMessage" class="alert mt-3 d-none"></div>
     <div class="row g-3">
       <div class="col-md-6">
         <label class="form-label" for="firstName">First Name</label>
@@ -222,14 +223,18 @@
 </div>
 
 
-      <div class="col-md-6">
+      {{!-- <div class="col-md-6">
         <label class="form-label" for="role">Role</label>
         <select class="form-select" name="role" id="role" required>
           <option value="student" {{#if (eq formData.role 'student')}}selected{{/if}}>Student</option>
           <option value="ta" {{#if (eq formData.role 'ta')}}selected{{/if}}>TA</option>
           <option value="professor" {{#if (eq formData.role 'professor')}}selected{{/if}}>Professor</option>
         </select>
-      </div>
+      </div> --}}
+
+      <!-- Hidden Role Field -->
+    <input type="hidden" name="role" id="role" value="student" />
+
 
       {{!-- <div class="col-md-3">
         <label class="form-label" for="age">Age</label>
@@ -245,8 +250,8 @@
         </select>
       </div>
 
-      <div class="col-md-12">
-        <label class="form-label" for="major">Major (Students only)</label>
+      <div class="col-md-9">
+        <label class="form-label" for="major">Major</label>
         <input class="form-control" name="major" id="major" value="{{formData.major}}" />
       </div>
     </div>
@@ -267,11 +272,41 @@
   </p>
 </div>
 
-
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
-  // Show spinner on submit
-  document.getElementById("registerForm").addEventListener("submit", function () {
-    document.getElementById("spinner").classList.add("active");
+  const form = document.getElementById("registerForm");
+  const spinner = document.getElementById("spinner");
+  const messageBox = document.getElementById("registerMessage");
+
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    spinner.classList.add("active");
+    messageBox.classList.add("d-none");
+    messageBox.innerHTML = "";
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await axios.post("/register", data, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      messageBox.className = "alert alert-success mt-3";
+      messageBox.innerHTML = "✅ Registration successful! You can now <a href='/'>log in</a> after your account is approved!.";
+      messageBox.classList.remove("d-none");
+      form.reset();
+    } catch (err) {
+      const error = err.response?.data?.error || "Something went wrong!";
+      messageBox.className = "alert alert-danger mt-3";
+      messageBox.innerText = `⚠️ ${error}`;
+      messageBox.classList.remove("d-none");
+    } finally {
+      spinner.classList.remove("active");
+    }
   });
 
   // Password toggle logic
@@ -290,3 +325,4 @@
     }
   }
 </script>
+

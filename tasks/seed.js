@@ -1,16 +1,17 @@
 import { dbConnection, closeConnection } from "../config/mongoConnection.js";
 import { userData, courseData } from "../data/index.js"
 import lectureData from "../data/lectures.js";
-import { users } from "../config/mongoCollections.js";
+import { users, courses } from "../config/mongoCollections.js";
 import { ObjectId } from "mongodb";
 
 const db = await dbConnection();
-// await db.dropDatabase();
+await db.dropDatabase();
 
 const usersCollection = await users();
+const coursesCollection = await courses();
 
 const user1 = await userData.createUser(
-    "Anik", "Doshi", "male", "asdoshi@hotmail.com", "Admin@911", "admin", "1990-01-01"
+    "Anik", "Doshi", "male", "admin@scholorio.com", "Admin@911", "admin", "1990-01-01"
 )
 await usersCollection.updateOne({ email: "admin@scholorio.com" }, { $set: { accessStatus: "approved" } });
 
@@ -90,7 +91,7 @@ const student1 = await usersCollection.findOne({ email: "jdoe@stevens.edu" });
 const student2 = await usersCollection.findOne({ email: "jsmith@stevens.edu" });
 const student3 = await usersCollection.findOne({ email: "mjohnson@stevens.edu" });
 
-// Add pending enrollment requests to students
+// Add pending enrollment requests to both student and course documents
 await usersCollection.updateOne(
   { _id: student1._id },
   { 
@@ -103,49 +104,47 @@ await usersCollection.updateOne(
     } 
   }
 );
+await coursesCollection.updateOne(
+  { _id: new ObjectId(webDevCourseId) },
+  {
+    $push: {
+      studentEnrollments: {
+        studentId: student1._id,
+        status: "pending",
+        requestedAt: new Date()
+      }
+    }
+  }
+);
 
 await usersCollection.updateOne(
   { _id: student2._id },
-  { 
-    $push: { 
-      studentEnrollments: {
-        courseId: new ObjectId(webDevCourseId),
-        status: "pending",
-        requestedAt: new Date()
-      }
-    } 
-  }
+  { $push: { studentEnrollments: { courseId: new ObjectId(webDevCourseId), status: "pending", requestedAt: new Date() } } }
+);
+await coursesCollection.updateOne(
+  { _id: new ObjectId(webDevCourseId) },
+  { $push: { studentEnrollments: { studentId: student2._id, status: "pending", requestedAt: new Date() } } }
 );
 
 await usersCollection.updateOne(
   { _id: student3._id },
-  { 
-    $push: { 
-      studentEnrollments: {
-        courseId: new ObjectId(webDevCourseId),
-        status: "pending",
-        requestedAt: new Date()
-      }
-    } 
-  }
+  { $push: { studentEnrollments: { courseId: new ObjectId(webDevCourseId), status: "pending", requestedAt: new Date() } } }
+);
+await coursesCollection.updateOne(
+  { _id: new ObjectId(webDevCourseId) },
+  { $push: { studentEnrollments: { studentId: student3._id, status: "pending", requestedAt: new Date() } } }
 );
 
-// Add a second request for student3 for the database course
 await usersCollection.updateOne(
   { _id: student3._id },
-  { 
-    $push: { 
-      studentEnrollments: {
-        courseId: new ObjectId(dbCourseId),
-        status: "pending",
-        requestedAt: new Date()
-      }
-    } 
-  }
+  { $push: { studentEnrollments: { courseId: new ObjectId(dbCourseId), status: "pending", requestedAt: new Date() } } }
+);
+await coursesCollection.updateOne(
+  { _id: new ObjectId(dbCourseId) },
+  { $push: { studentEnrollments: { studentId: student3._id, status: "pending", requestedAt: new Date() } } }
 );
 
 console.log("Done seeding database with pending enrollment requests");
-
 console.log("Done seeding database");  
 
 await closeConnection();

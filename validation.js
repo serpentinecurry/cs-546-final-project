@@ -1,10 +1,13 @@
 const stringValidate = (str) => {
-  if (!str) throw `Enter a string Argument, not ${str}`;
-  if (typeof str !== "string") throw `Argument must be a string, not ${str}`;
+  if (str === undefined || str === null)
+    throw `Enter a string argument — received: ${str}`;
+  if (typeof str !== "string")
+    throw `Argument must be a string, not ${typeof str} (${JSON.stringify(str)})`;
   if (str.trim().length === 0)
-    throw `Argument cannot be an empty string or string with just spaces, hence "${str}" is invalid`;
+    throw `Argument cannot be an empty string or just spaces — received: "${str}"`;
   return str.trim();
 };
+
 
 const azAZLenValidate = (str, min, max) => {
   if (str.length < min) throw `${str} length must be greater than ${min}!`;
@@ -80,11 +83,40 @@ const calculateAge = (dateOfBirth) => {
   return age;
 }
 
+const parse12HourTime = (timeStr) => {
+  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+  if (!match) return null;
+
+  let [_, hour, minute, meridiem] = match;
+  hour = parseInt(hour, 10);
+  minute = parseInt(minute, 10);
+
+  if (hour < 1 || hour > 12 || minute < 0 || minute > 59) return null;
+
+  if (meridiem.toUpperCase() === "PM" && hour !== 12) hour += 12;
+  if (meridiem.toUpperCase() === "AM" && hour === 12) hour = 0;
+
+  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+};
+
+const isValid24Hour = (timeStr) => {
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(timeStr);
+};
+
+const isStartBeforeEnd = (start, end) => {
+  let [sh, sm] = start.split(":").map(Number);
+  let [eh, em] = end.split(":").map(Number);
+  return sh < eh || (sh === eh && sm < em);
+};
+
 export {
   stringValidate,
   azAZLenValidate,
   validateEmail,
   passwordValidate,
   isValidDateString,
-  calculateAge
+  calculateAge,
+  parse12HourTime,
+  isValid24Hour,
+  isStartBeforeEnd
 };

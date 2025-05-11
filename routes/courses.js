@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { ObjectId } from "mongodb";
+
 const router = Router();
 
 import { courseData } from "../data/index.js";
@@ -95,7 +96,7 @@ router.route("/:id").get(async (req, res) => {
 router.route("/edit/:id").post(async (req, res) => {
   try {
     let courseId = req.params.id;
-    const { newProfessorId } = req.body;
+    let { newProfessorId } = req.body;
 
     courseId = stringValidate(courseId);
     newProfessorId = stringValidate(newProfessorId);
@@ -116,24 +117,69 @@ router.route("/edit/:id").post(async (req, res) => {
   }
 });
 
+router.route("/update-info/:id").post(async (req, res) => {
+  try {
+    const courseId = stringValidate(req.params.id);
+    const { courseName, courseCode } = req.body;
+
+    if (!ObjectId.isValid(courseId)) throw "Invalid course ID";
+
+    const validatedName = stringValidate(courseName);
+    const validatedCode = stringValidate(courseCode);
+
+    await courseData.updateCourseInfo(courseId, validatedName, validatedCode);
+
+    return res.redirect(`/admin/courses/${courseId}`);
+  } catch (error) {
+    return res.status(400).render("error", {
+      error:
+        typeof error === "string"
+          ? error
+          : error.message || "Error updating course info.",
+    });
+  }
+});
+
 router.route("/delete/:id").post(async (req, res) => {
   try {
     let courseId = req.params.id;
     courseId = stringValidate(courseId);
     if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
+    const objectCourseId = new ObjectId(courseId);
+
+    const usersCollection = await users();
+
+    // Step 1: Remove course ID from taForCourses for all users
+    await usersCollection.updateMany(
+      { taForCourses: objectCourseId },
+      { $pull: { taForCourses: objectCourseId } }
+    );
+
+    // Step 2: Revert role to student if no TA courses left
+    const formerTAs = await usersCollection
+      .find({
+        role: "ta",
+        taForCourses: { $exists: true, $size: 0 },
+      })
+      .toArray();
+
+    for (const user of formerTAs) {
+      await usersCollection.updateOne(
+        { _id: user._id },
+        { $set: { role: "student" }, $unset: { taForCourses: "" } }
+      );
+    }
 
     await courseData.deleteCourse(courseId);
 
     return res.redirect("/admin/courses");
   } catch (error) {
-    return res
-      .status(400)
-      .render("error", {
-        error:
-          typeof error === "string"
-            ? error
-            : error.message || "Error deleting course.",
-      });
+    return res.status(400).render("error", {
+      error:
+        typeof error === "string"
+          ? error
+          : error.message || "Error deleting course.",
+    });
   }
 });
 

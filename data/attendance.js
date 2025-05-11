@@ -9,91 +9,198 @@ import { stringValidate } from "../validation.js";
 //     "studentId": "ObjectId_student",
 //     "status": "present",
 //     "points": 0,
-//     "createdAt": "timestamp"  
+//     "createdAt": "timestamp"
 // }
 
-// uses createAttendance, updateAttendance, it will be adding 1 point for each class missed, for now excused does not add points
+// uses createAttendance, updateAttendance; it will be adding 1 point for each class missed, for now excused does not add points
 let createAttendance = async (lectureId, courseId, studentId, status) => {
+  if (!lectureId || !courseId || !studentId || !status) {
+    throw "All fields are required.";
+  }
 
-    const attendanceCollection = await attendance();
-    lectureId = stringValidate(lectureId);
-    courseId = stringValidate(courseId);
-    studentId = stringValidate(studentId);
-    status = stringValidate(status);
-    if (!ObjectId.isValid(lectureId)) {
-        throw "Invalid lecture ID.";
-    }
-    if (!ObjectId.isValid(courseId)) {
-        throw "Invalid course ID.";
-    }
-    if (!ObjectId.isValid(studentId)) {
-        throw "Invalid student ID.";
-    }
-    if (status === "present" || status === "absent" || status === "excused") {
-        throw "Status must be either 'present' or 'absent or excused '.";
-    }
-    if (status === "present") {
-        points = 0; 
-    }
-    else if (status === "excused") {
-        points = 0
-    }
-    else {
-        point = 1
-    }
+  const attendanceCollection = await attendance();
+  lectureId = stringValidate(lectureId);
+  courseId = stringValidate(courseId);
+  studentId = stringValidate(studentId);
+  status = stringValidate(status);
+  if (!ObjectId.isValid(lectureId)) {
+    throw "Invalid lecture ID.";
+  }
+  if (!ObjectId.isValid(courseId)) {
+    throw "Invalid course ID.";
+  }
+  if (!ObjectId.isValid(studentId)) {
+    throw "Invalid student ID.";
+  }
+  if (status !== "present" && status !== "absent" && status !== "excused") {
+    throw "Status must be either 'present' or 'absent or excused '.";
+  }
 
+  let points = 0;
+  if (status === "absent") {
+    points = 1;
+  }
 
+  const lectObjId = new ObjectId(lectureId);
+  const courseObjId = new ObjectId(courseId);
+  const studObjId = new ObjectId(studentId);
 
-    attendanceCollection.insertOne({
-        lectureId: lectureId,
-        courseId: courseId, 
-        studentId: studentId,
-        status: status,
-        points: points,
-        createdAt: new Date()
-    })
+  const existingRecord = await attendanceCollection.findOne({
+    lectureId: lectObjId,
+    courseId: courseObjId,
+    studentId: studObjId,
+  });
 
-}
-
-let updateAttendance = async (attendanceId, updates) => {
-
-    attendancCollection = await attendance();
-    attendanceId = stringValidate(attendanceId);
-    let attendanceRecord = await attendancCollection.findOne({ _id: new ObjectId(attendanceId) });
-    if (!attendanceRecord) {
-        throw "Attendance not found";
-    }
-    let existingAttendance = await attendancCollection.findOne({ _id: new ObjectId(attendanceId) });
-    if (!existingAttendance) {
-        throw "Attendance record not found";
-    }
-
-    if (updates.status) {
-        updates.status = stringValidate(updates.status);
-        if (updates.status !== "present" && updates.status !== "absent" && updates.status !== "excused") {
-            throw "Status must be either 'present', 'absent', or 'excused'.";
-        }
-    }
-    if (updates.points) {
-        updates.points = parseInt(updates.points);
-        if (isNaN(updates.points) || updates.points < 0) {
-            throw "Points must be a non-negative number.";
-        }
-    }
-    updates.updatedAt = new Date();
-    const updateInfo = await attendancCollection.updateOne(
-        { _id: new ObjectId(attendanceId) },
-        { $set: updates }
+  if (existingRecord) {
+    const updateInfo = await attendanceCollection.updateOne(
+      { _id: existingRecord._id },
+      {
+        $set: {
+          status: status,
+          points: points,
+          updatedAt: new Date(),
+        },
+      }
     );
     if (updateInfo.modifiedCount === 0) {
-        throw "Could not update attendance record";
+      throw "Could not update attendance record";
     }
-    return { isUpdated: true, attendanceId: attendanceId };
 
+    return {
+      updated: true,
+      attendanceId: existingRecord._id.toString(),
+      status: status,
+    };
+  } else {
+    const newAttendance = {
+      lectureId: lectObjId,
+      courseId: courseObjId,
+      studentId: studObjId,
+      status: status,
+      points: points,
+      createdAt: new Date(),
+    };
 
-}
+    const insertInfo = await attendanceCollection.insertOne(newAttendance);
+
+    if (!insertInfo.insertedId) {
+      throw "Failed to insert attendance record";
+    }
+
+    return {
+      created: true,
+      attendanceId: insertInfo.insertedId.toString(),
+      status: status,
+    };
+  }
+};
+
+let updateAttendance = async (attendanceId, updates) => {
+  const attendanceCollection = await attendance();
+  attendanceId = stringValidate(attendanceId);
+  let existingAttendance = await attendanceCollection.findOne({
+    _id: new ObjectId(attendanceId),
+  });
+  if (!existingAttendance) {
+    throw "Attendance record not found";
+  }
+
+  if (updates.status) {
+    updates.status = stringValidate(updates.status);
+    if (
+      updates.status !== "present" &&
+      updates.status !== "absent" &&
+      updates.status !== "excused"
+    ) {
+      throw "Status must be either 'present', 'absent', or 'excused'.";
+    }
+  }
+  if (updates.points) {
+    updates.points = parseInt(updates.points);
+    if (isNaN(updates.points) || updates.points < 0) {
+      throw "Points must be a non-negative number.";
+    }
+  }
+  updates.updatedAt = new Date();
+  const updateInfo = await attendancCollection.updateOne(
+    { _id: new ObjectId(attendanceId) },
+    { $set: updates }
+  );
+  if (updateInfo.modifiedCount === 0) {
+    throw "Could not update attendance record";
+  }
+  return { isUpdated: true, attendanceId: attendanceId };
+};
+
+let averageAttendance = async (courseId) => {
+  courseId = stringValidate(courseId);
+  if (!ObjectId.isValid(courseId)) {
+    throw "Invalid course ID";
+  }
+
+  const attendanceCollection = await attendance();
+
+  const AttendanceTotal = await attendanceCollection
+    .find({ courseId: new ObjectId(courseId) })
+    .toArray();
+
+  const AttendanceCount = AttendanceTotal.filter(
+    (record) => record.status === "present"
+  ).length;
+
+  return Number(((AttendanceCount / AttendanceTotal.length) * 100).toFixed(2));
+};
+
+const getAllPresentStudents = async (courseId) => {
+  courseId = stringValidate(courseId);
+  if (!ObjectId.isValid(courseId)) {
+    throw "Invalid course ID";
+  }
+
+  const attendanceCollection = await attendance();
+
+  const presentRecords = await attendanceCollection
+    .find({ courseId: new ObjectId(courseId), status: "present" })
+    .toArray();
+
+  return presentRecords;
+};
+
+const getAllAbsentStudents = async (courseId) => {
+  courseId = stringValidate(courseId);
+  if (!ObjectId.isValid(courseId)) {
+    throw "Invalid course ID";
+  }
+
+  const attendanceCollection = await attendance();
+
+  const absentRecords = await attendanceCollection
+    .find({ courseId: new ObjectId(courseId), status: "absent" })
+    .toArray();
+
+  return absentRecords;
+};
+
+const getAllExcusedStudents = async (courseId) => {
+  courseId = stringValidate(courseId);
+  if (!ObjectId.isValid(courseId)) {
+    throw "Invalid course ID";
+  }
+
+  const attendanceCollection = await attendance();
+
+  const excusedRecords = await attendanceCollection
+    .find({ courseId: new ObjectId(courseId), status: "excused" })
+    .toArray();
+
+  return excusedRecords;
+};
 
 export default {
-    createAttendance,
-    updateAttendance
-}
+  createAttendance,
+  updateAttendance,
+  averageAttendance,
+  getAllAbsentStudents,
+  getAllPresentStudents,
+  getAllExcusedStudents,
+};

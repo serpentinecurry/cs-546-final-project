@@ -6,8 +6,20 @@
   <p><strong>Assigned Professor:</strong> {{professor.firstName}} {{professor.lastName}}</p>
 </div>
 
-<h2 class="mt-4">Change Assigned Professor</h2>
+<h2 class="mt-4">Edit Course Info</h2>
+<form method="POST" action="/admin/courses/update-info/{{course._id}}" class="mb-4">
+  <div class="mb-3">
+    <label for="courseName" class="form-label">Course Name</label>
+    <input type="text" class="form-control" id="courseName" name="courseName" value="{{course.courseName}}" required />
+  </div>
+  <div class="mb-3">
+    <label for="courseCode" class="form-label">Course Code</label>
+    <input type="text" class="form-control" id="courseCode" name="courseCode" value="{{course.courseCode}}" required />
+  </div>
+  <button type="submit" class="btn btn-warning">✏️ Update Course Info</button>
+</form>
 
+<h2 class="mt-4">Change Assigned Professor</h2>
 <form method="POST" action="/admin/courses/edit/{{course._id}}" class="mb-4">
   <div class="mb-3">
     <label for="newProfessorId" class="form-label">Select New Professor</label>

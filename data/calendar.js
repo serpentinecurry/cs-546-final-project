@@ -1,39 +1,77 @@
-import { ObjectId } from 'mongodb';
-import { users } from '../config/mongoCollections.js';
-import { courseData } from './index.js';
+import { ObjectId } from "mongodb";
+import { users, courses, lectures } from "../config/mongoCollections.js";
 
-const getOfficeHours = async (studentId) => {
-    const userCollection = await users();
-    const student = await userCollection.findOne({_id: new ObjectId(studentId)});
-    const courseIds = student.enrolledCourses;
+// function that returns an array of all lectures for a given student
+const getStudentLectures = async (studentId) => {
+  const userCollection = await users();
+  const student = await userCollection.findOne({
+    _id: new ObjectId(studentId),
+  });
 
-    let returnResult = [];
+  if (!student) throw `Student with ID ${studentId} not found`;
 
-    for (let courseId of courseIds) {
-        const courseInfo = await courseData.getCourseById(courseId);
-        // object w/ course code and array of office hours
-        const officeHoursInfo = {courseCode: courseInfo.course.courseCode};
-        let officeHours = courseInfo.course.taOfficeHours;
+  const courseCollection = await courses();
+  // get courses that the student is in
+  const studentCourses = await courseCollection
+    .find({
+      "studentEnrollments.studentId": new ObjectId(studentId),
+      "studentEnrollments.status": "active",
+    })
+    .toArray();
 
-        for (let item of officeHours) {
-            const taId = item.taId;
-            const taInfo = userCollection.findOne({_id: new ObjectId(taId)});
-            let taName = taInfo.firstName + " " + taInfo.lastName;
+  // array of all the students' lectures
+  let studentLectures = [];
+  const lectureCollection = await lectures();
 
-            item.name = taName;
-        }
+  for (let course of studentCourses) {
+    let courseId = course._id;
 
-        const professorOfficeHours = courseInfo.course.professorOfficeHours;
-        const professorInfo = courseInfo.professor;
-        professorOfficeHours.name = professorInfo.firstName + " " + professorInfo.lastName;
-        officeHours.push(professorOfficeHours);
-
-        officeHoursInfo.officeHours = officeHours;
-
-        returnResult.push(officeHoursInfo);
+    let courseLectures = await lectureCollection
+      .find({ courseId: courseId })
+      .toArray();
+    for (let lecture of courseLectures) {
+      lecture.courseCode = course.courseCode;
     }
 
-    return returnResult;
-}
+    studentLectures = studentLectures.concat(courseLectures);
+  }
 
-export default {getOfficeHours};
+  return lecturesToEventObjects(studentLectures);
+};
+
+const lecturesToEventObjects = async (lectures) => {
+  let events = [];
+
+  for (let l of lectures) {
+    const eventObject = {};
+    // event id: "coursecode-date" (e.g. CS-546-2025-04-15)
+    eventObject.id = l.courseCode + "-" + l.lectureDate;
+    // CS-546 - Learn AJAX
+    eventObject.title = l.courseCode + " - " + l.lectureTitle;
+
+    // get individual parts of the date
+    let date = l.lectureDate.split("-");
+
+    // get start and end time
+    let startTime = l.lectureStartTime.split(":");
+    let endTime = l.lectureEndTime.split(":");
+
+    const start = new Date(
+      date[0],
+      date[1] - 1,
+      date[2],
+      startTime[0],
+      startTime[1]
+    );
+    const end = new Date(date[0], date[1] - 1, date[2], endTime[0], endTime[1]);
+
+    eventObject.start = start;
+    eventObject.end = end;
+
+    events.push(JSON.stringify(eventObject));
+  }
+
+  return events;
+};
+
+export default { getStudentLectures };

@@ -22,14 +22,66 @@ app.engine(
         layoutsDir: path.join(__dirname, "views/layouts"),
 
         partialsDir: [path.join(__dirname, "views/student/partials"),
-            //added for professor directory
-            path.join(__dirname, "views/professorDasboard.handlebars"),
+
+            path.join(__dirname, "views/professorDasboard"),
         ],
         helpers: {
             ifEquals: function (arg1, arg2, options) {
                 return arg1 === arg2 ? options.fn(this) : options.inverse(this);
             },
             eq: (a, b) => a === b,
+            inc: function (value) {
+                return parseInt(value) + 1;
+            },
+            json: function (context) {
+                return JSON.stringify(context);
+            },
+            gt: function (a, b) {
+                return a > b;
+            },
+            substr: function (str, start, len) {
+                if (typeof str !== 'string') return '';
+                return str.substr(start, len);
+            },
+            formatDate: function (date) {
+                return new Date(date).toLocaleDateString();
+            },
+            array: function () {
+                return Array.from({length: arguments[0]}, (_, i) => i + 1);
+            },
+            lte: function (a, b) {
+                return a <= b;
+            },
+            lt: function (a, b) {
+                return a < b;
+            },
+            add: function (a, b) {
+                return Number(a) + Number(b);
+            },
+            and: function (a, b) {
+                return a && b;
+            },
+            includes: function (array, value) {
+                return Array.isArray(array) && array.includes(value);
+            },
+            some: function (array, key) {
+                return Array.isArray(array) && array.some(item => item[key]);
+            },
+            dayMap: function (shortDay) {
+                const map = {M: 'Monday', T: 'Tuesday', W: 'Wednesday', Th: 'Thursday', F: 'Friday'};
+                return map[shortDay] || shortDay;
+            },
+            getScheduleTime(scheduleMap, short, timeType) {
+                const map = {
+                    M: 'Monday',
+                    T: 'Tuesday',
+                    W: 'Wednesday',
+                    Th: 'Thursday',
+                    F: 'Friday'
+                };
+                const day = map[short];
+                return scheduleMap && scheduleMap[day] ? scheduleMap[day][timeType] : '';
+            }
         }
     })
 );
@@ -44,17 +96,17 @@ app.use(express.urlencoded({extended: true}));
 // import MongoStore from "connect-mongo";
 //
 // app.use(
-//   session({
-//     name: "Scholario",
-//     secret: "top secret",
-//     saveUninitialized: false,
-//     resave: false,
-//     store: MongoStore.create({
-//       mongoUrl: "mongodb://localhost:27017/scholarioSession", // your MongoDB session DB
-//       ttl: 60 * 60, // 1 hour
-//     }),
-//     cookie: { maxAge: 3600000 },
-//   })
+//     session({
+//         name: "Scholario",
+//         secret: "top secret",
+//         saveUninitialized: false,
+//         resave: false,
+//         store: MongoStore.create({
+//             mongoUrl: "mongodb://localhost:27017/scholarioSession", // your MongoDB session DB
+//             ttl: 60 * 60, // 1 hour
+//         }),
+//         cookie: {maxAge: 3600000},
+//     })
 // );
 
 

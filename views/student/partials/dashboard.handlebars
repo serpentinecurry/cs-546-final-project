@@ -1,6 +1,123 @@
-<div class="p-4 bg-light rounded shadow-sm mb-4 border border-primary-subtle">
-  <h2 class="fw-bold text-primary mb-2">Welcome back, Scholar! 🎓</h2>
-  <p class="text-secondary fs-5">
-    Track your progress, view your schedule, and stay ahead with your personalized dashboard.
-  </p>
+<h2 class="fw-bold text-primary mb-4 text-center">Welcome back, Scholar! 🎓</h2>
+
+{{#if (some attendanceData "warningMessage")}}
+  <div class="p-4 bg-white rounded-4 shadow-sm mb-5 border border-2 border-primary-subtle">
+      <div class="alert alert-danger text-center fw-semibold mb-4">
+          🚨 You have missed too many classes in one or more courses. Please review your attendance!
+      </div>
+
+      {{#each attendanceData}}
+          {{#if warningMessage}}
+              <div class="mb-4 p-3 rounded border border-warning bg-light-subtle shadow-sm">
+                  <h5 class="mb-2 text-dark">{{courseName}}</h5>
+                  <div class="alert alert-warning py-2 px-3 mb-0">
+                      <i class="bi bi-exclamation-triangle-fill me-2"></i> {{warningMessage}}
+                  </div>
+              </div>
+          {{/if}}
+      {{/each}}
+  </div>
+{{/if}}
+
+
+<div class="p-4 bg-white rounded-4 shadow-sm mb-5 border border-2 border-primary-subtle">
+    <h4 class="mb-4 text-primary">
+        <i class="bi bi-graph-up-arrow me-2"></i>Attendance Performance
+    </h4>
+
+    <canvas id="attendanceChart" height="160"></canvas>
+
+    <script id="attendance-json" type="application/json">
+        {{{json attendanceData}}}
+    </script>
+
+    <script>
+        const parsed = JSON.parse(document.getElementById('attendance-json').textContent || '[]');
+        const labels = parsed.map(item => item.courseName);
+        const data = parsed.map(item => item.percentage);
+
+        const backgroundColors = data.map(val => {
+            if (val >= 85) return 'rgba(16, 185, 129, 0.85)';     // Emerald
+            if (val >= 35) return 'rgba(251, 191, 36, 0.85)';     // Amber
+            return 'rgba(239, 68, 68, 0.85)';                     // Rose
+        });
+
+        const borderColors = backgroundColors.map(c => c.replace('0.85', '1'));
+
+        new Chart(document.getElementById('attendanceChart'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Attendance Rate',
+                    data,
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    barThickness: 50,
+                    hoverBackgroundColor: borderColors
+                }]
+            },
+            options: {
+                responsive: true,
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `Attendance: ${ctx.raw}%`
+                        },
+                        backgroundColor: '#f3f4f6',
+                        titleColor: '#111827',
+                        bodyColor: '#111827',
+                        borderColor: '#e5e7eb',
+                        borderWidth: 1
+                    },
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: '#e5e7eb'
+                        },
+                        ticks: {
+                            callback: value => value + '%',
+                            color: '#374151'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Attendance (%)',
+                            color: '#374151',
+                            font: {
+                                size: 16,
+                                weight: '600'
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#374151',
+                            font: {
+                                size: 15,
+                                weight: '500'
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 </div>

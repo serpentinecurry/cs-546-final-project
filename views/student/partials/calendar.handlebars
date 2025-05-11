@@ -1,5 +1,25 @@
-{{#each officeHours}}
-<div id="calendar">
-    
-</div>
-{{/each}}
+<ol hidden="true">
+  {{#each events}}
+  <li class="event">{{this}}</li>
+  {{/each}}
+</ol>
+<div id="calendar"></div>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js'></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+          timezone: 'local',
+          initialView: 'timeGridWeek'
+        });
+
+        const eventList = document.getElementsByClassName("event");
+
+        for (e of eventList) {
+          const event = JSON.parse(e.innerHTML);
+          calendar.addEvent(event);
+        }
+
+        calendar.render();
+      });
+</script>

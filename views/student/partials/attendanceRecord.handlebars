@@ -1,0 +1,96 @@
+<!-- views/student/partials/attendanceRecord.handlebars -->
+<div class="container py-4">
+    <h2 class="text-primary mb-5 text-center display-6">
+        <i class="bi bi-bar-chart-fill me-2"></i> Attendance Summary
+    </h2>
+
+    <!-- Enhanced & Styled Attendance Summary Card -->
+    <div class="card border-0 shadow-lg mb-5 p-4 bg-light-subtle rounded-4">
+        <div class="row align-items-center text-center">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="display-2 fw-bold text-success">
+                    {{attendancePercentage}}%
+                </div>
+                <div class="text-muted small fw-bold">Effective Attendance Rate</div>
+            </div>
+            <div class="col-md-8">
+                <h5 class="mb-3 text-primary fw-semibold">
+                    <i class="bi bi-journal-bookmark-fill me-2"></i> {{course.courseName}}
+                </h5>
+                <div class="d-flex flex-wrap justify-content-center gap-3">
+                    <span class="badge bg-success px-3 py-2 fs-6">Present: {{presentCount}}</span>
+                    <span class="badge bg-danger px-3 py-2 fs-6">Absent: {{absentCount}}</span>
+                    <span class="badge bg-warning text-dark px-3 py-2 fs-6"> Excused: {{excusedCount}}</span>
+                    <span class="badge bg-secondary px-3 py-2 fs-6"> Total: {{totalLectures}}</span>
+                </div>
+                <!-- Progress Bar for Attendance -->
+                <div class="mt-4 px-3">
+                    <label for="attendanceProgress" class="form-label fw-bold text-muted">Attendance Progress</label>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar {{progressBarClass}}" role="progressbar"
+                             style="width: {{attendancePercentage}}%;"
+                             aria-valuenow="{{attendancePercentage}}" aria-valuemin="0" aria-valuemax="100">
+                            {{attendancePercentage}}%
+                        </div>
+                    </div>
+                </div>
+
+                <p class="mt-2 text-muted small">
+                    <i class="bi bi-info-circle-fill me-1"></i> Excused absences are not counted against you.
+                </p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Attendance Table -->
+    <div class="table-responsive">
+        <table class="table align-middle table-hover border shadow-sm">
+            <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Points</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{#each attendanceRecords}}
+                <tr>
+                    <td><span class="fw-semibold">Lecture {{inc @index}}</span></td>
+                    <td>{{this.date}}</td>
+                    <td>
+                        {{#ifEquals this.status "present"}}
+                            <span class="badge rounded-pill bg-success px-3 py-2">
+                  <i class="bi bi-check-circle me-1"></i> Present
+                </span>
+                        {{else ifEquals this.status "absent"}}
+                            <span class="badge rounded-pill bg-danger px-3 py-2">
+                  <i class="bi bi-x-circle me-1"></i> Absent
+                </span>
+                        {{else ifEquals this.status "excused"}}
+                            <span class="badge rounded-pill bg-warning text-dark px-3 py-2">
+                  <i class="bi bi-exclamation-circle me-1"></i> Excused
+                </span>
+                        {{/ifEquals}}
+                    </td>
+                    <td>
+                        {{#if this.points}}
+                            <span class="text-danger fw-bold">{{this.points}}</span>
+                        {{else}}
+                            <span class="text-muted">0</span>
+                        {{/if}}
+                    </td>
+                </tr>
+            {{/each}}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Back Button -->
+    <div class="text-center mt-4">
+        <a href="/student/courses/{{course._id}}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
+            <i class="bi bi-arrow-left me-2"></i> Back to Course Page
+        </a>
+    </div>
+</div>

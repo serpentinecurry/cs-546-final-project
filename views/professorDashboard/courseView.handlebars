@@ -1,33 +1,27 @@
-<div class="container">
-  <a href = "/professor" class="backToClass">Back to Dashboard</a>
-  <h1 class="courseTitle">{{courseName}}</h1>
+<a href="/professor" class="backToClass">Back to Dashboard</a>
+<h1 class="courseTitle">{{courseName}}</h1>
 
-  <h2 class="courseCode">{{courseCode}}</h2>
+<h2 class="courseCode">{{courseCode}}</h2>
 
 
-  <div class="Lectures"> 
+<div class="Lectures">
     <a href="/professor/course/{{courseId}}/lecture/create" class="createLecture">Create Lecture</a>
-     
-    {{!-- display lextures --}}
-    {{#if lectures.length}}
-      <ul class="Lectures">
-        {{#each lectures}}
-          <li class="lectureItem">
-            <a href="/professor/course/{{../courseId}}/lecture/{{this._id}}">{{this.title}}</a>
-            <span class="lectureDate">{{formatDate this.date}}</span>
-            <a href="DataAnalytics/{{this._id}}" class="dataAnalytics">Lecture Attendance statistics</a>
-          </li>
-        {{/each}}
-        {{else}}
-        <div class="noLectures>
-          <p>No lectures available for this course.</p>
+
+
+{{#if lectures.length}}
+    <ul class="Lectures">
+    {{#each lectures}}
+            <li class="lectureItem">
+                <a href="/professor/course/{{../courseId}}/lecture/{{this._id}}">{{this.title}}</a>
+                <span class="lectureDate">{{formatDate this.date}}</span>
+                <a href="DataAnalytics/{{this._id}}" class="dataAnalytics">Lecture Attendance statistics</a>
+            </li>
+    {{/each}}
+{{else}}
+        <div class="noLectures">
+            <p>No lectures available for this course.</p>
         </div>
-      </ul>
+    </ul>
 
-
-     
-      </div>
-
-  </div>
-
-</div>
+    </div>
+    </div>
