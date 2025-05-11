@@ -93,18 +93,18 @@
         <button type="submit" class="btn btn-danger">❌ Reject</button>
       </form>
 
-      {{#if (eq user.role "student")}}
+      {{!-- {{#if (eq user.role "student")}}
         <form method="POST" action="/admin/promote/{{user._id}}">
           <button type="submit" class="btn btn-warning text-white">🎓 Promote to
             TA</button>
         </form>
-      {{/if}}
+      {{/if}} --}}
 
-      {{#if (eq user.role "ta")}}
+      {{!-- {{#if (eq user.role "ta")}}
         <form method="POST" action="/admin/demote/{{user._id}}">
           <button type="submit" class="btn btn-secondary">⬇️ Demote to Student</button>
         </form>
-      {{/if}}
+      {{/if}} --}}
     {{/if}}
   </div>
 

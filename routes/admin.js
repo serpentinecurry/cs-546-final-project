@@ -211,67 +211,67 @@ router.route("/searchUsers").get(async (req, res) => {
     }
 });
 
-router.route("/promote/:id").post(async (req, res) => {
-    try {
-        const userId = req.params.id;
-        if (!ObjectId.isValid(userId)) throw "Invalid user ID";
+// router.route("/promote/:id").post(async (req, res) => {
+//     try {
+//         const userId = req.params.id;
+//         if (!ObjectId.isValid(userId)) throw "Invalid user ID";
 
-        const usersCollection = await users();
-        const user = await usersCollection.findOne({_id: new ObjectId(userId)});
-        if (!user) throw "User not found";
+//         const usersCollection = await users();
+//         const user = await usersCollection.findOne({_id: new ObjectId(userId)});
+//         if (!user) throw "User not found";
 
-        if (user.role !== "student") {
-            throw "Only students can be promoted to TA.";
-        }
+//         if (user.role !== "student") {
+//             throw "Only students can be promoted to TA.";
+//         }
 
-        const updateRes = await usersCollection.updateOne(
-            {_id: new ObjectId(userId)},
-            {$set: {role: "ta"}}
-        );
+//         const updateRes = await usersCollection.updateOne(
+//             {_id: new ObjectId(userId)},
+//             {$set: {role: "ta"}}
+//         );
 
-        if (updateRes.modifiedCount === 0) throw "User promotion failed.";
+//         if (updateRes.modifiedCount === 0) throw "User promotion failed.";
 
-        return res.redirect(`/admin/user/${userId}`); // after promoting, stay on the profile page
-    } catch (error) {
-        return res.status(400).render("error", {
-            error:
-                typeof error === "string"
-                    ? error
-                    : error.message || "Error promoting user.",
-        });
-    }
-});
+//         return res.redirect(`/admin/user/${userId}`); // after promoting, stay on the profile page
+//     } catch (error) {
+//         return res.status(400).render("error", {
+//             error:
+//                 typeof error === "string"
+//                     ? error
+//                     : error.message || "Error promoting user.",
+//         });
+//     }
+// });
 
-router.route("/demote/:id").post(async (req, res) => {
-    try {
-        const userId = req.params.id;
-        if (!ObjectId.isValid(userId)) throw "Invalid user ID";
+// router.route("/demote/:id").post(async (req, res) => {
+//     try {
+//         const userId = req.params.id;
+//         if (!ObjectId.isValid(userId)) throw "Invalid user ID";
 
-        const usersCollection = await users();
-        const user = await usersCollection.findOne({_id: new ObjectId(userId)});
-        if (!user) throw "User not found";
+//         const usersCollection = await users();
+//         const user = await usersCollection.findOne({_id: new ObjectId(userId)});
+//         if (!user) throw "User not found";
 
-        if (user.role !== "ta") {
-            throw "Only TAs can be demoted back to student.";
-        }
+//         if (user.role !== "ta") {
+//             throw "Only TAs can be demoted back to student.";
+//         }
 
-        const updateRes = await usersCollection.updateOne(
-            {_id: new ObjectId(userId)},
-            {$set: {role: "student"}}
-        );
+//         const updateRes = await usersCollection.updateOne(
+//             {_id: new ObjectId(userId)},
+//             {$set: {role: "student"}}
+//         );
 
-        if (updateRes.modifiedCount === 0) throw "User demotion failed.";
+//         if (updateRes.modifiedCount === 0) throw "User demotion failed.";
 
-        return res.redirect(`/admin/user/${userId}`); // stay on the user profile after demoting
-    } catch (error) {
-        return res.status(400).render("error", {
-            error:
-                typeof error === "string"
-                    ? error
-                    : error.message || "Error demoting user.",
-        });
-    }
-});
+//         return res.redirect(`/admin/user/${userId}`); // stay on the user profile after demoting
+//     } catch (error) {
+//         return res.status(400).render("error", {
+//             error:
+//                 typeof error === "string"
+//                     ? error
+//                     : error.message || "Error demoting user.",
+//         });
+//     }
+// });
 
 router.route("/change-requests").get(async (req, res) => {
     try {
