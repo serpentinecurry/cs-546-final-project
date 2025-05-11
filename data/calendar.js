@@ -39,7 +39,7 @@ const getStudentLectures = async (studentId) => {
   return lecturesToEventObjects(studentLectures);
 };
 
-const lecturesToEventObjects = async (lectures) => {
+const lecturesToEventObjects = (lectures) => {
   let events = [];
 
   for (let l of lectures) {
