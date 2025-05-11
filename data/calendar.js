@@ -48,18 +48,15 @@ const lecturesToEventObjects = async (lectures) => {
         // CS-546 - Learn AJAX
         eventObject.title = l.courseCode + " - " + l.lectureTitle;
 
-        // initialize date objects
-        let start = new Date(l.lectureDate);
-        let end = new Date(l.lectureDate);
+        // get individual parts of the date
+        let date = l.lectureDate.split('-');
 
         // get start and end time
         let startTime = l.lectureStartTime.split(':');
         let endTime = l.lectureEndTime.split(':');
 
-        start.setHours(startTime[0]);
-        start.setMinutes(startTime[1]);
-        end.setHours(endTime[0]);
-        end.setMinutes(endTime[1]);
+        const start = new Date(date[0], date[1] - 1, date[2], startTime[0], startTime[1]);
+        const end = new Date(date[0], date[1] - 1, date[2], endTime[0], endTime[1]);
 
         eventObject.start = start;
         eventObject.end = end;
