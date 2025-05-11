@@ -4,6 +4,7 @@ import userData from "../data/users.js";
 import courseData from "../data/courses.js";
 import attendanceData from "../data/attendance.js";
 import lectureData from "../data/lectures.js";
+import discussionsData from "../data/discussions.js";
 import dayjs from "dayjs";
 
 const router = Router();
@@ -685,7 +686,7 @@ router.post("/enrollment/reject", async (req, res) => {
     const studentId = stringValidate(req.body.studentId);
     const courseId = stringValidate(req.body.courseId);
 
-    // Add your rejection logic here
+    
     await userData.rejectEnrollmentRequest(studentId, courseId);
 
     req.session.successMessage = "Enrollment request rejected successfully";
@@ -875,6 +876,30 @@ router
       const averageRating = await lectureData.getAverageRating(lectureId);
       const ratingCount = lecture.ratings ? lecture.ratings.length : 0;
 
+      
+      let hasDiscussion = false;
+      let discussionId = null;
+
+      try {
+        const courseCollection = await courses();
+        const course = await courseCollection.findOne({
+          _id: new ObjectId(courseId),
+        });
+
+        if (course && course.discussions && course.discussions.length > 0) {
+          const existingDiscussion = course.discussions.find(
+            (d) => d.lectureId.toString() === lectureId
+          );
+
+          if (existingDiscussion) {
+            hasDiscussion = true;
+            discussionId = existingDiscussion._id.toString();
+          }
+        }
+      } catch (err) {
+        console.error("Error checking for discussion:", err);
+      }
+
       res.render("professorDashboard/LectureViews", {
         layout: "main",
         lecture,
@@ -888,6 +913,11 @@ router
         students: studentAttendanceHistory,
         averageRating: averageRating,
         ratingCount: ratingCount,
+        hasDiscussion,
+        discussionId,
+        discussionViewPath: hasDiscussion
+          ? `/professor/course/${courseId}/lecture/${lectureId}/discussions/${discussionId}`
+          : null,
       });
     } catch (e) {
       console.error("Error fetching lecture or course:", e);
@@ -905,10 +935,10 @@ router
     try {
       const { courseId, lectureId } = req.params;
 
-      // Change this line - validate attendanceData instead of attendance
+      
       const attendanceFormData = req.body.attendanceData;
 
-      // Validate that attendance data exists
+      
       if (!attendanceFormData) {
         return res.status(400).render("error", {
           layout: "main",
@@ -916,7 +946,7 @@ router
         });
       }
 
-      // Rest of code remains the same
+      
       for (const [studentId, status] of Object.entries(attendanceFormData)) {
         await attendanceData.createAttendance(
           lectureId,
@@ -938,7 +968,7 @@ router
     }
   });
 
-// absence request approve or reject route - doesn't mark as absent yet
+// absence request approve or reject route - doesn't mark as absent 
 router.post(
   "/absence-request/update/:studentId/:courseId/:action",
   verifyProfessorOwnsCourse,
@@ -1004,7 +1034,7 @@ router.post(
   }
 );
 
-// Edit lecture routes
+// lecture Routes
 router
   .route("/course/:courseId/lecture/:lectureId/edit")
   .get(verifyProfessorOwnsCourse, async (req, res) => {
@@ -1074,4 +1104,257 @@ router
     }
   });
 
+// Use this for discussion routes - copy and paste for student discussion routes
+router.route("/Discussion")
+  .get(async (req, res) => {
+    try {
+        
+      if (!req.session.user || req.session.user.role !== 'professor') {
+        return res.status(403).render('error', {
+          layout: 'main', 
+          error: 'You must be logged in as a professor to access discussions'
+        });
+      }
+      
+      
+      res.render("professorDashboard/discussions", {
+        layout: "main",
+        title: "Course Discussions",
+        course: req.query.courseId ? { _id: req.query.courseId } : null
+      });
+    } catch (error) {
+      console.error("Error accessing discussions:", error);
+      res.status(500).render("error", {
+        layout: "main",
+        error: "Error loading discussions. Please try again later."
+      });
+    }
+  });
+
+  
+router.route("/course/:courseId/lecture/:lectureId/discussions")
+  .get(verifyProfessorOwnsCourse, async (req, res) => {
+    try {
+      const { courseId, lectureId } = req.params;
+      
+      
+      const lecture = await lectureData.getLectureById(lectureId);
+      if (!lecture) {
+        return res.status(404).render("error", {
+          layout: "main",
+          error: "Lecture not found"
+        });
+      }
+      
+      
+      const course = await courseData.getCourseById(courseId);
+      
+      
+      let discussions = [];
+      try {
+        discussions = await discussionsData.getDiscussionsLecture(lectureId, courseId);
+        
+        
+        const usersCollection = await users();
+        for (const discussion of discussions) {
+          const author = await usersCollection.findOne({
+            _id: new ObjectId(discussion.authorId)
+          });
+          
+          if (author) {
+            discussion.authorName = `${author.firstName} ${author.lastName}`;
+            discussion.authorRole = author.role;
+          } else {
+            discussion.authorName = "Unknown User";
+          }
+        }
+      } catch (e) {
+        
+        if (e !== "No discussions found for this lecture") {
+          console.error("Error fetching discussions:", e);
+        }
+      }
+      
+      res.render("professorDashboard/lectureDiscussions", {
+        layout: "main",
+        course,
+        lecture,
+        discussions,
+        title: `Discussions for ${lecture.lectureTitle}`
+      });
+    } catch (error) {
+      console.error("Error fetching lecture discussions:", error);
+      res.status(500).render("error", {
+        layout: "main",
+        error: "Error loading discussions: " + error.message
+      });
+    }
+  });
+
+  
+router.route("/course/:courseId/lecture/:lectureId/discussions/create")
+  .get(verifyProfessorOwnsCourse, async (req, res) => {
+    try {
+      const { courseId, lectureId } = req.params;
+      const authorId = req.session.user._id;
+      
+      
+      let lecture;
+      try {
+        lecture = await lectureData.getLectureById(lectureId);
+      } catch (error) {
+        return res.status(404).render("error", {
+          layout: "main",
+          error: "Lecture not found"
+        });
+      }
+      
+      
+      const postTitle = `Discussion for ${lecture.lectureTitle}`;
+      const postContent = "Use this discussion forum to ask questions and share insights about this lecture.";
+      
+      
+      const newDiscussion = await discussionsData.createDiscussion(
+        lectureId,
+        courseId,
+        authorId,
+        postTitle, 
+        postContent
+      );
+      
+      
+      if (newDiscussion.alreadyExists) {
+        req.session.successMessage = "Viewing existing discussion";
+      } else {
+        req.session.successMessage = "Discussion created successfully!";
+      }
+      
+      
+      res.redirect(`/professor/course/${courseId}/lecture/${lectureId}/discussions/${newDiscussion._id}`);
+    } catch (error) {
+      console.error("Error creating discussion:", error);
+      return res.status(400).render("error", {
+        layout: "main",
+        error: "Error creating discussion: " + error
+      });
+    }
+  });
+
+  
+router.route("/course/:courseId/lecture/:lectureId/discussions/:discussionId")
+  .get(verifyProfessorOwnsCourse, async (req, res) => {
+    try {
+      const { courseId, lectureId, discussionId } = req.params;
+      
+      
+      const courseCollection = await courses();
+      const course = await courseCollection.findOne({
+        _id: new ObjectId(courseId)
+      });
+      
+      if (!course) {
+        throw "Course not found";
+      }
+      
+      
+      const discussion = course.discussions?.find(
+        d => d._id.toString() === discussionId
+      );
+      
+      if (!discussion) {
+        throw "Discussion not found";
+      }
+      
+      
+      const usersCollection = await users();
+      const author = await usersCollection.findOne({
+        _id: new ObjectId(discussion.authorId)
+      });
+      
+      
+      const discussionData = {
+        ...discussion,
+        _id: discussion._id.toString(),
+        lectureId: discussion.lectureId.toString(),
+        authorId: discussion.authorId.toString(),
+        authorName: author ? `${author.firstName} ${author.lastName}` : "Unknown User",
+        comments: discussion.comments?.map(c => ({
+          ...c,
+          _id: c._id.toString(),
+          commenterId: c.commenterId.toString()
+        })) || []
+      };
+      
+      
+      if (discussionData.comments.length > 0) {
+        const commenterIds = discussionData.comments
+          .filter(c => !c.isAnonymous)
+          .map(c => new ObjectId(c.commenterId));
+          
+        if (commenterIds.length > 0) {
+          const commenters = await usersCollection.find({
+            _id: { $in: commenterIds }
+          }).toArray();
+          
+          const commenterMap = {};
+          commenters.forEach(u => {
+            commenterMap[u._id.toString()] = `${u.firstName} ${u.lastName}`;
+          });
+          
+          
+          discussionData.comments.forEach(c => {
+            c.commenterName = c.isAnonymous ? "Anonymous" : 
+              commenterMap[c.commenterId] || "Unknown User";
+          });
+        }
+      }
+      
+      
+      const lecture = await lectureData.getLectureById(lectureId);
+      
+      res.render("professorDashboard/DiscussionView", {
+        layout: "main",
+        course,
+        lecture, 
+        discussion: discussionData,
+        title: discussionData.postTitle,
+        successMessage: req.session.successMessage
+      });
+      
+      
+      req.session.successMessage = null;
+    } catch (error) {
+      console.error("Error viewing discussion:", error);
+      res.status(500).render("error", {
+        layout: "main",
+        error: "Error viewing discussion: " + error
+      });
+    }
+  })
+  .post(verifyProfessorOwnsCourse, async (req, res) => {
+    try {
+      const { courseId, lectureId, discussionId } = req.params;
+      const { commentText, isAnonymous } = req.body;
+      const commenterId = req.session.user._id;
+      
+      await discussionsData.addAComment(
+        discussionId,
+        courseId,
+        commenterId,
+        commentText,
+        isAnonymous === 'on'
+      );
+      
+      req.session.successMessage = "Comment added successfully";
+      res.redirect(`/professor/course/${courseId}/lecture/${lectureId}/discussions/${discussionId}`);
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      res.status(400).render("error", {
+        layout: "main",
+        error: "Error adding comment: " + error.message
+      });
+    }
+  });
+
 export default router;
+
