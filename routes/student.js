@@ -1,7 +1,7 @@
 // routes/student.js
 import {Router} from "express";
 import {users, courses, changeRequests, attendance, lectures} from "../config/mongoCollections.js";
-import {absenceProofUpload} from "../middleware.js";
+import {absenceProofUpload, checkActiveEnrollment} from "../middleware.js";
 import {ObjectId} from "mongodb";
 import {userData, calendarData} from "../data/index.js";
 import coursesData from "../data/courses.js";
@@ -219,7 +219,7 @@ router.route("/my-courses").get(async (req, res) => {
     }
 });
 
-router.route("/courses/:id").get(async (req, res) => {
+router.route("/courses/:id").get(checkActiveEnrollment, async (req, res) => {
     try {
         const courseId = stringValidate(req.params.id);
         const studentId = req.session.user._id;
@@ -284,7 +284,7 @@ router.route("/courses/:id").get(async (req, res) => {
     }
 });
 
-router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
+router.get("/courses/:courseId/lectures/:lectureId", checkActiveEnrollment,async (req, res) => {
     try {
         const {courseId, lectureId} = req.params;
         const studentId = req.session.user._id;
@@ -351,7 +351,7 @@ router.get("/courses/:courseId/lectures/:lectureId", async (req, res) => {
     }
 });
 
-router.post("/courses/:courseId/lectures/:lectureId/rate", async (req, res) => {
+router.post("/courses/:courseId/lectures/:lectureId/rate", checkActiveEnrollment,async (req, res) => {
     try {
         const {courseId, lectureId} = req.params;
         const {rating} = req.body;
@@ -405,7 +405,7 @@ router.post("/courses/:courseId/lectures/:lectureId/rate", async (req, res) => {
 
 
 // GET /student/courses/:id/members
-router.get("/courses/:courseId/members", async (req, res) => {
+router.get("/courses/:courseId/members", checkActiveEnrollment,async (req, res) => {
     const {courseId} = req.params;
 
     try {
@@ -448,7 +448,7 @@ router.get("/courses/:courseId/members", async (req, res) => {
     }
 });
 
-router.get('/:courseId/attendance', async (req, res) => {
+router.get('/:courseId/attendance', checkActiveEnrollment,async (req, res) => {
     const { courseId } = req.params;
     const studentId = new ObjectId(req.session.user._id);
 
@@ -713,7 +713,7 @@ router
     });
 
 
-router.get("/lectures/:courseId", async (req, res) => {
+router.get("/lectures/:courseId", checkActiveEnrollment,async (req, res) => {
     try {
         const lecturesCollection = await lectures();
         const usersCollection = await users();

@@ -1,5 +1,5 @@
 import {ObjectId} from "mongodb";
-import {stringValidate} from "../validation.js";
+import {stringValidate, parse12HourTime} from "../validation.js";
 import {users, courses} from "../config/mongoCollections.js";
 
 const createCourse = async (courseName, courseCode, professorId) => {
@@ -325,6 +325,35 @@ const updateCourseInfo = async (courseId, newName, newCode) => {
     );
 
     if (updateResult.modifiedCount === 0) throw "No changes made to course info.";
+}
+
+const addProfessorOfficeHour = async(courseId, officeHourObj) =>{
+    courseId = stringValidate(courseId);
+    if (typeof officeHourObj !== "object") throw "Missing or invalid inputs.";
+    const { day, startTime, endTime, location, notes } = officeHourObj;
+    const validDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    if (!validDays.includes(day)) throw "Invalid day. Must be a valid weekday no weekends!";
+    const convertedStart = parse12HourTime(startTime);
+    const convertedEnd = parse12HourTime(endTime);
+    if (!convertedStart || !convertedEnd)  throw "Invalid time format. Use HH:MM AM/PM (e.g., 2:30 PM).";
+    location = stringValidate(location)
+    const courseCollection = await courses()
+    const updateResult = await courseCollection.updateOne(
+    { _id: new ObjectId(courseId) },
+    {
+      $push: {
+        professorOfficeHours: {
+          day,
+          startTime: convertedStart,
+          endTime: convertedEnd,
+          location: location.trim(),
+          notes: notes?.toString().trim() || "",
+        },
+      },
+    }
+  );
+    if (updateResult.modifiedCount === 0) throw "Failed to add office hour. Course may not exist.";
+    return { added: true };
 }
 
 export default {

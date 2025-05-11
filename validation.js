@@ -83,11 +83,28 @@ const calculateAge = (dateOfBirth) => {
   return age;
 }
 
+const parse12HourTime = (timeStr) => {
+  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+  if (!match) return null;
+
+  let [_, hour, minute, meridiem] = match;
+  hour = parseInt(hour, 10);
+  minute = parseInt(minute, 10);
+
+  if (hour < 1 || hour > 12 || minute < 0 || minute > 59) return null;
+
+  if (meridiem.toUpperCase() === "PM" && hour !== 12) hour += 12;
+  if (meridiem.toUpperCase() === "AM" && hour === 12) hour = 0;
+
+  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+};
+
 export {
   stringValidate,
   azAZLenValidate,
   validateEmail,
   passwordValidate,
   isValidDateString,
-  calculateAge
+  calculateAge,
+  parse12HourTime
 };

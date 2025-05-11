@@ -10,6 +10,7 @@ const router = Router()
 
 import {users, courses, lectures, attendance} from "../config/mongoCollections.js";
 import {stringValidate} from "../validation.js";
+import { verifyProfessorOwnsCourse } from "../middleware.js";
 
 
 router.route("/").get(async (req, res) => {
@@ -56,7 +57,7 @@ router.route("/").get(async (req, res) => {
 });
 
 
-router.route("/course/:id").get(async (req, res) => {
+router.route("/course/:id").get(verifyProfessorOwnsCourse , async (req, res) => {
     try {
         return res.redirect(`/professor/course/${req.params.id}/analytics`);
         const courseCollection = await courses();
@@ -90,7 +91,7 @@ router.route("/course/:id").get(async (req, res) => {
     }
 });
 
-router.route("/course/:id/analytics").get(async (req, res) => {
+router.route("/course/:id/analytics").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
         const courseId = req.params.id;
 
@@ -273,7 +274,7 @@ router.route("/course/:id/analytics").get(async (req, res) => {
     }
 });
 
-router.post('/course/:courseId/set-schedule', async (req, res) => {
+router.post('/course/:courseId/set-schedule',verifyProfessorOwnsCourse, async (req, res) => {
     const {courseId} = req.params;
     const {schedule} = req.body;
 
@@ -345,7 +346,7 @@ function dayMap(short) {
 }
 
 
-router.route("/course/:id/analytics/manage-tas").get(async (req, res) => {
+router.route("/course/:id/analytics/manage-tas").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
         const courseId = req.params.id;
         const courseCollection = await courses();
@@ -380,7 +381,7 @@ router.route("/course/:id/analytics/manage-tas").get(async (req, res) => {
     }
 })
 
-router.route("/course/:courseId/analytics/manage-tas/promote/:studentId").post(async (req, res) => {
+router.route("/course/:courseId/analytics/manage-tas/promote/:studentId").post(verifyProfessorOwnsCourse,async (req, res) => {
     try {
         const {studentId, courseId} = req.params;
 
@@ -414,7 +415,7 @@ router.route("/course/:courseId/analytics/manage-tas/promote/:studentId").post(a
     }
 })
 
-router.post("/course/:courseId/analytics/manage-tas/demote/:studentId", async (req, res) => {
+router.post("/course/:courseId/analytics/manage-tas/demote/:studentId", verifyProfessorOwnsCourse,async (req, res) => {
     try {
         const {courseId, studentId} = req.params;
 
@@ -616,7 +617,7 @@ router.route("/course/:courseId/lecture/create")
     });
 
 
-router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
+router.route("/course/:courseId/lecture/:lectureId").get(verifyProfessorOwnsCourse,async (req, res) => {
     try {
         const {courseId, lectureId} = req.params
         const lecturesCollection = await lectures()
@@ -711,7 +712,7 @@ router.route("/course/:courseId/lecture/:lectureId").get(async (req, res) => {
 })
 
 //attendance submission route
-router.route("/course/:courseId/lecture/:lectureId/attendance").post(async (req, res) => {
+router.route("/course/:courseId/lecture/:lectureId/attendance").post(verifyProfessorOwnsCourse,async (req, res) => {
     try {
         const {courseId, lectureId} = req.params;
 
@@ -748,7 +749,7 @@ router.route("/course/:courseId/lecture/:lectureId/attendance").post(async (req,
 })
 
 // absence request approve or reject route - doesn't mark as absent yet 
-router.post('/absence-request/update/:studentId/:courseId/:action', async (req, res) => {
+router.post('/absence-request/update/:studentId/:courseId/:action', verifyProfessorOwnsCourse,async (req, res) => {
     try {
         const {studentId, courseId, action} = req.params;
         const {requestIndex} = req.body;
@@ -805,7 +806,7 @@ router.post('/absence-request/update/:studentId/:courseId/:action', async (req, 
 
 // Edit lecture routes
 router.route("/course/:courseId/lecture/:lectureId/edit")
-    .get(async (req, res) => {
+    .get(verifyProfessorOwnsCourse,async (req, res) => {
         try {
             const {courseId, lectureId} = req.params;
 
@@ -839,7 +840,7 @@ router.route("/course/:courseId/lecture/:lectureId/edit")
             });
         }
     })
-    .post(async (req, res) => {
+    .post(verifyProfessorOwnsCourse,async (req, res) => {
         try {
             const {courseId, lectureId} = req.params;
             const {
