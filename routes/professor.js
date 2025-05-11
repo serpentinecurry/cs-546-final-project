@@ -229,19 +229,11 @@ router.route("/course/:id/analytics").get(async (req, res) => {
         try {
             // Get attendance data using the provided functions
             const absentStudents = await attendanceData.getAllAbsentStudents(courseId);
-
-            // Note: getAllPresentStudents takes studentId not courseId (this is inconsistent)
-            // Fix this by getting attendance for the course instead
-            const attendanceCollection = await attendance();
-            const presentRecords = await attendanceCollection.find({
-                courseId: new ObjectId(courseId),
-                status: "present"
-            }).toArray();
-
+            const presentStudents = await attendanceData.getAllPresentStudents(courseId);
             const excusedStudents = await attendanceData.getAllExcusedStudents(courseId);
 
             // Count the records
-            totalPresent = presentRecords.length;
+            totalPresent = presentStudents.length;
             totalAbsent = absentStudents.length;
             totalExcused = excusedStudents.length;
 
@@ -265,7 +257,7 @@ router.route("/course/:id/analytics").get(async (req, res) => {
                 totalPresent: totalPresent || 0,
                 totalAbsent: totalAbsent || 0,
                 totalExcused: totalExcused || 0,
-                hasAttendanceData, // Add this flag,
+                hasAttendanceData, 
                 scheduleMap,
                 weekdays: ['M', 'T', 'W', 'Th', 'F'],
             });

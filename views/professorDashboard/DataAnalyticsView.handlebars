@@ -211,7 +211,9 @@
         {{#if hasAttendanceData}}
             <div class="row">
                 <div class="col-md-6">
-                    <canvas id="attendanceChart" width="300" height="300"></canvas>
+                    <div style="width: 160px; height: 160px; margin: 0 auto;">
+                        <canvas id="attendanceChart"></canvas>
+                    </div>
                 </div>
                 <div class="col-md-6 d-flex align-items-center">
                     <div class="attendance-legend">
@@ -294,7 +296,7 @@
 
 <a href="/professor" class="btn btn-primary mt-4">Back to Dashboard</a>
 
-{{!-- Add this small script at the bottom of the page --}}
+
 <script>
     document.getElementById('searchBtn').addEventListener('click', filterStudents);
     document.getElementById('studentSearchInput').addEventListener('keyup', function (e) {
@@ -315,140 +317,50 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    // Use window.onload instead of DOMContentLoaded for better reliability
-    window.onload = function () {
+  
+    window.onload = function() {
         try {
-            // Get the canvas element
-            const ctx = document.getElementById('attendanceChart');
-
-            if (!ctx) {
-                console.error("Canvas element not found!");
-                return;
-            }
-
-            // Add fallback values in case they're undefined
-            const presentCount = {{totalPresent}} ||
-            1;
-            const absentCount = {{totalAbsent}} ||
-            0;
-            const excusedCount = {{totalExcused}} ||
-            0;
-
-            console.log("Chart data:", presentCount, absentCount, excusedCount);
-
-            // Create the chart with basic options
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['Present', 'Absent', 'Excused'],
-                    datasets: [{
-                        data: [presentCount, absentCount, excusedCount],
-                        backgroundColor: ['#198754', '#dc3545', '#ffc107']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
+            const hasData = {{#if hasAttendanceData}}true{{else}}false{{/if}};
+            
+            if (hasData) {
+                const ctx = document.getElementById('attendanceChart');
+                if (!ctx) {
+                    console.error("Canvas element not found!");
+                    return;
                 }
-            });
+                
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Present', 'Absent', 'Excused'],
+                        datasets: [{
+                            data: [{{totalPresent}}, {{totalAbsent}}, {{totalExcused}}],
+                            backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
+                            borderColor: ['#fff', '#fff', '#fff'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false, 
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.label + ': ' + context.raw + ' students';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
         } catch (err) {
             console.error("Error creating chart:", err);
-        }
-    };
-
-    window.onload = function () {
-        const form = document.getElementById('scheduleForm');
-        if (!form) return;
-
-        const btn = document.getElementById('submitScheduleBtn');
-        const spinner = document.getElementById('scheduleSpinner');
-        const btnText = document.getElementById('scheduleBtnText');
-
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-            const schedule = {};
-            const days = ['M', 'T', 'W', 'Th', 'F'];
-            const errors = [];
-
-            days.forEach(day => {
-                const active = formData.get(`${day}_active`) === 'on';
-                const start = formData.get(`${day}_startTime`);
-                const end = formData.get(`${day}_endTime`);
-
-                if (active) {
-                    if (!start || !end) {
-                        errors.push(`${dayMap(day)}: Start and end time are required.`);
-                        return;
-                    }
-
-                    const timePattern = /^\d{2}:\d{2}$/;
-                    if (!timePattern.test(start) || !timePattern.test(end)) {
-                        errors.push(`${dayMap(day)}: Invalid time format. Use HH:MM.`);
-                        return;
-                    }
-
-                    const [sh, sm] = start.split(':').map(Number);
-                    const [eh, em] = end.split(':').map(Number);
-                    const startMinutes = sh * 60 + sm;
-                    const endMinutes = eh * 60 + em;
-
-                    if (endMinutes <= startMinutes) {
-                        errors.push(`${dayMap(day)}: End time must be after start time.`);
-                        return;
-                    }
-
-                    schedule[day] = {startTime: start, endTime: end};
-                }
-            });
-
-            if (errors.length > 0) {
-                alert('Please fix the following errors:\n\n' + errors.join('\n'));
-                return;
-            }
-
-            const courseId = form.dataset.courseId;
-
-            // ✅ Spinner logic STARTS HERE — only if submit is valid
-            spinner.classList.remove('d-none');
-            btnText.textContent = 'Saving...';
-            btn.disabled = true;
-
-            fetch(`/professor/course/${courseId}/set-schedule`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({schedule})
-            })
-                    .then(res => {
-                        if (!res.ok) throw new Error("Failed to save schedule.");
-                        return res.json();
-                    })
-                    .then(data => {
-                        alert('Schedule saved successfully!');
-                        console.log('Server response:', data);
-                    })
-                    .catch(err => {
-                        console.error('Schedule save failed:', err);
-                        alert('Error saving schedule.');
-                    })
-                    .finally(() => {
-                        // ✅ Always reset spinner state
-                        spinner.classList.add('d-none');
-                        btnText.textContent = 'Save Schedule';
-                        btn.disabled = false;
-                    });
-        });
-
-        function dayMap(short) {
-            const map = {
-                M: 'Monday',
-                T: 'Tuesday',
-                W: 'Wednesday',
-                Th: 'Thursday',
-                F: 'Friday'
-            };
-            return map[short] || short;
         }
     };
 </script>
