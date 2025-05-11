@@ -276,6 +276,112 @@ router.route("/course/:id/analytics").get(async (req, res) => {
     }
 });
 
+router.route("/course/:id/analytics/manage-tas").get(async(req,res)=>{
+    try {
+         const courseId = req.params.id;
+    const courseCollection = await courses();
+    const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+
+    if (!course) throw "Course not found";
+
+    const studentIds = (course.studentEnrollments || [])
+      .filter(e => e.status === "active")
+      .map(e => new ObjectId(e.studentId));
+
+    const usersCollection = await users();
+    const students = await usersCollection.find({ _id: { $in: studentIds } }).toArray();
+    students.forEach((student) => {
+  student.isTAForThisCourse = (student.taForCourses || []).some(cid =>
+    cid.toString() === course._id.toString()
+  );
+});
+
+
+    return res.render("professorDashboard/manageTAs", {
+      layout: "main",
+      course,
+      students
+    });
+    } catch (error) {
+        console.error("Error loading TA management:", error);
+        res.status(500).render("error", {
+        layout: "main",
+        error: error.message || "Error loading TA management page."
+    });
+    }
+})
+
+router.route("/course/:courseId/analytics/manage-tas/promote/:studentId").post(async(req,res)=>{
+    try {
+    const { studentId, courseId } = req.params;
+
+    const usersCollection = await users();
+    const student = await usersCollection.findOne({ _id: new ObjectId(studentId) });
+
+    if (!student) throw "User not found";
+
+    const updates = {
+      $addToSet: { taForCourses: new ObjectId(courseId) }
+    };
+
+    // Only update role if the user isn't already a TA
+    if (student.role === "student") {
+      updates.$set = { role: "ta" };
+    }
+
+    await usersCollection.updateOne(
+      { _id: new ObjectId(studentId) },
+      updates
+    );
+
+    req.session.successMessage = "Student promoted to TA successfully!";
+    return res.redirect(`/professor/course/${courseId}/analytics/manage-tas`);
+    } catch (error) {
+         console.error("Promotion error:", error);
+    res.status(400).render("error", {
+      layout: "main",
+      error: error.message || error
+    });
+    }
+})
+
+router.post("/course/:courseId/analytics/manage-tas/demote/:studentId", async (req, res) => {
+  try {
+    const { courseId, studentId } = req.params;
+
+    const usersCollection = await users();
+    const user = await usersCollection.findOne({ _id: new ObjectId(studentId) });
+    if (!user) throw "User not found";
+
+    // Remove course from taForCourses
+    await usersCollection.updateOne(
+      { _id: new ObjectId(studentId) },
+      {
+        $pull: { taForCourses: new ObjectId(courseId) }
+      }
+    );
+
+    // If this was the only course, change role back to student
+    const updated = await usersCollection.findOne({ _id: new ObjectId(studentId) });
+    if (!updated.taForCourses || updated.taForCourses.length === 0) {
+      await usersCollection.updateOne(
+        { _id: new ObjectId(studentId) },
+        { $set: { role: "student" } }
+      );
+    }
+
+    req.session.successMessage = "TA successfully demoted to student.";
+    return res.redirect(`/professor/course/${courseId}/analytics/manage-tas`);
+  } catch (error) {
+    console.error("Demotion error:", error);
+    res.status(400).render("error", {
+      layout: "main",
+      error: error.message || error
+    });
+  }
+});
+
+
 router.route("/lectures/analytics/:id").get(async (req, res) => {
 
     try {

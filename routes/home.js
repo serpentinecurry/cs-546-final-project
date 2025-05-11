@@ -48,7 +48,7 @@ router
       };
       if (user.role === "professor") return res.redirect("/professor");
       else if (user.role === "student") return res.redirect("/student");
-      else if (user.role === "ta") return res.redirect("/ta");
+      else if (user.role === "ta") return res.redirect("/student");
       else return res.redirect("/admin");
     } catch (error) {
       return res.status(400).render("home", {
@@ -145,7 +145,7 @@ router.route("/logout").get(async (req, res) => {
 
 router
   .route("/forgot-password")
-  .get(async (req, res) => {
+  .get(preventDoubleLogin,async (req, res) => {
     res.render("forgotPassword", { error: null });
   })
   .post(async (req, res) => {

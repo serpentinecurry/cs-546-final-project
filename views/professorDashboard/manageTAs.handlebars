@@ -1,0 +1,58 @@
+<h2 class="mb-4">Manage TAs for {{course.courseName}} ({{course.courseCode}})</h2>
+
+{{#if students.length}}
+  <table class="table table-bordered">
+    <thead class="table-light">
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Gender</th>
+        <th>Current Role</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each students}}
+        <tr>
+          <td>{{this.firstName}} {{this.lastName}}</td>
+          <td>{{this.email}}</td>
+          <td>{{this.gender}}</td>
+          <td>
+            {{#if (eq this.role "ta")}}
+              {{#if this.isTAForThisCourse}}
+                {{#if (gt this.taForCourses.length 1)}}
+                  TA for this and other courses
+                {{else}}
+                  TA for this course
+                {{/if}}
+              {{else}}
+                TA for other course
+              {{/if}}
+            {{else}}
+              Student
+            {{/if}}
+          </td>
+          <td>
+            {{#if this.isTAForThisCourse}}
+              <form action="/professor/course/{{../course._id}}/analytics/manage-tas/demote/{{this._id}}" method="POST">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Demote to Student</button>
+              </form>
+            {{else}}
+              <form action="/professor/course/{{../course._id}}/analytics/manage-tas/promote/{{this._id}}" method="POST">
+                <button type="submit" class="btn btn-sm btn-warning">Promote to TA</button>
+              </form>
+            {{/if}}
+          </td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+{{else}}
+  <div class="alert alert-info">No active students enrolled in this course.</div>
+{{/if}}
+
+<div class="text-end mt-4">
+  <a href="/professor/course/{{course._id}}/analytics" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left-circle me-1"></i> Back to Course Analytics
+  </a>
+</div>
