@@ -64,6 +64,40 @@
   </div>
 {{/if}}
 
+{{#if sentMessages.length}}
+  <div class="card mt-4">
+    <div class="card-header bg-info text-dark">
+      <h5 class="mb-0">Your Sent Messages to Students</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>To (Student)</th>
+              <th>Course</th>
+              <th>Subject</th>
+              <th>Message</th>
+              <th>Date Sent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each sentMessages}}
+              <tr>
+                <td>{{this.studentName}}</td>
+                <td>{{this.courseName}}</td>
+                <td>{{this.subject}}</td>
+                <td>{{this.message}}</td>
+                <td>{{this.date}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{{/if}}
+
 <!-- Message Modal -->
 <div class="modal fade" id="messageStudentModal" tabindex="-1" aria-labelledby="messageStudentModalLabel" aria-hidden="true">
   <div class="modal-dialog">

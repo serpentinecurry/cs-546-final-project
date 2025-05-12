@@ -1085,32 +1085,7 @@ router.route("/request-change").get(async (req, res) => {
     } catch (error) {
         console.log(error);
     }
-})
-    .post(async (req, res) => {
-        try {
-            const userId = req.session.user._id;
-            let {field, newValue} = req.body;
-            field = stringValidate(field);
-            newValue = stringValidate(newValue);
-            if (!["major", "email"].includes(field)) throw "Invalid field selection.";
-            if (field === "email") {
-                newValue = validateEmail(newValue);
-            }
-            await userData.createRequest(userId, field, newValue);
-            res.redirect("/student/request-status");
-        } catch (error) {
-            return res.status(400).render("student/student", {
-                layout: "main",
-                partialToRender: "requestChangeForm",
-                user: {
-                    ...req.session.user,
-                    fullName: `${req.session.user.firstName} ${req.session.user.lastName}`,
-                },
-                currentPage: "requestChangeForm",
-                error: error.toString(),
-            });
-        }
-    });
+});
 
 router.route("/request-status").get(async (req, res) => {
     try {
@@ -1371,7 +1346,7 @@ router.route("/contact-tas").get(async (req, res) => {
         const filteredCourses = enrolledCourses.filter(course => {
             return !(course.taOfficeHours || []).some(oh => oh.taId.toString() === userIdStr);
         });
-
+        
         const coursesWithTAs = [];
         // For each course, get the TAs from taOfficeHours
         for (const course of filteredCourses) {
@@ -1412,23 +1387,27 @@ router.route("/contact-tas").get(async (req, res) => {
             });
         }
 
-        // Fetch sent messages by the student (only to TAs)
-        const taUsersList = await userCollection.find({ role: "ta" }).project({ _id: 1 }).toArray();
-        const taIdSet = new Set(taUsersList.map(u => u._id.toString()));
+        // Fetch sent messages by the student (only to TAs, and only for courses where sender is not a TA)
         const rawSentMessages = await messagesCollection.find({ fromId: studentId }).sort({ sentAt: -1 }).toArray();
-        const filteredSentMessages = rawSentMessages.filter(m => taIdSet.has(m.toId.toString()));
-        // Get all TA and course IDs for name lookup
+        // For each message, check if sender is a TA for that course
+        const courseIdsSet = new Set(rawSentMessages.map(m => m.courseId.toString()));
+        const courseDocs = await courseCollection.find({ _id: { $in: Array.from(courseIdsSet).map(id => new ObjectId(id)) } }).project({ _id: 1, courseName: 1, taOfficeHours: 1 }).toArray();
+        const courseTAmap = {};
+        courseDocs.forEach(c => { courseTAmap[c._id.toString()] = c; });
+        const filteredSentMessages = rawSentMessages.filter(m => {
+            const course = courseTAmap[m.courseId.toString()];
+            if (!course) return false;
+            // Sender should NOT be a TA for this course
+            return !(course.taOfficeHours || []).some(oh => oh.taId.toString() === studentId.toString());
+        });
+        // Get all TA IDs for name lookup
         const taIdsSet = new Set(filteredSentMessages.map(m => m.toId.toString()));
-        const courseIdsSet = new Set(filteredSentMessages.map(m => m.courseId.toString()));
         const taUsers = await userCollection.find({ _id: { $in: Array.from(taIdsSet).map(id => new ObjectId(id)) } }).project({ firstName: 1, lastName: 1 }).toArray();
-        const courseDocs = await courseCollection.find({ _id: { $in: Array.from(courseIdsSet).map(id => new ObjectId(id)) } }).project({ courseName: 1 }).toArray();
         const taMap = {};
         taUsers.forEach(ta => { taMap[ta._id.toString()] = `${ta.firstName} ${ta.lastName}`; });
-        const courseMap = {};
-        courseDocs.forEach(c => { courseMap[c._id.toString()] = c.courseName; });
         const sentMessages = filteredSentMessages.map(m => ({
             taName: taMap[m.toId.toString()] || 'Unknown TA',
-            courseName: courseMap[m.courseId.toString()] || 'Unknown Course',
+            courseName: courseTAmap[m.courseId.toString()]?.courseName || 'Unknown Course',
             subject: m.subject,
             message: m.message,
             date: m.sentAt ? new Date(m.sentAt).toLocaleString() : ''
@@ -1473,7 +1452,6 @@ router.route("/send-message").post(async (req, res) => {
             _id: new ObjectId(taId),
             role: "ta"
         });
-
         if (!ta) {
             throw "Invalid TA selected";
         }
@@ -1491,13 +1469,17 @@ router.route("/send-message").post(async (req, res) => {
         // Check if student and TA share any course (using taOfficeHours)
         let sharedCourseId = null;
         for (const course of studentCourses) {
-            if ((course.taOfficeHours || []).some(oh => oh.taId.toString() === taId)) {
+            // Check: sender is NOT a TA for this course
+            const isSenderTAForCourse = (course.taOfficeHours || []).some(oh => oh.taId.toString() === studentId.toString());
+            // Check: recipient is a TA for this course
+            const isRecipientTAForCourse = (course.taOfficeHours || []).some(oh => oh.taId.toString() === taId);
+            if (!isSenderTAForCourse && isRecipientTAForCourse) {
                 sharedCourseId = course._id;
                 break;
             }
         }
         if (!sharedCourseId) {
-            throw "You can only message TAs from your courses";
+            throw "You can only message TAs from your courses where you are a student (not a TA)";
         }
 
         // Store the message in the messages collection
@@ -1529,6 +1511,7 @@ router.route("/ta/messages").get(async (req, res) => {
     try {
         const taId = new ObjectId(req.session.user._id);
         const userCollection = await users();
+        const courseCollection = await courses();
         const messagesCollection = await messages();
 
         // Verify user is a TA
@@ -1536,7 +1519,6 @@ router.route("/ta/messages").get(async (req, res) => {
             _id: taId,
             role: "ta"
         });
-
         if (!ta) {
             return res.status(403).render("error", {
                 layout: "main",
@@ -1544,16 +1526,39 @@ router.route("/ta/messages").get(async (req, res) => {
             });
         }
 
+        // Get all course IDs where this user is a TA
+        const taCourses = await courseCollection.find({
+            taOfficeHours: { $elemMatch: { taId: taId } }
+        }).project({ _id: 1, studentEnrollments: 1, taOfficeHours: 1 }).toArray();
+        const taCourseIds = new Set(taCourses.map(c => c._id.toString()));
+        // Build a map of courseId to set of studentIds who are active and NOT TAs for that course
+        const courseStudentMap = {};
+        for (const course of taCourses) {
+            const taIdsForCourse = new Set((course.taOfficeHours || []).map(oh => oh.taId.toString()));
+            const studentIds = (course.studentEnrollments || [])
+                .filter(enr => enr.status === "active" && !taIdsForCourse.has(enr.studentId.toString()))
+                .map(enr => enr.studentId.toString());
+            courseStudentMap[course._id.toString()] = new Set(studentIds);
+        }
+
         // Fetch messages sent to this TA
         const rawMessages = await messagesCollection.find({ toId: taId }).sort({ sentAt: -1 }).toArray();
-
+        // Only include messages where:
+        // - The sender is a student (not a TA for that course)
+        // - The sender is actively enrolled in a course where this user is a TA
+        // - The message is for a course where this user is a TA
+        const filteredMessages = rawMessages.filter(m => {
+            const senderId = m.fromId.toString();
+            const courseId = m.courseId.toString();
+            return taCourseIds.has(courseId) && courseStudentMap[courseId]?.has(senderId);
+        });
         // Fetch student names for display
-        const studentIds = rawMessages.map(m => m.fromId);
+        const studentIds = filteredMessages.map(m => m.fromId);
         const students = await userCollection.find({ _id: { $in: studentIds } }).project({ firstName: 1, lastName: 1 }).toArray();
         const studentMap = {};
         students.forEach(s => { studentMap[s._id.toString()] = `${s.firstName} ${s.lastName}`; });
 
-        const messagess = rawMessages.map(m => ({
+        const messagess = filteredMessages.map(m => ({
             _id: m._id.toString(),
             subject: m.subject,
             message: m.message,
@@ -1600,17 +1605,19 @@ router.get("/ta/contact-students", async (req, res) => {
             // Get all active student enrollments
             const studentEnrollments = (course.studentEnrollments || []).filter(e => e.status === "active");
             const studentIds = studentEnrollments.map(e => new ObjectId(e.studentId));
-            // Exclude TAs
+            // Fetch all users enrolled as students in this course
             const students = await userCollection.find({
-                _id: { $in: studentIds },
-                role: { $ne: "ta" }
-            }).project({ firstName: 1, lastName: 1, email: 1, major: 1 }).toArray();
-            const formattedStudents = students.map(s => ({
+                _id: { $in: studentIds }
+            }).project({ firstName: 1, lastName: 1, email: 1, major: 1, taForCourses: 1 }).toArray();
+            // Exclude users who are TAs for this course (but allow TAs for other courses)
+            const formattedStudents = students
+              .filter(s => !(s.taForCourses || []).some(cid => cid.toString() === course._id.toString()))
+              .map(s => ({
                 _id: s._id.toString(),
                 fullName: `${s.firstName} ${s.lastName}`,
                 email: s.email,
                 major: s.major || "-"
-            }));
+              }));
             coursess.push({
                 _id: course._id.toString(),
                 courseName: course.courseName,
@@ -1619,12 +1626,48 @@ router.get("/ta/contact-students", async (req, res) => {
             });
         }
 
+        // Fetch sent messages by the TA (to students only, and only for courses where the recipient is an active student and not a TA for that course)
+        const messagesCollection = await messages();
+        const rawSentMessages = await messagesCollection.find({ fromId: taId }).sort({ sentAt: -1 }).toArray();
+        // Build a map of courseId to set of studentIds who are active and NOT TAs for that course
+        const courseStudentMap = {};
+        for (const course of taCourses) {
+            const taIdsForCourse = new Set((course.taOfficeHours || []).map(oh => oh.taId.toString()));
+            const studentIds = (course.studentEnrollments || [])
+                .filter(enr => enr.status === "active" && !taIdsForCourse.has(enr.studentId.toString()))
+                .map(enr => enr.studentId.toString());
+            courseStudentMap[course._id.toString()] = new Set(studentIds);
+        }
+        // Only include messages where recipient is an active student (not a TA for that course) and course is one where this user is a TA
+        const filteredSentMessages = rawSentMessages.filter(m => {
+            const studentId = m.toId.toString();
+            const courseId = m.courseId.toString();
+            return courseStudentMap[courseId]?.has(studentId);
+        });
+        // Get all student and course IDs for name lookup
+        const studentIdsSet = new Set(filteredSentMessages.map(m => m.toId.toString()));
+        const courseIdsSet = new Set(filteredSentMessages.map(m => m.courseId.toString()));
+        const studentUsers = await userCollection.find({ _id: { $in: Array.from(studentIdsSet).map(id => new ObjectId(id)) } }).project({ firstName: 1, lastName: 1 }).toArray();
+        const courseDocs = await courseCollection.find({ _id: { $in: Array.from(courseIdsSet).map(id => new ObjectId(id)) } }).project({ courseName: 1 }).toArray();
+        const studentMap = {};
+        studentUsers.forEach(s => { studentMap[s._id.toString()] = `${s.firstName} ${s.lastName}`; });
+        const courseMap = {};
+        courseDocs.forEach(c => { courseMap[c._id.toString()] = c.courseName; });
+        const sentMessages = filteredSentMessages.map(m => ({
+            studentName: studentMap[m.toId.toString()] || 'Unknown Student',
+            courseName: courseMap[m.courseId.toString()] || 'Unknown Course',
+            subject: m.subject,
+            message: m.message,
+            date: m.sentAt ? new Date(m.sentAt).toLocaleString() : ''
+        }));
+
         res.render("student/student", {
             layout: "main",
             partialToRender: "contactStudents",
             user: withUser(req),
             currentPage: "contactStudents",
-            courses: coursess
+            courses: coursess,
+            sentMessages
         });
     } catch (error) {
         console.error("Error loading TA contact students page:", error);
@@ -1653,13 +1696,11 @@ router.post("/ta/send-message", async (req, res) => {
 
         // Verify the student exists and is actually a student
         const student = await userCollection.findOne({
-            _id: new ObjectId(studentId),
-            role: { $ne: "ta" }
+            _id: new ObjectId(studentId)
         });
         if (!student) {
             throw "Invalid student selected";
         }
-
         // Find a course where this TA and student are both present
         const taCourses = await courseCollection.find({
             taOfficeHours: { $elemMatch: { taId: new ObjectId(taId) } },
@@ -1704,12 +1745,29 @@ router.get("/inbox", async (req, res) => {
         const courseCollection = await courses();
         const messagesCollection = await messages();
 
+        // Fetch all courses where the user is an active student (not a TA for that course)
+        const enrolledCourses = await courseCollection.find({
+            studentEnrollments: {
+                $elemMatch: {
+                    studentId,
+                    status: "active"
+                }
+            }
+        }).project({ _id: 1, taOfficeHours: 1 }).toArray();
+        // Exclude courses where the user is a TA
+        const filteredCourses = enrolledCourses.filter(course => {
+            return !(course.taOfficeHours || []).some(oh => oh.taId.toString() === studentId.toString());
+        });
+        const studentCourseIds = new Set(filteredCourses.map(c => c._id.toString()));
+
         // Fetch messages sent to this student
         const rawMessages = await messagesCollection.find({ toId: studentId }).sort({ sentAt: -1 }).toArray();
-        // Only include messages where the sender is a TA
+        // Only include messages where the sender is a TA and the course is one where the user is a student (not a TA)
         const taUsersList = await userCollection.find({ role: "ta" }).project({ _id: 1 }).toArray();
         const taIdSet = new Set(taUsersList.map(u => u._id.toString()));
-        const filteredMessages = rawMessages.filter(m => taIdSet.has(m.fromId.toString()));
+        const filteredMessages = rawMessages.filter(m => {
+            return taIdSet.has(m.fromId.toString()) && studentCourseIds.has(m.courseId.toString());
+        });
         // Get all TA and course IDs for name lookup
         const taIdsSet = new Set(filteredMessages.map(m => m.fromId.toString()));
         const courseIdsSet = new Set(filteredMessages.map(m => m.courseId.toString()));
@@ -1719,7 +1777,7 @@ router.get("/inbox", async (req, res) => {
         taUsers.forEach(ta => { taMap[ta._id.toString()] = `${ta.firstName} ${ta.lastName}`; });
         const courseMap = {};
         courseDocs.forEach(c => { courseMap[c._id.toString()] = c.courseName; });
-        const messages = filteredMessages.map(m => ({
+        const messagess = filteredMessages.map(m => ({
             _id: m._id.toString(),
             taName: taMap[m.fromId.toString()] || 'Unknown TA',
             courseName: courseMap[m.courseId.toString()] || 'Unknown Course',
@@ -1733,7 +1791,7 @@ router.get("/inbox", async (req, res) => {
             partialToRender: "studentInbox",
             user: withUser(req),
             currentPage: "studentInbox",
-            messages: messages
+            messages: messagess
         });
     } catch (error) {
         console.error("Error loading student inbox:", error);
