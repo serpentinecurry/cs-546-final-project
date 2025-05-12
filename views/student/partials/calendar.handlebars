@@ -1,25 +1,135 @@
+<style>
+    /* ✅ Fix wrapping and font size */
+    .fc-event-title,
+    .fc-event-time,
+    .fc-event-main {
+        white-space: normal !important;
+        overflow-wrap: break-word;
+        font-size: 13px;
+        line-height: 1.25;
+    }
+
+    /* ✅ Capitalize FullCalendar buttons */
+    .fc-button {
+        text-transform: capitalize !important;
+        font-weight: 500;
+    }
+
+    /* ✅ Custom subscribe button */
+    .btn-primary {
+        background-color: #4285f4;
+        border-color: #4285f4;
+    }
+
+    .btn-primary:hover {
+        background-color: #357ae8;
+        border-color: #357ae8;
+    }
+</style>
+
+<!-- 🗂️ Hidden events -->
 <ol hidden="true">
-  {{#each events}}
-  <li class="event">{{this}}</li>
-  {{/each}}
+    {{#each events}}
+        <li class="event">{{this}}</li>
+    {{/each}}
 </ol>
-<div id="calendar"></div>
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js'></script>
+
+<!-- 📅 Header with Subscribe button -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-calendar3 fs-4 text-primary"></i>
+        <h2 class="mb-0 fw-semibold">My Calendar</h2>
+    </div>
+
+    <a href="{{calendarSubscribeUrl}}" target="_blank"
+       class="btn btn-primary d-flex align-items-center gap-2 shadow-sm">
+        <img src="https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_16_2x.png" width="20"
+             height="20" alt="Google Calendar"/>
+        <span class="fw-medium">Subscribe to Google Calendar</span>
+    </a>
+</div>
+
+<!-- 📆 Calendar container -->
+<div id="calendar" class="shadow rounded p-3 bg-white border border-light-subtle"></div>
+
+<!-- FullCalendar CSS + JS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/main.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var calendarEl = document.getElementById('calendar');
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-          timezone: 'local',
-          initialView: 'timeGridWeek'
+    document.addEventListener('DOMContentLoaded', function () {
+        const calendarEl = document.getElementById('calendar');
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            buttonText: {
+                today: 'Today',
+                month: 'Month',
+                week: 'Week',
+                day: 'Day'
+            },
+            initialView: 'timeGridWeek',
+            nowIndicator: true,
+            slotMinTime: "07:00:00",
+            slotMaxTime: "24:00:00",
+            themeSystem: 'standard',
+            height: 'auto',
+            expandRows: true,
+            eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: true },
+
+            eventDidMount: function (info) {
+                // Tooltip
+                const tooltip = document.createElement('div');
+                tooltip.innerText = info.event.title;
+                tooltip.style.position = 'absolute';
+                tooltip.style.zIndex = '1000';
+                tooltip.style.padding = '4px 8px';
+                tooltip.style.background = 'rgba(0, 0, 0, 0.75)';
+                tooltip.style.color = 'white';
+                tooltip.style.borderRadius = '5px';
+                tooltip.style.fontSize = '12px';
+                tooltip.style.pointerEvents = 'none';
+                tooltip.style.display = 'none';
+                document.body.appendChild(tooltip);
+
+                info.el.addEventListener('mouseenter', function (e) {
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = e.pageX + 10 + 'px';
+                    tooltip.style.top = e.pageY + 10 + 'px';
+                });
+
+                info.el.addEventListener('mousemove', function (e) {
+                    tooltip.style.left = e.pageX + 10 + 'px';
+                    tooltip.style.top = e.pageY + 10 + 'px';
+                });
+
+                info.el.addEventListener('mouseleave', function () {
+                    tooltip.style.display = 'none';
+                });
+
+                // Style the event box
+                info.el.style.borderRadius = '6px';
+                info.el.style.padding = '4px';
+                info.el.style.color = 'white';
+                info.el.style.fontWeight = '500';
+                info.el.style.fontSize = '13px';
+                info.el.style.lineHeight = '1.2';
+                info.el.style.whiteSpace = 'normal';
+                info.el.style.overflow = 'visible';
+            },
+            events: [],
         });
 
         const eventList = document.getElementsByClassName("event");
-
-        for (e of eventList) {
-          const event = JSON.parse(e.innerHTML);
-          calendar.addEvent(event);
+        for (const e of eventList) {
+            const event = JSON.parse(e.innerHTML.trim());
+            calendar.addEvent(event);
         }
 
         calendar.render();
-      });
+    });
 </script>

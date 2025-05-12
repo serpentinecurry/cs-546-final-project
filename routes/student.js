@@ -21,6 +21,9 @@ import {
     passwordValidate,
     calculateAge,
 } from "../validation.js";
+import {addOfficeHourEvent, deleteOfficeHourEvent} from "../services/calendarSync.js";
+import {subscribeLinks} from "../services/calendarSync.js"; // ✅ add this
+
 
 const router = Router();
 
@@ -760,7 +763,6 @@ router.route("/absence-request").get(async (req, res) => {
         currentPage: "absence-request",
     });
 })
-
     .post(absenceProofUpload.single("proof"), async (req, res) => {
         let {courseId, lectureId, reason, proofType} = req.body;
         lectureId = lectureId?.trim();
@@ -1136,12 +1138,19 @@ router.route("/calendar").get(async (req, res) => {
         const officeHours = await calendarData.getOfficeHours(req.session.user._id);
         let events = lectures.concat(officeHours);
 
+        // 🎯 Decide which calendar to suggest
+        let calendarSubscribeUrl = subscribeLinks.students;
+        const role = req.session.user.user_role;
+        if (role === "ta") calendarSubscribeUrl = subscribeLinks.tas;
+        if (role === "professor") calendarSubscribeUrl = subscribeLinks.professors;
+
         return res.render("student/student", {
             layout: "main",
             partialToRender: "calendar",
             user: withUser(req),
             currentPage: "calendar",
             events: events,
+            calendarSubscribeUrl
         });
     } catch (error) {
         console.log(error);
@@ -1227,6 +1236,24 @@ router.route("/ta/officeHour/add").post(async (req, res) => {
             });
         }
 
+        // ✅ Google Calendar Sync
+        const name = `${user.firstName} ${user.lastName}`;
+        const eventIds = {};
+        for (const calendarType of ["students", "tas", "professors"]) {
+            const result = await addOfficeHourEvent({
+                name,
+                day,
+                startTime,
+                endTime,
+                location,
+                calendarType
+            });
+            if (result?.eventId) {
+                eventIds[calendarType] = result.eventId;
+            }
+        }
+
+
         const newOfficeHour = {
             _id: new ObjectId(),
             taId: userId,
@@ -1235,6 +1262,7 @@ router.route("/ta/officeHour/add").post(async (req, res) => {
             endTime,
             location: location.trim(),
             notes: notes?.trim() || "",
+            googleCalendarEventIds: eventIds
         };
 
         const updateResult = await courseCollection.updateOne(
@@ -1246,11 +1274,13 @@ router.route("/ta/officeHour/add").post(async (req, res) => {
             throw "Failed to add office hour.";
         }
 
+
         return res.redirect("/student/ta/officeHour");
     } catch (error) {
+        console.error("Add TA office hour error:", error);
         res.status(400).render("error", {
             layout: "main",
-            error: typeof err === "string" ? err : "Could not add office hour.",
+            error: typeof error === "string" ? error : "Could not add office hour.",
         });
     }
 })
@@ -1281,6 +1311,16 @@ router.post("/ta/officeHour/delete", async (req, res) => {
             });
         }
 
+        const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
+        const targetHour = course.taOfficeHours.find(
+            (oh) => oh._id.toString() === officeHourId && oh.taId.toString() === userId.toString()
+        );
+
+        if (targetHour?.googleCalendarEventIds) {
+            for (const [calendarType, eventId] of Object.entries(targetHour.googleCalendarEventIds)) {
+                await deleteOfficeHourEvent(calendarType, eventId);
+            }
+        }
         // Remove the TA’s office hour that matches officeHourId and taId
         const updateResult = await courseCollection.updateOne(
             {_id: new ObjectId(courseId)},
@@ -1309,41 +1349,41 @@ router.post("/ta/officeHour/delete", async (req, res) => {
 });
 
 router.get("/contact-tas", async (req, res) => {
-  try {
-    const user = req.session.user;
-    const studentCourses = user.enrolledCourses || [];
-    const allCourses = await coursesData.getAllCourses();
-    const usersCollection = await users();
-    const taList = [];
+    try {
+        const user = req.session.user;
+        const studentCourses = user.enrolledCourses || [];
+        const allCourses = await coursesData.getAllCourses();
+        const usersCollection = await users();
+        const taList = [];
 
-    for (const course of allCourses) {
-      if (studentCourses.some((id) => id.toString() === course._id.toString())) {
-        if (Array.isArray(course.taOfficeHours)) {
-          for (const taEntry of course.taOfficeHours) {
-            const taUser = await usersCollection.findOne({ _id: new ObjectId(taEntry.taId) });
-            if (taUser) {
-              taList.push({
-                _id: taUser._id,
-                fullName: `${taUser.firstName} ${taUser.lastName}`,
-                courseName: course.courseName,
-                courseId: course._id.toString(),
-              });
+        for (const course of allCourses) {
+            if (studentCourses.some((id) => id.toString() === course._id.toString())) {
+                if (Array.isArray(course.taOfficeHours)) {
+                    for (const taEntry of course.taOfficeHours) {
+                        const taUser = await usersCollection.findOne({_id: new ObjectId(taEntry.taId)});
+                        if (taUser) {
+                            taList.push({
+                                _id: taUser._id,
+                                fullName: `${taUser.firstName} ${taUser.lastName}`,
+                                courseName: course.courseName,
+                                courseId: course._id.toString(),
+                            });
+                        }
+                    }
+                }
             }
-          }
         }
-      }
-    }
 
-    return res.render("student/student", {
-      layout: "main",
-      user,
-      currentPage: "contactTas",
-      partialToRender: "contactTas",
-      taList,
-    });
-  } catch (e) {
-    return res.status(500).render("error", { error: "Error loading TA contact page." });
-  }
+        return res.render("student/student", {
+            layout: "main",
+            user,
+            currentPage: "contactTas",
+            partialToRender: "contactTas",
+            taList,
+        });
+    } catch (e) {
+        return res.status(500).render("error", {error: "Error loading TA contact page."});
+    }
 });
 //
 // router.route("/messages").get(async (req, res) => {
