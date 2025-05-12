@@ -5,13 +5,14 @@ import {
   isStartBeforeEnd,
   isValid24Hour,
 } from "../validation.js";
-import { users, courses, lectures } from "../config/mongoCollections.js";
+import { users, courses, lectures, discussions } from "../config/mongoCollections.js";
 
 
 
 // {
 //     "_id": "ObjectId_discussion",
 //     "lectureId": "ObjectId_lecture",
+//     "courseId": "ObjectId_course", // Added to keep track of which course it belongs to
 //     "authorId": "ObjectId_student",
 //     "postTitle": "Confused about Fetch API chaining",
 //     "postContent": "Can someone explain the difference between .then() and                                         async/await?",
@@ -31,7 +32,7 @@ import { users, courses, lectures } from "../config/mongoCollections.js";
 
 // create a discussion
 const createDiscussion = async (lectureId, courseId, authorId, postTitle, postContent) => {
-    // Input validation remains the same
+    
     lectureId = stringValidate(lectureId);
     courseId = stringValidate(courseId);
     authorId = stringValidate(authorId);
@@ -52,7 +53,7 @@ const createDiscussion = async (lectureId, courseId, authorId, postTitle, postCo
         throw "Invalid author ID";
     }
 
-    // First check that the course exists
+    
     const courseCollection = await courses();
     const course = await courseCollection.findOne({
         _id: new ObjectId(courseId)
@@ -61,7 +62,7 @@ const createDiscussion = async (lectureId, courseId, authorId, postTitle, postCo
         throw "Course not found";
     }
     
-    // Modified lecture check: Don't require courseId in the same document
+    
     const lecturesCollection = await lectures();
     const lecture = await lecturesCollection.findOne({
         _id: new ObjectId(lectureId)
@@ -71,20 +72,25 @@ const createDiscussion = async (lectureId, courseId, authorId, postTitle, postCo
         throw "Lecture not found";
     }
     
-    // Check if lecture belongs to this course
+    
     if (lecture.courseId.toString() !== courseId) {
         throw "Lecture does not belong to this course";
     }
     
-    // Check if a discussion already exists for this lecture
-    const existingDiscussion = course.discussions?.find(
-        disc => disc.lectureId.toString() === lectureId
-    );
+    
+    const discussionsCollection = await discussions();
+    
+    
+    const existingDiscussion = await discussionsCollection.findOne({
+        lectureId: new ObjectId(lectureId),
+        courseId: new ObjectId(courseId)
+    });
     
     if (existingDiscussion) {
         return {
             _id: existingDiscussion._id.toString(),
             lectureId: existingDiscussion.lectureId.toString(),
+            courseId: existingDiscussion.courseId.toString(),
             authorId: existingDiscussion.authorId.toString(),
             postTitle: existingDiscussion.postTitle,
             postContent: existingDiscussion.postContent,
@@ -97,8 +103,8 @@ const createDiscussion = async (lectureId, courseId, authorId, postTitle, postCo
     
     // Create discussion object following the schema
     const discussion = {
-        _id: new ObjectId(),
         lectureId: new ObjectId(lectureId),
+        courseId: new ObjectId(courseId),
         authorId: new ObjectId(authorId),
         postTitle: postTitle,
         postContent: postContent,
@@ -107,23 +113,17 @@ const createDiscussion = async (lectureId, courseId, authorId, postTitle, postCo
         updatedAt: new Date()
     };
     
-    // Add discussion to course
-    const updateInfo = await courseCollection.updateOne(
-        { _id: new ObjectId(courseId) },
-        {
-            $push: {
-                discussions: discussion,
-            },
-        }
-    );
     
-    if (updateInfo.modifiedCount === 0) {
+    const insertResult = await discussionsCollection.insertOne(discussion);
+    
+    if (!insertResult.acknowledged) {
         throw "Could not create discussion";
     }
     
     return {
-        _id: discussion._id.toString(),
+        _id: insertResult.insertedId.toString(),
         lectureId: discussion.lectureId.toString(),
+        courseId: discussion.courseId.toString(),
         authorId: discussion.authorId.toString(),
         postTitle: discussion.postTitle,
         postContent: discussion.postContent,
@@ -136,7 +136,6 @@ const createDiscussion = async (lectureId, courseId, authorId, postTitle, postCo
 
 
 // get all discussions for lecture
-
 const getDiscussionsLecture = async (lectureId, courseId) => {
     lectureId = stringValidate(lectureId);
     courseId = stringValidate(courseId);
@@ -157,15 +156,18 @@ const getDiscussionsLecture = async (lectureId, courseId) => {
         throw "Course not found";
     }
     
-    // Filter discussions for this lecture
-    const lectureDiscussions = course.discussions?.filter(
-        discussion => discussion.lectureId.toString() === lectureId
-    ) || [];
     
-    // Don't throw if no discussions, just return empty array
+    const discussionsCollection = await discussions();
+    const lectureDiscussions = await discussionsCollection.find({
+        lectureId: new ObjectId(lectureId),
+        courseId: new ObjectId(courseId)
+    }).toArray();
+    
+    
     return lectureDiscussions.map(discussion => ({
         _id: discussion._id.toString(),
         lectureId: discussion.lectureId.toString(),
+        courseId: discussion.courseId.toString(),
         authorId: discussion.authorId.toString(),
         postTitle: discussion.postTitle,
         postContent: discussion.postContent,
@@ -199,15 +201,16 @@ const addAComment = async (discussionId, courseId, commenterId, commentText, isA
         timestamp: new Date()
     };
     
-    const courseCollection = await courses();
-    const updateResult = await courseCollection.updateOne(
+    // Update in the discussions collection
+    const discussionsCollection = await discussions();
+    const updateResult = await discussionsCollection.updateOne(
         { 
-            _id: new ObjectId(courseId),
-            "discussions._id": new ObjectId(discussionId)
+            _id: new ObjectId(discussionId),
+            courseId: new ObjectId(courseId)
         },
         { 
-            $push: { "discussions.$.comments": comment },
-            $set: { "discussions.$.updatedAt": new Date() }
+            $push: { comments: comment },
+            $set: { updatedAt: new Date() }
         }
     );
     

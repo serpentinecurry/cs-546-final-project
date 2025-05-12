@@ -6,7 +6,7 @@ import attendanceData from "../data/attendance.js";
 import lectureData from "../data/lectures.js";
 import discussionsData from "../data/discussions.js";
 import {createFeedbackSurvey} from "../data/feedback.js";
-import {attendance, courses, feedback, lectures, users} from "../config/mongoCollections.js";
+import {attendance, courses, feedback, lectures, users, discussions} from "../config/mongoCollections.js";
 import dayjs from "dayjs";
 import {stringValidate} from "../validation.js";
 import {verifyProfessorOwnsCourse} from "../middleware.js";
@@ -882,25 +882,19 @@ router.route("/course/:courseId/lecture/:lectureId").get(verifyProfessorOwnsCour
         const averageRating = await lectureData.getAverageRating(lectureId);
         const ratingCount = lecture.ratings ? lecture.ratings.length : 0;
 
-
         let hasDiscussion = false;
         let discussionId = null;
 
         try {
-            const courseCollection = await courses();
-            const course = await courseCollection.findOne({
-                _id: new ObjectId(courseId),
+            const discussionsCollection = await discussions();
+            const existingDiscussion = await discussionsCollection.findOne({
+                lectureId: new ObjectId(lectureId),
+                courseId: new ObjectId(courseId)
             });
 
-            if (course && course.discussions && course.discussions.length > 0) {
-                const existingDiscussion = course.discussions.find(
-                    (d) => d.lectureId.toString() === lectureId
-                );
-
-                if (existingDiscussion) {
-                    hasDiscussion = true;
-                    discussionId = existingDiscussion._id.toString();
-                }
+            if (existingDiscussion) {
+                hasDiscussion = true;
+                discussionId = existingDiscussion._id.toString();
             }
         } catch (err) {
             console.error("Error checking for discussion:", err);
@@ -1272,6 +1266,16 @@ router.route("/course/:courseId/lecture/:lectureId/discussions/:discussionId").g
     try {
         const {courseId, lectureId, discussionId} = req.params;
 
+        const discussionsCollection = await discussions();
+        const discussion = await discussionsCollection.findOne({
+            _id: new ObjectId(discussionId),
+            courseId: new ObjectId(courseId),
+            lectureId: new ObjectId(lectureId)
+        });
+
+        if (!discussion) {
+            throw "Discussion not found";
+        }
 
         const courseCollection = await courses();
         const course = await courseCollection.findOne({
@@ -1282,35 +1286,26 @@ router.route("/course/:courseId/lecture/:lectureId/discussions/:discussionId").g
             throw "Course not found";
         }
 
-
-        const discussion = course.discussions?.find(
-            d => d._id.toString() === discussionId
-        );
-
-        if (!discussion) {
-            throw "Discussion not found";
-        }
-
-
         const usersCollection = await users();
         const author = await usersCollection.findOne({
-            _id: new ObjectId(discussion.authorId)
+            _id: discussion.authorId
         });
-
 
         const discussionData = {
             ...discussion,
             _id: discussion._id.toString(),
             lectureId: discussion.lectureId.toString(),
+            courseId: discussion.courseId.toString(),
             authorId: discussion.authorId.toString(),
             authorName: author ? `${author.firstName} ${author.lastName}` : "Unknown User",
+            createdAt: new Date(discussion.createdAt).toLocaleString(),
+            updatedAt: new Date(discussion.updatedAt).toLocaleString(),
             comments: discussion.comments?.map(c => ({
                 ...c,
                 _id: c._id.toString(),
                 commenterId: c.commenterId.toString()
             })) || []
         };
-
 
         if (discussionData.comments.length > 0) {
             const commenterIds = discussionData.comments
@@ -1326,7 +1321,6 @@ router.route("/course/:courseId/lecture/:lectureId/discussions/:discussionId").g
                 commenters.forEach(u => {
                     commenterMap[u._id.toString()] = `${u.firstName} ${u.lastName}`;
                 });
-
 
                 discussionData.comments.forEach(c => {
                     c.commenterName = c.isAnonymous ? "Anonymous" :
