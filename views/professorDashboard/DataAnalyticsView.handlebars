@@ -365,10 +365,20 @@
     {{!-- Enrolled Students Section --}}
     <!-- Enrolled Students -->
     <div class="card mb-4">
-        <div class="card-header bg-light fw-bold">Enrolled Students</div>
+        <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
+            <span>Enrolled Students</span>
+            <div class="search-container">
+                <div class="input-group">
+                    <input type="text" id="studentSearchInput" class="form-control" placeholder="Search students...">
+                    <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
         <div class="card-body p-0">
             {{#if enrolledStudents.length}}
-                <table class="table table-striped mb-0">
+                <table class="table table-striped mb-0" id="enrolledStudentsTable">
                     <thead>
                     <tr>
                         <th>Name</th>
@@ -378,7 +388,7 @@
                     </thead>
                     <tbody>
                     {{#each enrolledStudents}}
-                        <tr>
+                        <tr class="student-row">
                             <td>{{this.firstName}} {{this.lastName}}</td>
                             <td>{{this.email}}</td>
                             <td>{{this.major}}</td>
@@ -454,7 +464,7 @@
 
     function filterStudents() {
         const searchText = document.getElementById('studentSearchInput').value.toLowerCase();
-        const tableRows = document.querySelectorAll('.enrolled-students-section tbody tr');
+        const tableRows = document.querySelectorAll('#enrolledStudentsTable tbody tr');
 
         tableRows.forEach(row => {
             const text = row.textContent.toLowerCase();

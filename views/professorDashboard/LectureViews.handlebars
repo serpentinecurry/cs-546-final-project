@@ -19,6 +19,35 @@
   .student-card select {
     margin-top: 0.5rem;
   }
+  
+  .attendance-status {
+    display: inline-block;
+    margin-left: 1rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .status-present {
+    background-color: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+  }
+  
+  .status-absent {
+    background-color: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+  }
+  
+  .status-excused {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+  }
+  
+  .status-none {
+    background-color: rgba(108, 117, 125, 0.15);
+    color: #6c757d;
+  }
 
   .lecture-details {
     background-color: white;
@@ -48,6 +77,13 @@
     border: 1px solid #cbd5e0;
     font-weight: 500;
   }
+  
+  .attendance-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
 </style>
 
 <div class="container py-4">
@@ -59,16 +95,49 @@
 
   <h2 class="h4 mb-3">Attendance Sheet</h2>
 
+<!-- Filter Tabs -->
+  <div class="mb-3">
+    <ul class="nav nav-tabs" id="attendanceFilterTabs">
+      <li class="nav-item">
+        <button class="nav-link active" data-filter="all">All Students</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-filter="present">Present</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-filter="absent">Absent</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-filter="excused">Excused</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-filter="none">No Data</button>
+      </li>
+    </ul>
+  </div>
+
   <form method="POST" action="/professor/course/{{course._id}}/lecture/{{lecture._id}}/attendance" class="attendance-form">
     {{#each students}}
-      <div class="student-card student">
+      <div class="student-card student" data-status="{{this.attendanceStatus}}">
         <p class="fw-semibold mb-1">{{this.firstName}} {{this.lastName}}</p>
-        <select name="attendanceData[{{this._id}}]" class="form-select w-auto">
-          <option value="" disabled {{#unless this.attendanceStatus}}selected{{/unless}}>Select Attendance</option>
-          <option value="present" {{#if (eq this.attendanceStatus "present")}}selected{{/if}}>Present</option>
-          <option value="absent" {{#if (eq this.attendanceStatus "absent")}}selected{{/if}}>Absent</option>
-          <option value="excused" {{#if (eq this.attendanceStatus "excused")}}selected{{/if}}>Excused</option>
-        </select>
+        <div class="attendance-controls">
+          <select name="attendanceData[{{this._id}}]" class="form-select w-auto">
+            <option value="" disabled {{#unless this.attendanceStatus}}selected{{/unless}}>Select Attendance</option>
+            <option value="present" {{#if (eq this.attendanceStatus "present")}}selected{{/if}}>Present</option>
+            <option value="absent" {{#if (eq this.attendanceStatus "absent")}}selected{{/if}}>Absent</option>
+            <option value="excused" {{#if (eq this.attendanceStatus "excused")}}selected{{/if}}>Excused</option>
+          </select>
+          
+          {{#if this.attendanceStatus}}
+            <span class="attendance-status status-{{this.attendanceStatus}}">
+              {{#if (eq this.attendanceStatus "present")}}Present{{/if}}
+              {{#if (eq this.attendanceStatus "absent")}}Absent{{/if}}
+              {{#if (eq this.attendanceStatus "excused")}}Excused{{/if}}
+            </span>
+          {{else}}
+            <span class="attendance-status status-none">No attendance data</span>
+          {{/if}}
+        </div>
       </div>
     {{/each}}
 
@@ -132,6 +201,29 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    
+    const filterTabs = document.querySelectorAll('#attendanceFilterTabs .nav-link');
+    
+    filterTabs.forEach(tab => {
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        filterTabs.forEach(t => t.classList.remove('active'))
+        this.classList.add('active');
+        const filter = this.getAttribute('data-filter');
+        const studentCards = document.querySelectorAll('.student-card');
+        
+        studentCards.forEach(card => {
+          const status = card.getAttribute('data-status') || 'none';
+          
+          if (filter === 'all' || filter === status) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
     try {
       const ctx = document.getElementById('attendanceChart');
       if (!ctx) {

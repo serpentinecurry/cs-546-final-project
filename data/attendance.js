@@ -376,5 +376,3 @@ export default {
   getLectureExcusedStudents,
 };
 
-
-console.log(await getAllPresentStudents("681c47b00f0929c669de8f14"));
