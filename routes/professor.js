@@ -17,6 +17,7 @@ import {
 import dayjs from "dayjs";
 import { stringValidate } from "../validation.js";
 import { verifyProfessorOwnsCourse } from "../middleware.js";
+import { sendAbsentNotificationEmail } from "../utils/mailer.js";
 
 const router = Router();
 
@@ -1023,6 +1024,26 @@ router
           studentId,
           status
         );
+        if (status === "absent") {
+          // Fetch student info
+          const userCollection = await users();
+          const student = await userCollection.findOne({ _id: new ObjectId(studentId) });
+      
+          // Fetch course and lecture info
+          const courseCollection = await courses();
+          const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+          const lecturesCollection = await lectures();
+          const lecture = await lecturesCollection.findOne({ _id: new ObjectId(lectureId) });
+      
+          if (student && student.email && course && lecture) {
+            await sendAbsentNotificationEmail(
+              student.email,
+              student.firstName,
+              course.courseName,
+              lecture.lectureTitle
+            );
+          }
+        }
       }
 
       req.session.successMessage = "Attendance submitted successfully!";
