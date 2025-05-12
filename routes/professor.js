@@ -882,6 +882,17 @@ router.route("/course/:courseId/lecture/:lectureId").get(verifyProfessorOwnsCour
         const averageRating = await lectureData.getAverageRating(lectureId);
         const ratingCount = lecture.ratings ? lecture.ratings.length : 0;
 
+        // Get lecture-specific attendance data
+        const lecturePresentStudents = await attendanceData.getLecturePresentStudents(lectureId);
+        const lectureAbsentStudents = await attendanceData.getLectureAbsentStudents(lectureId);
+        const lectureExcusedStudents = await attendanceData.getLectureExcusedStudents(lectureId);
+        
+        const lecturePresentCount = lecturePresentStudents.length;
+        const lectureAbsentCount = lectureAbsentStudents.length;
+        const lectureExcusedCount = lectureExcusedStudents.length;
+        
+        const lectureHasAttendanceData = lecturePresentCount > 0 || lectureAbsentCount > 0 || lectureExcusedCount > 0;
+
         let hasDiscussion = false;
         let discussionId = null;
 
@@ -918,6 +929,11 @@ router.route("/course/:courseId/lecture/:lectureId").get(verifyProfessorOwnsCour
             discussionViewPath: hasDiscussion
                 ? `/professor/course/${courseId}/lecture/${lectureId}/discussions/${discussionId}`
                 : null,
+            // Add lecture-specific attendance data
+            lecturePresentCount,
+            lectureAbsentCount,
+            lectureExcusedCount,
+            lectureHasAttendanceData
         });
     } catch (e) {
         console.error("Error fetching lecture or course:", e);

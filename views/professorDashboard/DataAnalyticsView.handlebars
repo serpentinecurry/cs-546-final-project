@@ -362,39 +362,6 @@
         </div>
     </div>
 
-    {{!-- Attendance Pie Chart --}}
-    <div class="card mt-4">
-        <div class="card-header">
-            <h3>Attendance Overview</h3>
-        </div>
-        <div class="card-body">
-            {{#if hasAttendanceData}}
-                <div class="row">
-                    <div class="col-md-6">
-                        <div style="width: 160px; height: 160px; margin: 0 auto;">
-                            <canvas id="attendanceChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="col-md-6 d-flex align-items-center">
-                        <div class="attendance-legend">
-                            <div class="mb-2"><span class="badge bg-success me-2">&nbsp;</span> Present: <span
-                                    id="presentCount">{{totalPresent}}</span> students
-                            </div>
-                            <div class="mb-2"><span class="badge bg-danger me-2">&nbsp;</span> Absent: <span
-                                    id="absentCount">{{totalAbsent}}</span> students
-                            </div>
-                            <div><span class="badge bg-warning me-2">&nbsp;</span> Excused: <span
-                                    id="excusedCount">{{totalExcused}}</span> students
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {{else}}
-                <p><strong>No attendance data now</strong></p>
-            {{/if}}
-        </div>
-    </div>
-
     {{!-- Enrolled Students Section --}}
     <!-- Enrolled Students -->
     <div class="card mb-4">
@@ -496,56 +463,7 @@
     }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-
-    window.onload = function () {
-        try {
-            const hasData = {{#if hasAttendanceData}}true{{else}}false{{/if}};
-
-            if (hasData) {
-                const ctx = document.getElementById('attendanceChart');
-                if (!ctx) {
-                    console.error("Canvas element not found!");
-                    return;
-                }
-
-                new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: ['Present', 'Absent', 'Excused'],
-                        datasets: [{
-                            data: [{{totalPresent}}, {{totalAbsent}}, {{totalExcused}}],
-                            backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
-                            borderColor: ['#fff', '#fff', '#fff'],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (context) {
-                                        return context.label + ': ' + context.raw + ' students';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        } catch (err) {
-            console.error("Error creating chart:", err);
-        }
-    };
-
     document.getElementById("scheduleForm").addEventListener("submit", async function (e) {
         e.preventDefault();
 

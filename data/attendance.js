@@ -1,4 +1,4 @@
-import { attendance } from "../config/mongoCollections.js";
+import { attendance, users, courses, lectures } from "../config/mongoCollections.js";
 import { ObjectId } from "mongodb";
 import { stringValidate } from "../validation.js";
 
@@ -19,6 +19,7 @@ let createAttendance = async (lectureId, courseId, studentId, status) => {
   }
 
   const attendanceCollection = await attendance();
+  
   lectureId = stringValidate(lectureId);
   courseId = stringValidate(courseId);
   studentId = stringValidate(studentId);
@@ -138,10 +139,24 @@ let averageAttendance = async (courseId) => {
     throw "Invalid course ID";
   }
 
+  const courseCollection = await courses();
+  const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+  if (!course) {
+    throw "Course not found";
+  }
+
+  
+  const activeStudentIds = course.studentEnrollments
+    .filter(enrollment => enrollment.status === "active" && enrollment.role !== "TA")
+    .map(enrollment => new ObjectId(enrollment.studentId));
+
   const attendanceCollection = await attendance();
 
   const AttendanceTotal = await attendanceCollection
-    .find({ courseId: new ObjectId(courseId) })
+    .find({ 
+      courseId: new ObjectId(courseId),
+      studentId: { $in: activeStudentIds }
+    })
     .toArray();
 
   const AttendanceCount = AttendanceTotal.filter(
@@ -157,10 +172,25 @@ const getAllPresentStudents = async (courseId) => {
     throw "Invalid course ID";
   }
 
+  const courseCollection = await courses();
+  const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+  if (!course) {
+    throw "Course not found";
+  }
+
+  // Filter out TAs and non-active students
+  const activeStudentIds = course.studentEnrollments
+    .filter(enrollment => enrollment.status === "active" && enrollment.role !== "TA")
+    .map(enrollment => new ObjectId(enrollment.studentId));
+
   const attendanceCollection = await attendance();
 
   const presentRecords = await attendanceCollection
-    .find({ courseId: new ObjectId(courseId), status: "present" })
+    .find({ 
+      courseId: new ObjectId(courseId), 
+      status: "present",
+      studentId: { $in: activeStudentIds }
+    })
     .toArray();
 
   return presentRecords;
@@ -172,10 +202,25 @@ const getAllAbsentStudents = async (courseId) => {
     throw "Invalid course ID";
   }
 
+  const courseCollection = await courses();
+  const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+  if (!course) {
+    throw "Course not found";
+  }
+
+  // Filter out TAs and non-active students
+  const activeStudentIds = course.studentEnrollments
+    .filter(enrollment => enrollment.status === "active" && enrollment.role !== "TA")
+    .map(enrollment => new ObjectId(enrollment.studentId));
+
   const attendanceCollection = await attendance();
 
   const absentRecords = await attendanceCollection
-    .find({ courseId: new ObjectId(courseId), status: "absent" })
+    .find({ 
+      courseId: new ObjectId(courseId), 
+      status: "absent",
+      studentId: { $in: activeStudentIds }
+    })
     .toArray();
 
   return absentRecords;
@@ -187,10 +232,133 @@ const getAllExcusedStudents = async (courseId) => {
     throw "Invalid course ID";
   }
 
+  const courseCollection = await courses();
+  const course = await courseCollection.findOne({ _id: new ObjectId(courseId) });
+  if (!course) {
+    throw "Course not found";
+  }
+
+  
+  const activeStudentIds = course.studentEnrollments
+    .filter(enrollment => enrollment.status === "active" && enrollment.role !== "TA")
+    .map(enrollment => new ObjectId(enrollment.studentId));
+
   const attendanceCollection = await attendance();
 
   const excusedRecords = await attendanceCollection
-    .find({ courseId: new ObjectId(courseId), status: "excused" })
+    .find({ 
+      courseId: new ObjectId(courseId), 
+      status: "excused",
+      studentId: { $in: activeStudentIds }
+    })
+    .toArray();
+
+  return excusedRecords;
+};
+
+const getLecturePresentStudents = async (lectureId) => {
+  lectureId = stringValidate(lectureId);
+  if (!ObjectId.isValid(lectureId)) {
+    throw "Invalid lecture ID";
+  }
+
+  const lectureCollection = await lectures();
+  const lecture = await lectureCollection.findOne({ _id: new ObjectId(lectureId) });
+  if (!lecture) {
+    throw "Lecture not found";
+  }
+
+  const courseCollection = await courses();
+  const course = await courseCollection.findOne({ _id: lecture.courseId });
+  if (!course) {
+    throw "Course not found";
+  }
+
+  // Filter out TAs and non-active students
+  const activeStudentIds = course.studentEnrollments
+    .filter(enrollment => enrollment.status === "active" && enrollment.role !== "TA")
+    .map(enrollment => new ObjectId(enrollment.studentId));
+
+  const attendanceCollection = await attendance();
+
+  const presentRecords = await attendanceCollection
+    .find({ 
+      lectureId: new ObjectId(lectureId), 
+      status: "present",
+      studentId: { $in: activeStudentIds }
+    })
+    .toArray();
+
+  return presentRecords;
+};
+
+const getLectureAbsentStudents = async (lectureId) => {
+  lectureId = stringValidate(lectureId);
+  if (!ObjectId.isValid(lectureId)) {
+    throw "Invalid lecture ID";
+  }
+
+  const lectureCollection = await lectures();
+  const lecture = await lectureCollection.findOne({ _id: new ObjectId(lectureId) });
+  if (!lecture) {
+    throw "Lecture not found";
+  }
+
+  const courseCollection = await courses();
+  const course = await courseCollection.findOne({ _id: lecture.courseId });
+  if (!course) {
+    throw "Course not found";
+  }
+
+  
+  const activeStudentIds = course.studentEnrollments
+    .filter(enrollment => enrollment.status === "active" && enrollment.role !== "TA")
+    .map(enrollment => new ObjectId(enrollment.studentId));
+
+  const attendanceCollection = await attendance();
+
+  const absentRecords = await attendanceCollection
+    .find({ 
+      lectureId: new ObjectId(lectureId), 
+      status: "absent",
+      studentId: { $in: activeStudentIds }
+    })
+    .toArray();
+
+  return absentRecords;
+};
+
+const getLectureExcusedStudents = async (lectureId) => {
+  lectureId = stringValidate(lectureId);
+  if (!ObjectId.isValid(lectureId)) {
+    throw "Invalid lecture ID";
+  }
+
+  const lectureCollection = await lectures();
+  const lecture = await lectureCollection.findOne({ _id: new ObjectId(lectureId) });
+  if (!lecture) {
+    throw "Lecture not found";
+  }
+
+  const courseCollection = await courses();
+  const course = await courseCollection.findOne({ _id: lecture.courseId });
+  if (!course) {
+    throw "Course not found";
+  }
+
+  
+  const activeStudentIds = course.studentEnrollments
+    .filter(enrollment => enrollment.status === "active" && enrollment.role !== "TA")
+    .map(enrollment => new ObjectId(enrollment.studentId));
+
+  const attendanceCollection = await attendance();
+
+  const excusedRecords = await attendanceCollection
+    .find({ 
+      lectureId: new ObjectId(lectureId), 
+      status: "excused",
+      studentId: { $in: activeStudentIds }
+    })
     .toArray();
 
   return excusedRecords;
@@ -203,4 +371,10 @@ export default {
   getAllAbsentStudents,
   getAllPresentStudents,
   getAllExcusedStudents,
+  getLectureAbsentStudents,
+  getLecturePresentStudents,
+  getLectureExcusedStudents,
 };
+
+
+console.log(await getAllPresentStudents("681c47b00f0929c669de8f14"));
