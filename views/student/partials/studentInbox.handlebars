@@ -1,4 +1,4 @@
-<h2 class="mb-4">Student Messages</h2>
+<h2 class="mb-4">Inbox: Messages from TAs</h2>
 
 {{#if error}}
   {{#unless (eq messages.length 0)}}
@@ -17,29 +17,30 @@
 {{#if messages.length}}
   <div class="row">
     <div class="col-md-4">
-      <div class="list-group" id="messageList">
+      <div class="list-group" id="studentInboxList">
         {{#each messages}}
           <a href="#" 
              class="list-group-item list-group-item-action"
              data-message-id="{{this._id}}"
              data-subject="{{this.subject}}"
              data-message="{{this.message}}"
-             data-student-name="{{this.studentName}}"
+             data-ta-name="{{this.taName}}"
+             data-course-name="{{this.courseName}}"
              data-date="{{this.date}}"
-             onclick="showMessage(event, '{{this._id}}')">
+             onclick="showStudentInboxMessage(event, '{{this._id}}')">
             <div class="d-flex w-100 justify-content-between">
               <h6 class="mb-1">{{this.subject}}</h6>
               <small>{{this.date}}</small>
             </div>
             <p class="mb-1 text-truncate">{{this.message}}</p>
-            <small>From: {{this.studentName}}</small>
+            <small>From: {{this.taName}} ({{this.courseName}})</small>
           </a>
         {{/each}}
       </div>
     </div>
     <div class="col-md-8">
-      <div id="messageContent" class="card">
-        <div class="card-body" id="messageContentBody">
+      <div id="studentInboxContent" class="card">
+        <div class="card-body" id="studentInboxContentBody">
           <div class="text-center text-muted py-5">
             <i class="bi bi-envelope fs-1"></i>
             <p class="mt-3">Select a message to view its content</p>
@@ -50,15 +51,15 @@
   </div>
 {{else}}
   <div class="alert alert-info">
-    You have no messages from students.
+    You have no messages from TAs.
   </div>
 {{/if}}
 
 <script>
-function showMessage(event, messageId) {
+function showStudentInboxMessage(event, messageId) {
   event.preventDefault();
   // Remove active class from all
-  document.querySelectorAll('.list-group-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('#studentInboxList .list-group-item').forEach(i => i.classList.remove('active'));
   // Add active to clicked
   const item = event.currentTarget;
   item.classList.add('active');
@@ -66,13 +67,14 @@ function showMessage(event, messageId) {
   // Get data attributes
   const subject = item.getAttribute('data-subject');
   const message = item.getAttribute('data-message');
-  const studentName = item.getAttribute('data-student-name');
+  const taName = item.getAttribute('data-ta-name');
+  const courseName = item.getAttribute('data-course-name');
   const date = item.getAttribute('data-date');
 
   // Set content
-  document.getElementById('messageContentBody').innerHTML = `
+  document.getElementById('studentInboxContentBody').innerHTML = `
     <h5 class="mb-3">${subject}</h5>
-    <p><strong>From:</strong> ${studentName}</p>
+    <p><strong>From:</strong> ${taName} (${courseName})</p>
     <p><strong>Date:</strong> ${date}</p>
     <hr>
     <div style="white-space: pre-line;">${message}</div>

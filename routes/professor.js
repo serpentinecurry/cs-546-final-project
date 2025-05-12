@@ -631,6 +631,7 @@ router.post(
       const { courseId, studentId } = req.params;
 
       const usersCollection = await users();
+      const courseCollection = await courses();
       const user = await usersCollection.findOne({
         _id: new ObjectId(studentId),
       });
@@ -642,6 +643,11 @@ router.post(
         {
           $pull: { taForCourses: new ObjectId(courseId) },
         }
+      );
+        // Remove TA's office hours from course
+      await courseCollection.updateOne(
+        { _id: new ObjectId(courseId) },
+        { $pull: { taOfficeHours: { taId: new ObjectId(studentId) } } }
       );
 
       // If this was the only course, change role back to student

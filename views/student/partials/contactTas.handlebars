@@ -81,6 +81,41 @@
   </div>
 {{/if}}
 
+<!-- Sent Messages Section -->
+{{#if sentMessages.length}}
+  <div class="card mt-4">
+    <div class="card-header bg-info text-dark">
+      <h5 class="mb-0">Your Sent Messages to TAs</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>To (TA)</th>
+              <th>Course</th>
+              <th>Subject</th>
+              <th>Message</th>
+              <th>Date Sent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each sentMessages}}
+              <tr>
+                <td>{{this.taName}}</td>
+                <td>{{this.courseName}}</td>
+                <td>{{this.subject}}</td>
+                <td>{{this.message}}</td>
+                <td>{{this.date}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{{/if}}
+
 <!-- Message Modal -->
 <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
   <div class="modal-dialog">
