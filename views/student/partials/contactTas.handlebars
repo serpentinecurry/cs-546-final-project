@@ -1,42 +1,137 @@
-<h2>Contact TAs</h2>
+<h2 class="mb-4">Contact TAs</h2>
 
-{{#each taList}}
-  <div class="ta-chat-card" style="margin-bottom: 1rem; border: 1px solid #ccc; padding: 1rem; border-radius: 8px;">
-    <h4>{{this.fullName}} <small style="font-weight: normal;">({{this.courseName}})</small></h4>
-    <div id="chatBox-{{@index}}" style="height: 200px; overflow-y: scroll; background: #f9f9f9; padding: 0.5rem; border-radius: 5px; margin-bottom: 0.5rem;"></div>
-    <input type="text" id="input-{{@index}}" placeholder="Type message..." style="width: 75%; padding: 0.5rem;">
-    <button class="submit-btn" onclick="sendMsg({{@index}}, '{{this.courseId}}', '{{this._id}}')">Send</button>
+{{#if error}}
+  <div class="alert alert-danger" role="alert">
+    {{error}}
   </div>
-{{/each}}
+{{/if}}
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
+{{#if successMessage}}
+  <div class="alert alert-success" role="alert">
+    {{successMessage}}
+  </div>
+{{/if}}
 
-  {{#each taList}}
-    socket.emit('join-room', '{{this.courseId}}');
+{{#if courses.length}}
+  {{#each courses}}
+    <div class="card mb-4 shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">{{this.courseName}} ({{this.courseCode}})</h4>
+      </div>
+      <div class="card-body">
+        {{#if this.tas.length}}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Office Hours</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{#each this.tas}}
+                  <tr>
+                    <td>{{this.fullName}}</td>
+                    <td>{{this.email}}</td>
+                    <td>
+                      {{#if this.officeHours.length}}
+                        <ul class="list-unstyled mb-0">
+                          {{#each this.officeHours}}
+                            <li>
+                              <small>
+                                {{this.day}} {{this.startTime}}-{{this.endTime}}
+                                {{#if this.location}}
+                                  at {{this.location}}
+                                {{/if}}
+                              </small>
+                            </li>
+                          {{/each}}
+                        </ul>
+                      {{else}}
+                        <span class="text-muted">No office hours set</span>
+                      {{/if}}
+                    </td>
+                    <td>
+                      <button type="button" 
+                              class="btn btn-sm btn-primary" 
+                              data-bs-toggle="modal" 
+                              data-bs-target="#messageModal"
+                              data-ta-id="{{this._id}}"
+                              data-ta-name="{{this.fullName}}"
+                              data-course-name="{{../courseName}}">
+                        <i class="bi bi-envelope"></i> Message
+                      </button>
+                    </td>
+                  </tr>
+                {{/each}}
+              </tbody>
+            </table>
+          </div>
+        {{else}}
+          <p class="text-muted mb-0">No TAs assigned to this course yet.</p>
+        {{/if}}
+      </div>
+    </div>
   {{/each}}
+{{else}}
+  <div class="alert alert-info">
+    You are not enrolled in any courses with TAs.
+  </div>
+{{/if}}
 
-  function sendMsg(index, courseId, taId) {
-    const input = document.getElementById(`input-${index}`);
-    const chatBox = document.getElementById(`chatBox-${index}`);
-    const msg = input.value.trim();
-    if (msg) {
-      socket.emit("student-message", { courseId, taId, message: msg, sender: "Student" });
-      const p = document.createElement("p");
-      p.textContent = `You: ${msg}`;
-      chatBox.appendChild(p);
-      chatBox.scrollTop = chatBox.scrollHeight;
-      input.value = "";
-    }
+<!-- Message Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="messageModalLabel">Send Message to TA</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="/student/send-message" method="POST">
+        <div class="modal-body">
+          <input type="hidden" name="taId" id="taId">
+          <div class="mb-3">
+            <label class="form-label">To:</label>
+            <input type="text" class="form-control" id="taName" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Course:</label>
+            <input type="text" class="form-control" id="courseName" readonly>
+          </div>
+          <div class="mb-3">
+            <label for="subject" class="form-label">Subject:</label>
+            <input type="text" class="form-control" id="subject" name="subject" required>
+          </div>
+          <div class="mb-3">
+            <label for="message" class="form-label">Message:</label>
+            <textarea class="form-control" id="message" name="message" rows="4" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Send Message</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const messageModal = document.getElementById('messageModal');
+  if (messageModal) {
+    messageModal.addEventListener('show.bs.modal', function(event) {
+      const button = event.relatedTarget;
+      const taId = button.getAttribute('data-ta-id');
+      const taName = button.getAttribute('data-ta-name');
+      const courseName = button.getAttribute('data-course-name');
+      
+      document.getElementById('taId').value = taId;
+      document.getElementById('taName').value = taName;
+      document.getElementById('courseName').value = courseName;
+    });
   }
-
-  socket.on("ta-receive", (data) => {
-    const index = {{taList.length}}; // rough fallback if needed
-    const chatBox = document.getElementById(`chatBox-${index}`);
-    const p = document.createElement("p");
-    p.textContent = `TA: ${data.message}`;
-    chatBox.appendChild(p);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
-</script>
+});
+</script> 

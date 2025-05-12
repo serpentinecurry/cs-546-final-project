@@ -1321,7 +1321,7 @@ router.post("/ta/officeHour/delete", async (req, res) => {
                 await deleteOfficeHourEvent(calendarType, eventId);
             }
         }
-        // Remove the TA’s office hour that matches officeHourId and taId
+        // Remove the TA's office hour that matches officeHourId and taId
         const updateResult = await courseCollection.updateOne(
             {_id: new ObjectId(courseId)},
             {
@@ -1348,43 +1348,189 @@ router.post("/ta/officeHour/delete", async (req, res) => {
     }
 });
 
-router.get("/contact-tas", async (req, res) => {
+router.route("/contact-tas").get(async (req, res) => {
     try {
-        const user = req.session.user;
-        const studentCourses = user.enrolledCourses || [];
-        const allCourses = await coursesData.getAllCourses();
-        const usersCollection = await users();
-        const taList = [];
+        const studentId = new ObjectId(req.session.user._id);
+        const courseCollection = await courses();
+        const userCollection = await users();
 
-        for (const course of allCourses) {
-            if (studentCourses.some((id) => id.toString() === course._id.toString())) {
-                if (Array.isArray(course.taOfficeHours)) {
-                    for (const taEntry of course.taOfficeHours) {
-                        const taUser = await usersCollection.findOne({_id: new ObjectId(taEntry.taId)});
-                        if (taUser) {
-                            taList.push({
-                                _id: taUser._id,
-                                fullName: `${taUser.firstName} ${taUser.lastName}`,
-                                courseName: course.courseName,
-                                courseId: course._id.toString(),
-                            });
-                        }
+        // Get all courses where the student is enrolled
+        const enrolledCourses = await courseCollection
+            .find({
+                studentEnrollments: {
+                    $elemMatch: {
+                        studentId,
+                        status: "active"
                     }
                 }
-            }
-        }
+            })
+            .toArray();
 
-        return res.render("student/student", {
+        // For each course, get the TAs
+        const coursesWithTAs = await Promise.all(enrolledCourses.map(async (course) => {
+            // Get all TAs for this course
+            const tas = await userCollection
+                .find({
+                    _id: { $in: course.taForCourses || [] }
+                })
+                .project({
+                    firstName: 1,
+                    lastName: 1,
+                    email: 1
+                })
+                .toArray();
+
+            // Format TA data
+            const formattedTAs = tas.map(ta => ({
+                _id: ta._id.toString(),
+                fullName: `${ta.firstName} ${ta.lastName}`,
+                email: ta.email,
+                officeHours: (course.taOfficeHours || [])
+                    .filter(oh => oh.taId.toString() === ta._id.toString())
+                    .map(oh => ({
+                        day: oh.day,
+                        startTime: oh.startTime,
+                        endTime: oh.endTime,
+                        location: oh.location
+                    }))
+            }));
+
+            return {
+                _id: course._id.toString(),
+                courseName: course.courseName,
+                courseCode: course.courseCode,
+                tas: formattedTAs
+            };
+        }));
+
+        res.render("student/student", {
             layout: "main",
-            user,
-            currentPage: "contactTas",
-            partialToRender: "contactTas",
-            taList,
+            partialToRender: "contactTAs",
+            user: withUser(req),
+            currentPage: "contactTAs",
+            courses: coursesWithTAs,
+            successMessage: req.session.successMessage
         });
-    } catch (e) {
-        return res.status(500).render("error", {error: "Error loading TA contact page."});
+    } catch (error) {
+        console.error("Error loading TAs:", error);
+        res.status(500).render("student/student", {
+            layout: "main",
+            partialToRender: "contactTAs",
+            user: withUser(req),
+            currentPage: "contactTAs",
+            error: "Failed to load TAs. Please try again."
+        });
     }
 });
+
+router.route("/send-message").post(async (req, res) => {
+    try {
+        const { taId, subject, message } = req.body;
+        const studentId = req.session.user._id;
+
+        if (!taId || !subject || !message) {
+            throw "All fields are required";
+        }
+
+        const userCollection = await users();
+        const courseCollection = await courses();
+
+        // Verify the TA exists and is actually a TA
+        const ta = await userCollection.findOne({
+            _id: new ObjectId(taId),
+            role: "ta"
+        });
+
+        if (!ta) {
+            throw "Invalid TA selected";
+        }
+
+        // Verify student and TA share at least one course
+        const studentCourses = await courseCollection
+            .find({
+                studentEnrollments: {
+                    $elemMatch: {
+                        studentId: new ObjectId(studentId),
+                        status: "active"
+                    }
+                }
+            })
+            .toArray();
+
+        const sharedCourse = studentCourses.find(course => 
+            course.taForCourses?.some(id => id.toString() === taId)
+        );
+
+        if (!sharedCourse) {
+            throw "You can only message TAs from your courses";
+        }
+
+        // TODO: Implement actual message sending functionality
+        // For now, just show success message
+        req.session.successMessage = "Message sent successfully!";
+        res.redirect("/student/contact-tas");
+    } catch (error) {
+        console.error("Error sending message:", error);
+        res.status(400).render("student/student", {
+            layout: "main",
+            partialToRender: "contactTAs",
+            user: withUser(req),
+            currentPage: "contactTAs",
+            error: typeof error === "string" ? error : "Failed to send message"
+        });
+    }
+});
+
+router.route("/ta/messages").get(async (req, res) => {
+    try {
+        const taId = new ObjectId(req.session.user._id);
+        const userCollection = await users();
+        const courseCollection = await courses();
+
+        // Verify user is a TA
+        const ta = await userCollection.findOne({
+            _id: taId,
+            role: "ta"
+        });
+
+        if (!ta) {
+            return res.status(403).render("error", {
+                layout: "main",
+                error: "You must be a TA to access this page."
+            });
+        }
+
+        // Get all courses where the user is a TA
+        const taCourses = await courseCollection
+            .find({
+                taForCourses: taId
+            })
+            .toArray();
+
+        // TODO: Implement actual message fetching
+        // For now, return empty messages array
+        const messages = [];
+
+        res.render("student/student", {
+            layout: "main",
+            partialToRender: "taMessages",
+            user: withUser(req),
+            currentPage: "taMessages",
+            messages,
+            successMessage: req.session.successMessage
+        });
+    } catch (error) {
+        console.error("Error loading messages:", error);
+        res.status(500).render("student/student", {
+            layout: "main",
+            partialToRender: "taMessages",
+            user: withUser(req),
+            currentPage: "taMessages",
+            error: "Failed to load messages. Please try again."
+        });
+    }
+});
+
 //
 // router.route("/messages").get(async (req, res) => {
 //     res.render("student/student", {

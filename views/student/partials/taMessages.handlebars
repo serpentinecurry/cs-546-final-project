@@ -1,0 +1,66 @@
+<h2 class="mb-4">Student Messages</h2>
+
+{{#if error}}
+  <div class="alert alert-danger" role="alert">
+    {{error}}
+  </div>
+{{/if}}
+
+{{#if successMessage}}
+  <div class="alert alert-success" role="alert">
+    {{successMessage}}
+  </div>
+{{/if}}
+
+{{#if messages.length}}
+  <div class="row">
+    <div class="col-md-4">
+      <div class="list-group">
+        {{#each messages}}
+          <a href="#" 
+             class="list-group-item list-group-item-action {{#if this.isActive}}active{{/if}}"
+             data-message-id="{{this._id}}"
+             onclick="showMessage('{{this._id}}')">
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">{{this.subject}}</h6>
+              <small>{{this.date}}</small>
+            </div>
+            <p class="mb-1 text-truncate">{{this.message}}</p>
+            <small>From: {{this.studentName}}</small>
+          </a>
+        {{/each}}
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div id="messageContent" class="card">
+        <div class="card-body">
+          <div class="text-center text-muted py-5">
+            <i class="bi bi-envelope fs-1"></i>
+            <p class="mt-3">Select a message to view its content</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{{else}}
+  <div class="alert alert-info">
+    You have no messages from students.
+  </div>
+{{/if}}
+
+<script>
+function showMessage(messageId) {
+  // TODO: Implement message viewing functionality
+  // This will be implemented when we add the messaging system
+  console.log('Viewing message:', messageId);
+}
+
+// Add active class to selected message
+document.querySelectorAll('.list-group-item').forEach(item => {
+  item.addEventListener('click', function(e) {
+    e.preventDefault();
+    document.querySelectorAll('.list-group-item').forEach(i => i.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script> 
