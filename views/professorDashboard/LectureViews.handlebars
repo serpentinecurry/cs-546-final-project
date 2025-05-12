@@ -84,6 +84,36 @@
     <p><strong>Materials:</strong> <a href="{{lecture.materialsLink}}" target="_blank">{{lecture.materialsLink}}</a></p>
     <p><strong>Average Rating:</strong> {{averageRating}} / 5</p>
 
+    <!-- Lecture Attendance Chart -->
+    <div class="card mb-4">
+      <div class="card-header bg-light fw-bold">
+        <i class="bi bi-bar-chart-line me-2"></i> Lecture Attendance
+      </div>
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <canvas id="attendanceChart" height="200"></canvas>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex flex-column">
+              <div class="mb-2 d-flex align-items-center">
+                <span class="badge bg-success me-2" style="width: 20px;">&nbsp;</span>
+                <span>Present: {{lecturePresentCount}}</span>
+              </div>
+              <div class="mb-2 d-flex align-items-center">
+                <span class="badge bg-danger me-2" style="width: 20px;">&nbsp;</span>
+                <span>Absent: {{lectureAbsentCount}}</span>
+              </div>
+              <div class="mb-2 d-flex align-items-center">
+                <span class="badge bg-warning me-2" style="width: 20px;">&nbsp;</span>
+                <span>Excused: {{lectureExcusedCount}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <a href="/professor/course/{{course._id}}/lecture/{{lecture._id}}/edit" class="btn btn-warning mt-2">
       <i class="bi bi-pencil-square me-1"></i> Edit Lecture
     </a>
@@ -98,3 +128,51 @@
     {{/if}}
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    try {
+      const ctx = document.getElementById('attendanceChart');
+      if (!ctx) {
+        console.error("Canvas element not found!");
+        return;
+      }
+
+      new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Present', 'Absent', 'Excused'],
+          datasets: [{
+            data: [{{lecturePresentCount}} || 0, {{lectureAbsentCount}} || 0, {{lectureExcusedCount}} || 0],
+            backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
+            borderColor: ['#fff', '#fff', '#fff'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              display: true
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  return context.label + ': ' + context.raw + ' students';
+                }
+              }
+            }
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Error creating chart:", err);
+    }
+  });
+</script>
+
+
+

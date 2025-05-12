@@ -121,7 +121,7 @@
 
             {{#if course.courseMeetingTime.length}}
                 <p class="mb-0">
-                    <strong>Times:</strong><br />
+                    <strong>Times:</strong><br/>
                     {{#each course.courseMeetingTime}}
                         <span class="d-block">{{this.startTime}} – {{this.endTime}}</span>
                     {{/each}}
@@ -144,13 +144,25 @@
     <!-- 📢 Announcements -->
     <div class="course-section">
         <div class="shadow-card">
+            {{#if successMessage}}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {{successMessage}}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {{/if}}
+
             <h4 class="mb-3 text-primary"><i class="bi bi-megaphone-fill me-2"></i>Announcements</h4>
-            {{#if announcements.length}}
-                <ul class="list-group">
-                    {{#each announcements}}
-                        <li class="list-group-item">{{this}}</li>
-                    {{/each}}
-                </ul>
+
+            {{#if feedbackSurvey}}
+                <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>📢 Anonymous Feedback Survey is open!</strong> &nbsp;
+                        Please help us improve your course experience.
+                    </div>
+                    <a href="/student/course/{{course._id}}/feedback" class="btn btn-sm btn-primary">
+                        Fill Out Survey
+                    </a>
+                </div>
             {{else}}
                 <p class="text-muted fst-italic">No announcements yet.</p>
             {{/if}}
@@ -165,28 +177,29 @@
                 <div class="table-responsive">
                     <table class="table table-bordered align-middle">
                         <thead class="table-light">
-                            <tr>
-                                <th>#</th>
-                                <th>Title</th>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>Actions</th>
-                            </tr>
+                        <tr>
+                            <th>#</th>
+                            <th>Title</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Actions</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            {{#each lectures}}
-                                <tr>
-                                    <td>{{inc @index}}</td>
-                                    <td>{{this.title}}</td>
-                                    <td>{{this.date}}</td>
-                                    <td>{{this.time.start}} - {{this.time.end}}</td>
-                                    <td>
-                                        <a href="/student/courses/{{../course._id}}/lectures/{{this._id}}" class="btn btn-sm btn-outline-primary">
-                                            View
-                                        </a>
-                                    </td>
-                                </tr>
-                            {{/each}}
+                        {{#each lectures}}
+                            <tr>
+                                <td>{{inc @index}}</td>
+                                <td>{{this.title}}</td>
+                                <td>{{this.date}}</td>
+                                <td>{{this.time.start}} - {{this.time.end}}</td>
+                                <td>
+                                    <a href="/student/courses/{{../course._id}}/lectures/{{this._id}}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                        {{/each}}
                         </tbody>
                     </table>
                 </div>

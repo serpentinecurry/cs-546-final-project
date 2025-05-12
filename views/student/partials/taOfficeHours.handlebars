@@ -1,0 +1,79 @@
+<h2 class="mb-4">Manage Your Office Hours as a TA</h2>
+
+{{#if taCourses.length}}
+  {{#each taCourses}}
+    <div class="content-card mb-4">
+      <h4>{{this.courseName}} ({{this.courseCode}})</h4>
+      <p><strong>Professor:</strong> {{this.professorName}}</p>
+
+      {{#if this.officeHours.length}}
+        <table class="status-table mt-3">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Start Time</th>
+              <th>End Time</th>
+              <th>Location</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each this.officeHours}}
+              <tr>
+                <td>{{day}}</td>
+                <td>{{startTime}}</td>
+                <td>{{endTime}}</td>
+                <td>{{location}}</td>
+                <td>{{notes}}</td>
+                <td>
+                  <form method="POST" action="/student/ta/officeHour/delete">
+                    <input type="hidden" name="courseId" value="{{../_id}}" />
+                    <input type="hidden" name="officeHourId" value="{{_id}}" />
+                    <button type="submit" class="view-btn text-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      {{else}}
+        <p class="text-muted">No office hours added yet.</p>
+      {{/if}}
+
+      <form method="POST" action="/student/ta/officeHour/add" class="change-form mt-4">
+        <input type="hidden" name="courseId" value="{{this._id}}" />
+        <div class="form-group">
+          <label for="day">Day</label>
+          <select name="day" required>
+            <option value="">Select</option>
+            <option>Monday</option>
+            <option>Tuesday</option>
+            <option>Wednesday</option>
+            <option>Thursday</option>
+            <option>Friday</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Start Time</label>
+          <input type="time" name="startTime" required />
+        </div>
+        <div class="form-group">
+          <label>End Time</label>
+          <input type="time" name="endTime" required />
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" name="location" required />
+        </div>
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <input type="text" name="notes" />
+        </div>
+        <button type="submit" class="submit-btn mt-2">Add Office Hour</button>
+      </form>
+    </div>
+  {{/each}}
+{{else}}
+  <p class="text-muted">You are not assigned as a TA for any course.</p>
+{{/if}}

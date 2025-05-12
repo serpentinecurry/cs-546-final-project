@@ -61,14 +61,12 @@ const createUser = async (
   };
   if (role === "student") {
     newUser.major = major;
-    newUser.enrolledCourses = [];
     newUser.absenceRequests = [];
     newUser.lectureNotes = [];
   }
   if (role === "ta") {
     newUser.taForCourses = [];
     newUser.major = major;
-    newUser.enrolledCourses = [];
     newUser.absenceRequests = [];
     newUser.lectureNotes = [];
   }
@@ -167,12 +165,12 @@ const approveRequest = async (requestId) => {
   if (req.status !== "pending") throw "Request already resolved";
 
   // Update user field
-  const updateResult = await userCollection.updateOne(
+  const courseUpdateResult = await userCollection.updateOne(
     { _id: new ObjectId(req.userId) },
     { $set: { [req.field]: req.newValue } }
   );
 
-  if (!updateResult.modifiedCount) throw "Failed to update user data";
+  if (!courseUpdateResult.modifiedCount) throw "Failed to update user data";
 
   // approve requests
   await requestCollection.updateOne(
@@ -267,15 +265,6 @@ const approveEnrollmentRequest = async (studentId, courseId) => {
     courseId: new ObjectId(courseId),
   });
 
-  // Update user document
-  const updateResult = await userCollection.updateOne(
-    {
-      _id: new ObjectId(studentId),
-    },
-    {
-      $push: { enrolledCourses: new ObjectId(courseId) },
-    }
-  );
 
   // Update course document
   const courseUpdateResult = await courseCollection.updateOne(
@@ -289,7 +278,6 @@ const approveEnrollmentRequest = async (studentId, courseId) => {
   );
 
   if (
-    updateResult.modifiedCount === 0 &&
     courseUpdateResult.modifiedCount === 0
   ) {
     throw "Failed to approve enrollment request";
