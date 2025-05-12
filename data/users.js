@@ -329,6 +329,63 @@ const getUserByEmail = async (email) => {
   return user;
 };
 
+// add/update a student's lecture notes
+const addLectureNotes = async (studentId, lectureId, courseId, notes) => {
+  // error handling
+  studentId = stringValidate(studentId);
+  courseId = stringValidate(courseId);
+  lectureId = stringValidate(lectureId);
+  notes = stringValidate(notes);
+
+  if (!ObjectId.isValid(studentId)) throw "Invalid studentId";
+  if (!ObjectId.isValid(courseId)) throw "Invalid courseId";
+  if (!ObjectId.isValid(lectureId)) throw "Invalid lectureId";
+
+  // get student
+  const userCollection = await users();
+  const user = await userCollection.findOne({
+    _id: new ObjectId(studentId)
+  });
+
+  // get student's lecture notes
+  let lectureNotes = user.lectureNotes;
+  let now = new Date();
+
+  // look to see if the student already has notes for that lecture
+  let indexToRemove = lectureNotes.findIndex((obj) =>{
+    return obj.lectureId.toString === lectureId
+  });
+  // get the object storing the notes or make a new one
+  const notesObject = indexToRemove !== -1 ? lectureNotes.at(indexToRemove)
+    : {
+      lectureId: new ObjectId(lectureId),
+      courseId: new ObjectId(courseId),
+      createdAt: now.toString()
+    };
+  // set notes and update time
+  notesObject.notes = notes;
+  notesObject.updatedAt = now.toString();
+
+  // add/replace item in lecture notes array
+  if (indexToRemove === -1) {
+    lectureNotes.push(notesObject);
+  } else {
+    lectureNotes.splice(indexToRemove, notesObject);
+  }
+
+  // update user in db
+  const updateInfo = await userCollection.findOneAndUpdate(
+    { _id: new ObjectId(studentId) },
+    { $set: { lectureNotes: lectureNotes } },
+    { returnDocument: "after" }
+  );
+
+  if (!updateInfo)
+    throw `Update unsuccessful`;
+
+  return {updateSuccessful: true};
+}
+
 export default {
   createUser,
   login,
