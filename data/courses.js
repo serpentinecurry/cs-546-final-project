@@ -454,6 +454,57 @@ const deleteProfessorOfficeHour = async (courseId, officeHourObj) => {
     return {deleted: true};
 };
 
+const getStudentsNoTAs = async (courseId) => {
+    courseId = stringValidate(courseId);
+    if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
+
+    const coursesCollection = await courses();
+    const usersCollection = await users();
+    
+    const course = await coursesCollection.findOne({
+        _id: new ObjectId(courseId),
+    });
+    if (!course) throw "Course not found.";
+
+    
+    const activeEnrollments = course.studentEnrollments.filter(
+        enrollment => enrollment.status === "active"
+    );
+    
+    
+    const studentIds = activeEnrollments.map(
+        enrollment => enrollment.studentId
+    );
+    
+    
+    const enrolledUsers = await usersCollection
+        .find({
+            _id: { $in: studentIds }
+        })
+        .toArray();
+    
+        
+    const nonTAUsers = enrolledUsers.filter(user => {
+        
+        const isTAForThisCourse = 
+            user.role === "ta" && 
+            user.taForCourses && 
+            user.taForCourses.some(cid => cid.toString() === courseId);
+            
+            
+        const enrollment = course.studentEnrollments.find(
+            e => e.studentId.toString() === user._id.toString()
+        );
+        const hasTARole = enrollment && enrollment.role === "TA";
+        
+        
+        return !isTAForThisCourse && !hasTARole;
+    });
+    
+    return nonTAUsers;
+}
+
+
 export default {
     createCourse,
     getAllCourses,
@@ -468,4 +519,5 @@ export default {
     updateCourseInfo,
     addProfessorOfficeHour,
     deleteProfessorOfficeHour,
+    getStudentsNoTAs
 };

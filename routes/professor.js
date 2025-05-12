@@ -851,7 +851,7 @@ router
     }
   });
 
-router
+  router
   .route("/course/:courseId/lecture/:lectureId")
   .get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
@@ -865,11 +865,8 @@ router
         });
       }
 
-      const courseCollection = await courses();
-      const course = await courseCollection.findOne({
-        _id: new ObjectId(courseId),
-      });
-
+      
+      const { course } = await courseData.getCourseById(courseId);
       if (!course) {
         return res.status(404).render("error", {
           layout: "main",
@@ -877,49 +874,38 @@ router
         });
       }
 
-      course._id = course._id.toString();
+      
+      const students = await courseData.getStudentsNoTAs(courseId);
+      
+      
+      students.forEach(s => {
+        s._id = s._id.toString();
+      });
 
-      const activeEnrollments =
-        course.studentEnrollments?.filter(
-          (enrollment) => enrollment.status === "active"
-        ) || [];
-
-      const activeStudentIds = activeEnrollments.map(
-        (enrollment) => new ObjectId(enrollment.studentId)
-      );
-
-      let students = [];
-      if (activeStudentIds.length > 0) {
-        const usersCollection = await users();
-        students = await usersCollection
+      
+      let attendanceMap = {};
+      try {
+        const attendanceCollection = await attendance();
+        const attendanceRecords = await attendanceCollection
           .find({
-            _id: { $in: activeStudentIds },
+            lectureId: new ObjectId(lectureId),
           })
           .toArray();
 
-        students = students.map((s) => ({
-          ...s,
-          _id: s._id.toString(),
-        }));
+        for (const record of attendanceRecords) {
+          attendanceMap[record.studentId.toString()] = record.status;
+        }
+      } catch (e) {
+        console.error("Error fetching attendance records:", e);
       }
 
-      const attendanceCollection = await attendance();
-      const attendanceRecords = await attendanceCollection
-        .find({
-          lectureId: new ObjectId(lectureId),
-        })
-        .toArray();
-
-      const attendanceMap = {};
-      for (const record of attendanceRecords) {
-        attendanceMap[record.studentId.toString()] = record.status;
-      }
-
+      
       const studentAttendanceHistory = students.map((student) => ({
         ...student,
         attendanceStatus: attendanceMap[student._id] || "",
       }));
 
+      
       let startDateTime = dayjs(
         `${lecture.lectureDate}T${lecture.lectureStartTime}`
       );
@@ -933,7 +919,7 @@ router
       const averageRating = await lectureData.getAverageRating(lectureId);
       const ratingCount = lecture.ratings ? lecture.ratings.length : 0;
 
-      // Get lecture-specific attendance data
+      
       const lecturePresentStudents =
         await attendanceData.getLecturePresentStudents(lectureId);
       const lectureAbsentStudents =
@@ -950,9 +936,9 @@ router
         lectureAbsentCount > 0 ||
         lectureExcusedCount > 0;
 
+        
       let hasDiscussion = false;
       let discussionId = null;
-
       try {
         const discussionsCollection = await discussions();
         const existingDiscussion = await discussionsCollection.findOne({
@@ -971,35 +957,29 @@ router
       res.render("professorDashboard/LectureViews", {
         layout: "main",
         lecture,
-        lectureStartTime: startDateTime.isValid()
-          ? startDateTime.format("hh:mm A")
-          : "N/A",
-        lectureEndTime: endDateTime.isValid()
-          ? endDateTime.format("hh:mm A")
-          : "N/A",
-        course: course,
+        course,
         students: studentAttendanceHistory,
-        averageRating: averageRating,
-        ratingCount: ratingCount,
-        hasDiscussion,
-        discussionId,
-        discussionViewPath: hasDiscussion
-          ? `/professor/course/${courseId}/lecture/${lectureId}/discussions/${discussionId}`
-          : null,
-        // Add lecture-specific attendance data
+        lectureStartTime: startDateTime.format("h:mm A"),
+        lectureEndTime: endDateTime.format("h:mm A"),
+        averageRating,
+        ratingCount,
         lecturePresentCount,
         lectureAbsentCount,
         lectureExcusedCount,
-        lectureHasAttendanceData,
+        hasAttendanceData: lectureHasAttendanceData,
+        discussionViewPath: `/professor/course/${courseId}/lecture/${lectureId}/discussions/${discussionId}`,
+        hasDiscussion,
       });
-    } catch (e) {
-      console.error("Error fetching lecture or course:", e);
-      return res.status(500).render("error", {
+    } catch (error) {
+      console.error("Error loading lecture view:", error);
+      res.status(400).render("error", {
         layout: "main",
-        error: "Internal server error while fetching lecture or course data.",
+        error: "Error loading lecture view: " + error.message,
       });
     }
   });
+  
+  
 
 //attendance submission route
 router

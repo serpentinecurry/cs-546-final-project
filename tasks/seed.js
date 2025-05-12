@@ -100,21 +100,21 @@ await coursesCollection.updateOne(
 const lecture1 = await lectureData.createLecture(
     webDevCourseId,
     "Learn AJAX",
-    "2025-09-05",  // Updated to future date
+    "2025-09-05",
     "10:00",
     "11:50",
     "Learning the fundamentals of AJAX and asynchronous web requests.",
-    "https://drive.google.com/slides/ajax-intro"
+    "https://github.com/stevens-cs546-cs554/CS-546/tree/master/lecture_11"
 );
 
 const lecture2 = await lectureData.createLecture(
     webDevCourseId,
-    "DOM Manipulation",
+    "Basic HTML and CSS",
     "2025-09-12",  // Updated to future date
     "10:00",
     "11:50",
-    "Learning to manipulate the Document Object Model with JavaScript for dynamic web pages.",
-    "https://drive.google.com/slides/dom-basics"
+    "Learn how to implement basic HTML and CSS",
+    "https://github.com/stevens-cs546-cs554/CS-546/tree/master/lecture_08"
 );
 
 const lecture3 = await lectureData.createLecture(
@@ -132,34 +132,9 @@ const lecture1Id = lecture1.lectureId.toString();
 const lecture2Id = lecture2.lectureId.toString();
 const lecture3Id = lecture3.lectureId.toString();
 
-// Make the TA
-await usersCollection.updateOne(
-  { _id: taStudent._id },
-  { 
-    $set: { 
-      role: "ta",
-      taForCourses: [new ObjectId(webDevCourseId)]
-    } 
-  }
-);
 
-// Add TA to course
-await coursesCollection.updateOne(
-  { _id: new ObjectId(webDevCourseId) },
-  { 
-    $push: { 
-      taOfficeHours: {
-        _id: new ObjectId(),
-        taId: taStudent._id,
-        day: "Friday",
-        startTime: "13:00",
-        endTime: "14:00",
-        location: "Zoom",
-        notes: "Please email before attending"
-      }
-    }
-  }
-);
+
+
 
 // Add student enrollments with proper status
 // Student 1 - active in Web Dev
@@ -217,20 +192,7 @@ await coursesCollection.updateOne(
   }
 );
 
-// TA with active status in Web Dev
-await coursesCollection.updateOne(
-  { _id: new ObjectId(webDevCourseId) },
-  { 
-    $push: { 
-      studentEnrollments: {
-        studentId: taStudent._id,
-        status: "active",
-        role: "TA",
-        requestedAt: new Date()
-      }
-    }
-  }
-);
+
 
 // Create attendances for students
 // Lecture 1 - all students present
@@ -239,13 +201,13 @@ await attendanceData.createAttendance(lecture1Id, webDevCourseId, student2._id.t
 await attendanceData.createAttendance(lecture1Id, webDevCourseId, student3._id.toString(), "present");
 await attendanceData.createAttendance(lecture1Id, webDevCourseId, taStudent._id.toString(), "present");
 
-// Lecture 2 - mixed attendance
+
 await attendanceData.createAttendance(lecture2Id, webDevCourseId, student1._id.toString(), "present");
 await attendanceData.createAttendance(lecture2Id, webDevCourseId, student2._id.toString(), "absent");
 await attendanceData.createAttendance(lecture2Id, webDevCourseId, student3._id.toString(), "excused");
 await attendanceData.createAttendance(lecture2Id, webDevCourseId, taStudent._id.toString(), "present");
 
-// Create discussions for lectures
+
 const discussion1 = await discussionsData.createDiscussion(
   lecture1Id,
   webDevCourseId, 

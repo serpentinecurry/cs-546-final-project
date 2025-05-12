@@ -1,6 +1,7 @@
 import { attendance, users, courses, lectures } from "../config/mongoCollections.js";
-import { ObjectId } from "mongodb";
+import { ObjectId } from "mongodb"
 import { stringValidate } from "../validation.js";
+import courseData from "./courses.js";
 
 // {
 //     "_id": "ObjectId",
@@ -268,24 +269,18 @@ const getLecturePresentStudents = async (lectureId) => {
     throw "Lecture not found";
   }
 
-  const courseCollection = await courses();
-  const course = await courseCollection.findOne({ _id: lecture.courseId });
-  if (!course) {
-    throw "Course not found";
-  }
-
-  // Filter out TAs and non-active students
-  const activeStudentIds = course.studentEnrollments
-    .filter(enrollment => enrollment.status === "active" && enrollment.role !== "TA")
-    .map(enrollment => new ObjectId(enrollment.studentId));
+  const courseId = lecture.courseId.toString();
+  
+  // Get non-TA student IDs using the getStudentsNoTAs function
+  const nonTAStudents = await courseData.getStudentsNoTAs(courseId);
+  const nonTAStudentIds = nonTAStudents.map(student => new ObjectId(student._id));
 
   const attendanceCollection = await attendance();
-
   const presentRecords = await attendanceCollection
     .find({ 
       lectureId: new ObjectId(lectureId), 
       status: "present",
-      studentId: { $in: activeStudentIds }
+      studentId: { $in: nonTAStudentIds }
     })
     .toArray();
 
@@ -304,24 +299,18 @@ const getLectureAbsentStudents = async (lectureId) => {
     throw "Lecture not found";
   }
 
-  const courseCollection = await courses();
-  const course = await courseCollection.findOne({ _id: lecture.courseId });
-  if (!course) {
-    throw "Course not found";
-  }
-
+  const courseId = lecture.courseId.toString();
   
-  const activeStudentIds = course.studentEnrollments
-    .filter(enrollment => enrollment.status === "active" && enrollment.role !== "TA")
-    .map(enrollment => new ObjectId(enrollment.studentId));
+  // Get non-TA student IDs using the getStudentsNoTAs function
+  const nonTAStudents = await courseData.getStudentsNoTAs(courseId);
+  const nonTAStudentIds = nonTAStudents.map(student => new ObjectId(student._id));
 
   const attendanceCollection = await attendance();
-
   const absentRecords = await attendanceCollection
     .find({ 
       lectureId: new ObjectId(lectureId), 
       status: "absent",
-      studentId: { $in: activeStudentIds }
+      studentId: { $in: nonTAStudentIds }
     })
     .toArray();
 
@@ -340,24 +329,18 @@ const getLectureExcusedStudents = async (lectureId) => {
     throw "Lecture not found";
   }
 
-  const courseCollection = await courses();
-  const course = await courseCollection.findOne({ _id: lecture.courseId });
-  if (!course) {
-    throw "Course not found";
-  }
-
+  const courseId = lecture.courseId.toString();
   
-  const activeStudentIds = course.studentEnrollments
-    .filter(enrollment => enrollment.status === "active" && enrollment.role !== "TA")
-    .map(enrollment => new ObjectId(enrollment.studentId));
+  // Get non-TA student IDs using the getStudentsNoTAs function
+  const nonTAStudents = await courseData.getStudentsNoTAs(courseId);
+  const nonTAStudentIds = nonTAStudents.map(student => new ObjectId(student._id));
 
   const attendanceCollection = await attendance();
-
   const excusedRecords = await attendanceCollection
     .find({ 
       lectureId: new ObjectId(lectureId), 
       status: "excused",
-      studentId: { $in: activeStudentIds }
+      studentId: { $in: nonTAStudentIds }
     })
     .toArray();
 
