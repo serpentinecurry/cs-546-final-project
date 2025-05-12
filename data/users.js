@@ -318,6 +318,17 @@ const rejectEnrollmentRequest = async (studentId, courseId) => {
   return { enrollmentRejected: true };
 };
 
+//add a getUserByEmail function
+const getUserByEmail = async (email) => {
+  email = validateEmail(email);
+  const usersCollection = await users();
+  const user = await usersCollection.findOne({
+    email: { $regex: `^${email}$`, $options: "i" },
+  });
+  if (!user) throw "User not found";
+  return user;
+};
+
 export default {
   createUser,
   login,
@@ -327,4 +338,5 @@ export default {
   getPendingEnrollmentRequests,
   approveEnrollmentRequest,
   rejectEnrollmentRequest,
+  getUserByEmail,
 };
