@@ -121,3 +121,11 @@ export const verifyProfessorOwnsCourse = async (req, res, next) => {
         });
     }
 };
+
+// Middleware: TA-only access
+export const isTA = (req, res, next) => {
+  if (!req.session.user || req.session.user.role !== 'ta') {
+    return res.status(403).render('error', { error: 'Unauthorized: TAs only' });
+  }
+  next();
+};

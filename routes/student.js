@@ -9,7 +9,7 @@ import {
     feedback,
     messages
 } from "../config/mongoCollections.js";
-import {absenceProofUpload, checkActiveEnrollment} from "../middleware.js";
+import {absenceProofUpload, checkActiveEnrollment, isTA} from "../middleware.js";
 import {ObjectId} from "mongodb";
 import {userData, calendarData} from "../data/index.js";
 import coursesData from "../data/courses.js";
@@ -1134,7 +1134,7 @@ router.route("/calendar").get(async (req, res) => {
     }
 });
 
-router.route("/ta/officeHour").get(async (req, res) => {
+router.route("/ta/officeHour").get(isTA, async (req, res) => {
     try {
         const userId = new ObjectId(req.session.user._id);
         const userCollection = await users();
@@ -1192,7 +1192,7 @@ router.route("/ta/officeHour").get(async (req, res) => {
     }
 })
 
-router.route("/ta/officeHour/add").post(async (req, res) => {
+router.route("/ta/officeHour/add").post(isTA, async (req, res) => {
     try {
         const {courseId, day, startTime, endTime, location, notes} = req.body;
         const userId = new ObjectId(req.session.user._id);
@@ -1261,7 +1261,7 @@ router.route("/ta/officeHour/add").post(async (req, res) => {
     }
 })
 
-router.post("/ta/officeHour/delete", async (req, res) => {
+router.post("/ta/officeHour/delete", isTA, async (req, res) => {
     try {
         const {courseId, officeHourId} = req.body;
         const userId = new ObjectId(req.session.user._id);
@@ -1507,7 +1507,7 @@ router.route("/send-message").post(async (req, res) => {
     }
 });
 
-router.route("/ta/messages").get(async (req, res) => {
+router.route("/ta/messages").get(isTA, async (req, res) => {
     try {
         const taId = new ObjectId(req.session.user._id);
         const userCollection = await users();
@@ -1588,7 +1588,7 @@ router.route("/ta/messages").get(async (req, res) => {
 });
 
 // GET: TA Contact Students page
-router.get("/ta/contact-students", async (req, res) => {
+router.get("/ta/contact-students", isTA, async (req, res) => {
     try {
         const taId = new ObjectId(req.session.user._id);
         const userCollection = await users();
@@ -1683,7 +1683,7 @@ router.get("/ta/contact-students", async (req, res) => {
 });
 
 // POST: TA sends message to student
-router.post("/ta/send-message", async (req, res) => {
+router.post("/ta/send-message", isTA, async (req, res) => {
     try {
         const { studentId, subject, message } = req.body;
         const taId = req.session.user._id;
