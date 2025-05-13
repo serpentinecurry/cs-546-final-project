@@ -87,7 +87,12 @@ const sendResetEmail = async (toEmail, name, resetLink) => {
   await transporter.sendMail(mailOptions);
 };
 
-const sendAbsentNotificationEmail = async (toEmail, firstName, courseName, lectureTitle) => {
+const sendAbsentNotificationEmail = async (
+  toEmail,
+  firstName,
+  courseName,
+  lectureTitle
+) => {
   const mailOptions = {
     from: '"Scholario Admin" <no-reply@scholario.edu>',
     to: toEmail,
@@ -96,7 +101,7 @@ const sendAbsentNotificationEmail = async (toEmail, firstName, courseName, lectu
            <p>This is to inform you that you were marked <strong>absent</strong> for the lecture <strong>"${lectureTitle}"</strong> in <strong>${courseName}</strong>.</p>
            <p>If you believe this is a mistake or have a valid reason, please contact your course instructor or TA as soon as possible.</p>
            <br><p>Best regards,<br>Scholario Team</p>
-           <br><small>This is an automated message. Please do not reply directly to this email.</small>`
+           <br><small>This is an automated message. Please do not reply directly to this email.</small>`,
   };
   await transporter.sendMail(mailOptions);
 };

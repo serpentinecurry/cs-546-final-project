@@ -12,8 +12,8 @@ const checkEnrollment = (course, studentId) => {
     }
   }
 
-  return enrollment.status === 'active';
-}
+  return enrollment.status === "active";
+};
 
 // function that returns an array of all lectures for a given student
 const getStudentLectures = async (studentId) => {
@@ -28,7 +28,7 @@ const getStudentLectures = async (studentId) => {
   // get courses that the student is in
   const studentCourses = await courseCollection
     .find({
-      "studentEnrollments.studentId": new ObjectId(studentId)
+      "studentEnrollments.studentId": new ObjectId(studentId),
     })
     .toArray();
 
@@ -110,7 +110,7 @@ const getOfficeHours = async (studentId) => {
     if (checkEnrollment(course, studentId)) {
       let professorOfficeHours = course.professorOfficeHours;
       const professor = await userCollection.findOne({
-        _id: course.professorId
+        _id: course.professorId,
       });
 
       for (let item of professorOfficeHours) {
@@ -122,23 +122,34 @@ const getOfficeHours = async (studentId) => {
 
       for (let item of taOfficeHours) {
         const ta = await userCollection.findOne({
-          _id: item.taId
+          _id: item.taId,
         });
 
         item.name = ta.firstName + " " + ta.lastName;
         item.color = " #53b656 ";
       }
 
-      officeHours = officeHours.concat(course.professorOfficeHours, course.taOfficeHours);
+      officeHours = officeHours.concat(
+        course.professorOfficeHours,
+        course.taOfficeHours
+      );
     }
   }
 
   return officeHoursToEventObjects(officeHours);
-}
+};
 
 const officeHoursToEventObjects = (officeHours) => {
   let events = [];
-  let weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  let weekDays = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
 
   for (let oh of officeHours) {
     const eventObject = {};
@@ -152,8 +163,8 @@ const officeHoursToEventObjects = (officeHours) => {
 
     events.push(JSON.stringify(eventObject));
   }
-  
+
   return events;
-}
+};
 
 export default { getStudentLectures, getOfficeHours };
