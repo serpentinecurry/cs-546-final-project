@@ -3,9 +3,9 @@ import {ObjectId} from "mongodb";
 import {courses, users} from "../config/mongoCollections.js";
 
 const CALENDAR_IDS = {
-    students: 'c3c980332658ed34836bae552a0e9ea3ac0357af6de1315aa4fa6da0a66c6c71@group.calendar.google.com',
-    tas: '0602d6a34d46403be6b33ad6278d1c37b9ed3bb9e540422e5cfa4491619fe188@group.calendar.google.com',
-    professors: '27842ef3de4f60d75e1bb5913e2b1c32a84889453b8030f5babab8340e48930d@group.calendar.google.com',
+    students: 'd2fc995ebc8237bb959c6980d17022b15d9f6c0cd6620e88da4e42224fdc9fef@group.calendar.google.com',
+    tas: '8c3907f93d3279d47682ca103a347d6332de1b7bebaab1d1f4c8ad1f6bbf6c88@group.calendar.google.com',
+    professors: '23ce92a59e931bf9c5fa07217060a421ed503fa1f3083157e1fae5d5d9d32162@group.calendar.google.com',
 };
 
 export async function addLectureToCalendars(lecture) {
