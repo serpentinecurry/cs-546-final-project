@@ -23,10 +23,10 @@ import {
     passwordValidate,
     calculateAge,
 } from "../validation.js";
-import {addOfficeHourEvent, deleteOfficeHourEvent} from "../services/calendarSync.js";
 import {subscribeLinks} from "../services/calendarSync.js"; // ✅ add this
-
 import discussionsData from "../data/discussions.js";
+import { addTAOfficeHour, deleteTAOfficeHour } from "../data/officeHours.js";
+
 
 const router = Router();
 
@@ -1206,7 +1206,7 @@ router.route("/calendar").get(async (req, res) => {
 
         // 🎯 Decide which calendar to suggest
         let calendarSubscribeUrl = subscribeLinks.students;
-        const role = req.session.user.user_role;
+        const role = req.session.user.role;
         if (role === "ta") calendarSubscribeUrl = subscribeLinks.tas;
         if (role === "professor") calendarSubscribeUrl = subscribeLinks.professors;
 
@@ -1284,62 +1284,18 @@ router.route("/ta/officeHour").get(isTA, async (req, res) => {
 
 router.route("/ta/officeHour/add").post(isTA, async (req, res) => {
     try {
-        const {courseId, day, startTime, endTime, location, notes} = req.body;
-        const userId = new ObjectId(req.session.user._id);
-        const courseObjectId = new ObjectId(courseId);
-        if (!ObjectId.isValid(courseId)) throw "Invalid course ID";
-        if (!day || !startTime || !endTime || !location)
-            throw "All fields except notes are required.";
-        const courseCollection = await courses();
-        const userCollection = await users();
+        const { courseId, day, startTime, endTime, location, notes } = req.body;
+        const userId = req.session.user._id;
 
-        // Check if user is actually a TA for this course
-        const user = await userCollection.findOne({_id: userId});
-        if (!user || !user.taForCourses?.some(id => id.toString() === courseObjectId.toString())) {
-            return res.status(403).render("error", {
-                layout: "main",
-                error: "You are not authorized to modify office hours for this course.",
-            });
-        }
-
-        // ✅ Google Calendar Sync
-        const name = `${user.firstName} ${user.lastName}`;
-        const eventIds = {};
-        for (const calendarType of ["students", "tas", "professors"]) {
-            const result = await addOfficeHourEvent({
-                name,
-                day,
-                startTime,
-                endTime,
-                location,
-                calendarType
-            });
-            if (result?.eventId) {
-                eventIds[calendarType] = result.eventId;
-            }
-        }
-
-
-        const newOfficeHour = {
-            _id: new ObjectId(),
-            taId: userId,
-            day: day.trim(),
+        await addTAOfficeHour({
+            courseId,
+            userId,
+            day,
             startTime,
             endTime,
-            location: location.trim(),
-            notes: notes?.trim() || "",
-            googleCalendarEventIds: eventIds
-        };
-
-        const updateResult = await courseCollection.updateOne(
-            {_id: new ObjectId(courseId)},
-            {$push: {taOfficeHours: newOfficeHour}}
-        );
-
-        if (updateResult.modifiedCount === 0) {
-            throw "Failed to add office hour.";
-        }
-
+            location,
+            notes
+        });
 
         return res.redirect("/student/ta/officeHour");
     } catch (error) {
@@ -1349,60 +1305,18 @@ router.route("/ta/officeHour/add").post(isTA, async (req, res) => {
             error: typeof error === "string" ? error : "Could not add office hour.",
         });
     }
-})
+});
 
 router.post("/ta/officeHour/delete", isTA, async (req, res) => {
     try {
-        const {courseId, officeHourId} = req.body;
-        const userId = new ObjectId(req.session.user._id);
+        const { courseId, officeHourId } = req.body;
+        const userId = req.session.user._id;
 
-        if (!ObjectId.isValid(courseId) || !ObjectId.isValid(officeHourId)) {
-            throw "Invalid course or office hour ID.";
-        }
-
-        const courseCollection = await courses();
-        const userCollection = await users();
-
-        const user = await userCollection.findOne({_id: userId});
-
-        if (
-            !user ||
-            !user.taForCourses?.some(
-                (id) => id.toString() === courseId.toString()
-            )
-        ) {
-            return res.status(403).render("error", {
-                layout: "main",
-                error: "You are not authorized to delete office hours for this course.",
-            });
-        }
-
-        const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
-        const targetHour = course.taOfficeHours.find(
-            (oh) => oh._id.toString() === officeHourId && oh.taId.toString() === userId.toString()
-        );
-
-        if (targetHour?.googleCalendarEventIds) {
-            for (const [calendarType, eventId] of Object.entries(targetHour.googleCalendarEventIds)) {
-                await deleteOfficeHourEvent(calendarType, eventId);
-            }
-        }
-        // Remove the TA's office hour that matches officeHourId and taId
-        const updateResult = await courseCollection.updateOne(
-            {_id: new ObjectId(courseId)},
-            {
-                $pull: {
-                    taOfficeHours: {
-                        _id: new ObjectId(officeHourId),
-                        taId: userId,
-                    },
-                },
-            }
-        );
-
-        if (updateResult.modifiedCount === 0) {
-            throw "No matching office hour was found to delete.";
-        }
+        await deleteTAOfficeHour({
+            courseId,
+            officeHourId,
+            userId
+        });
 
         res.redirect("/student/ta/officeHour");
     } catch (error) {
