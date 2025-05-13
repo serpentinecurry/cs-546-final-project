@@ -1,5 +1,6 @@
 import {Router} from "express";
 import {ObjectId} from "mongodb";
+import xss from "xss";
 
 const router = Router();
 
@@ -38,8 +39,8 @@ router
     .post(async (req, res) => {
         let {courseName, courseCode, professorId} = req.body;
         try {
-            courseName = stringValidate(courseName);
-            courseCode = stringValidate(courseCode);
+            courseName = xss(stringValidate(courseName));
+            courseCode = xss(stringValidate(courseCode));
             professorId = stringValidate(professorId);
             if (!ObjectId.isValid(professorId)) throw "Invalid professor ID.";
 
@@ -99,7 +100,7 @@ router.route("/edit/:id").post(async (req, res) => {
         let {newProfessorId} = req.body;
 
         courseId = stringValidate(courseId);
-        newProfessorId = stringValidate(newProfessorId);
+        newProfessorId = xss(stringValidate(newProfessorId));
 
         if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
         if (!ObjectId.isValid(newProfessorId)) throw "Invalid professor ID.";
@@ -124,8 +125,8 @@ router.route("/update-info/:id").post(async (req, res) => {
 
         if (!ObjectId.isValid(courseId)) throw "Invalid course ID";
 
-        const validatedName = stringValidate(courseName);
-        const validatedCode = stringValidate(courseCode);
+        const validatedName = xss(stringValidate(courseName));
+        const validatedCode = xss(stringValidate(courseCode));
 
         await courseData.updateCourseInfo(courseId, validatedName, validatedCode);
 
