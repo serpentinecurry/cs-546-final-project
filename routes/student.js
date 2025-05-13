@@ -569,6 +569,38 @@ router.post("/courses/:courseId/lectures/:lectureId/rate", checkActiveEnrollment
     }
 });
 
+router.post("/courses/:courseId/lectures/:lectureId/notes", checkActiveEnrollment, async (req, res) => {
+    let studentId, courseId, lectureId;
+    try {
+        [studentId, courseId, lectureId] = [
+            stringValidate(req.session.user._id),
+            stringValidate(req.params.courseId),
+            stringValidate(req.params.lectureId)
+        ]
+    } catch (error) {
+        return res.status(400).render("error", {error});
+    }
+
+    let lectureNotes;
+    try {
+        lectureNotes = stringValidate(req.body.lecture_notes_input); // needs xss
+        req.body.emptyNotes = false;
+    } catch (error) {
+        req.body.emptyNotes = true;
+        return res.status(400).render("error", {error});
+    }
+
+    try {
+        const lectureNotesUpdate = await userData.addLectureNotes(studentId, lectureId, courseId, lectureNotes);
+        if (lectureNotesUpdate.updateSuccessful) {
+            return res.redirect(`/student/courses/${req.params.courseId}/lectures/${req.params.lectureId}`);
+        }
+    } catch (error) {
+        return res.status(500).render("error", {error});
+    }
+    
+});
+
 // GET /student/courses/:id/members
 router.get("/courses/:courseId/members", checkActiveEnrollment, async (req, res) => {
     const {courseId} = req.params;
