@@ -1,4 +1,6 @@
 import calendar from "../config/googleCalendar.js";
+import {ObjectId} from "mongodb";
+import {courses, users} from "../config/mongoCollections.js";
 
 const CALENDAR_IDS = {
     students: '32441fb311afd8b4c5b380b8fca5ac7e088189005ac256c6ea6048427945eb95@group.calendar.google.com',
@@ -7,6 +9,8 @@ const CALENDAR_IDS = {
 };
 
 export async function addLectureToCalendars(lecture) {
+    const calendarEventIds = {};
+
     const event = {
         summary: `${lecture.courseCode} - ${lecture.lectureTitle}`,
         description: `Lecture for ${lecture.courseCode}`,
@@ -22,15 +26,18 @@ export async function addLectureToCalendars(lecture) {
 
     for (const [role, calendarId] of Object.entries(CALENDAR_IDS)) {
         try {
-            await calendar.events.insert({
+            const response = await calendar.events.insert({
                 calendarId,
                 requestBody: event,
             });
+            calendarEventIds[role] = response.data.id;
             console.log(`✅ Synced lecture to ${role} calendar`);
         } catch (err) {
-            console.error(`❌ Failed to sync lecture to ${role} calendar (${calendarId}):`, err.message);
+            console.error(`❌ Failed to sync lecture to ${role} calendar:`, err.message);
         }
     }
+
+    return calendarEventIds;
 }
 
 
@@ -93,71 +100,94 @@ export async function deleteOfficeHourEvent(calendarType, eventId) {
     }
 }
 
+export async function updateLectureEvent(calendarType, eventId, updatedData) {
+    const event = {
+        summary: `${updatedData.courseCode} - ${updatedData.lectureTitle}`,
+        description: `Lecture for ${updatedData.courseCode}`,
+        start: {
+            dateTime: new Date(`${updatedData.lectureDate}T${updatedData.lectureStartTime}:00`).toISOString(),
+            timeZone: 'America/New_York',
+        },
+        end: {
+            dateTime: new Date(`${updatedData.lectureDate}T${updatedData.lectureEndTime}:00`).toISOString(),
+            timeZone: 'America/New_York',
+        },
+    };
 
-export async function syncAllOfficeHoursForCourse(courseDoc, userCollection) {
-    // Sync professor office hours
+    try {
+        await calendar.events.update({
+            calendarId: CALENDAR_IDS[calendarType],
+            eventId,
+            requestBody: event,
+        });
+        console.log(`🔁 Updated lecture in ${calendarType} calendar`);
+    } catch (err) {
+        console.error(`❌ Failed to update event in ${calendarType} calendar:`, err.message);
+    }
+}
+
+
+export async function syncAllOfficeHoursForCourse(courseId) {
+    const courseCollection = await courses();
+    const userCollection = await users();
+
+    const courseDoc = await courseCollection.findOne({
+        _id: new ObjectId(courseId),
+    });
+    if (!courseDoc) throw new Error("Course not found for syncing office hours");
+
     const professor = await userCollection.findOne({_id: courseDoc.professorId});
+    if (!professor) throw new Error("Professor not found");
+
+    let updatedOfficeHours = [];
+
     for (const oh of courseDoc.professorOfficeHours || []) {
-        await addOfficeHourEvent({
-            name: `${professor.firstName} ${professor.lastName}`,
-            day: oh.day,
-            startTime: oh.startTime,
-            endTime: oh.endTime,
-            location: oh.location,
-            calendarType: 'students'
-        });
+        if (oh.calendarEventIds && Object.keys(oh.calendarEventIds).length > 0) {
+            updatedOfficeHours.push(oh);
+            continue;
+        }
 
-        await addOfficeHourEvent({
-            name: `${professor.firstName} ${professor.lastName}`,
-            day: oh.day,
-            startTime: oh.startTime,
-            endTime: oh.endTime,
-            location: oh.location,
-            calendarType: 'professors'
-        });
+        const name = `${professor.firstName} ${professor.lastName}`;
+        const calendarEventIds = {};
+        let failed = false;
 
-        await addOfficeHourEvent({
-            name: `${professor.firstName} ${professor.lastName}`,
-            day: oh.day,
-            startTime: oh.startTime,
-            endTime: oh.endTime,
-            location: oh.location,
-            calendarType: 'tas'
-        });
-    }
+        for (const calendarType of ["students", "tas", "professors"]) {
+            const result = await addOfficeHourEvent({
+                name,
+                day: oh.day,
+                startTime: oh.startTime,
+                endTime: oh.endTime,
+                location: oh.location,
+                calendarType
+            });
 
-    // Sync TA office hours
-    for (const oh of courseDoc.taOfficeHours || []) {
-        const ta = await userCollection.findOne({_id: oh.taId});
-        const name = `${ta.firstName} ${ta.lastName}`;
+            if (!result?.eventId) {
+                console.error(`❌ Failed to create event for ${calendarType}. Skipping this office hour.`);
+                failed = true;
+                break;
+            }
+            calendarEventIds[calendarType] = result.eventId;
+        }
 
-        await addOfficeHourEvent({
-            name,
-            day: oh.day,
-            startTime: oh.startTime,
-            endTime: oh.endTime,
-            location: oh.location,
-            calendarType: 'students'
-        });
+        if (failed) {
+            updatedOfficeHours.push(oh); // keep as-is
+            continue;
+        }
 
-        await addOfficeHourEvent({
-            name,
-            day: oh.day,
-            startTime: oh.startTime,
-            endTime: oh.endTime,
-            location: oh.location,
-            calendarType: 'tas'
-        });
-
-        await addOfficeHourEvent({
-            name,
-            day: oh.day,
-            startTime: oh.startTime,
-            endTime: oh.endTime,
-            location: oh.location,
-            calendarType: 'professors'
+        updatedOfficeHours.push({
+            ...oh,
+            calendarEventIds
         });
     }
+
+    await courseCollection.updateOne(
+        {_id: new ObjectId(courseId)},
+        {
+            $set: {
+                professorOfficeHours: updatedOfficeHours
+            }
+        }
+    );
 }
 
 
@@ -167,3 +197,5 @@ export const subscribeLinks = {
     professors: `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(CALENDAR_IDS.professors)}`
 };
 
+
+export {CALENDAR_IDS} ;
