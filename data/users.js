@@ -396,4 +396,5 @@ export default {
   approveEnrollmentRequest,
   rejectEnrollmentRequest,
   getUserByEmail,
+  addLectureNotes
 };
