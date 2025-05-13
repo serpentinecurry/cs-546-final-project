@@ -20,15 +20,12 @@
       </span>
     </button>
     <ul class="dropdown-menu dropdown-menu-end shadow-sm p-2" aria-labelledby="userDropdown" style="min-width: 220px;">
-      <li class="px-3 py-1 text-muted small">Logged in as <strong>{{user.email}}</strong></li>
-              <li class="px-3 py-1 text-muted small">Role: <strong class="text-capitalize">{{user.role}}</strong></li>
-      <li><hr class="dropdown-divider"></li>
-      <li><a class="dropdown-item" href="/student/profile">Profile</a></li>
-      <li><a class="dropdown-item text-danger fw-semibold" href="/logout">Logout</a></li>
-    </ul>
-
-      <ul class="dropdown-menu dropdown-menu-end shadow-sm p-2" aria-labelledby="userDropdown" style="min-width: 220px;">
-      <li class="px-3 py-1 text-muted small">Role: <strong class="text-capitalize">{{user.role}}</strong></li>
+      <li class="px-3 py-1 text-muted small">
+        Logged in as <strong>{{user.email}}</strong>
+      </li>
+      <li class="px-3 py-1 text-muted small">
+        Role: <strong class="text-capitalize">{{user.role}}</strong>
+      </li>
       <li><hr class="dropdown-divider"></li>
       <li><a class="dropdown-item" href="/student/profile">Profile</a></li>
       <li><a class="dropdown-item text-danger fw-semibold" href="/logout">Logout</a></li>
@@ -39,17 +36,12 @@
 <div class="d-flex">
   <aside class="sidebar">
     <ul class="nav">
-<!--      <li class="nav-item">-->
-<!--        <a href="/student" class="nav-link {{#ifEquals currentPage 'home'}}active{{/ifEquals}}">-->
-<!--          <i class="bi bi-house-door"></i> Home-->
-<!--        </a>-->
-<!--      </li>-->
       <li class="nav-item">
         <a href="/student/dashboard" class="nav-link {{#ifEquals currentPage 'dashboard'}}active{{/ifEquals}}">
           <i class="bi bi-speedometer2"></i> Dashboard
         </a>
       </li>
-        <li class="nav-item">
+      <li class="nav-item">
         <a href="/student/all-courses" class="nav-link {{#ifEquals currentPage 'all-courses'}}active{{/ifEquals}}">
           <i class="bi bi-book"></i> All Courses
         </a>
@@ -74,16 +66,17 @@
           <i class="bi bi-gear"></i> Request Changes
         </a>
       </li>
-<li class="nav-item">
-  <a href="/student/contact-tas" class="nav-link {{#ifEquals currentPage 'contactTAs'}}active{{/ifEquals}}">
-    <i class="bi bi-chat-dots"></i> Contact TAs
-  </a>
-</li>
-        <li class="nav-item">
-          <a href="/student/inbox" class="nav-link {{#ifEquals currentPage 'studentInbox'}}active{{/ifEquals}}">
-            <i class="bi bi-inbox"></i> Inbox
-          </a>
-        </li>
+      <li class="nav-item">
+        <a href="/student/contact-tas" class="nav-link {{#ifEquals currentPage 'contactTAs'}}active{{/ifEquals}}">
+          <i class="bi bi-chat-dots"></i> Contact TAs
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/student/inbox" class="nav-link {{#ifEquals currentPage 'studentInbox'}}active{{/ifEquals}}">
+          <i class="bi bi-inbox"></i> Inbox
+        </a>
+      </li>
+
       {{#ifEquals user.role "ta"}}
         <li class="nav-item">
           <a href="/student/ta/officeHour" class="nav-link {{#ifEquals currentPage 'taOfficeHours'}}active{{/ifEquals}}">

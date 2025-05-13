@@ -1,39 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link rel="icon" href="/public/images/scholario_favicon.png"/>
-    <title>Scholario</title>
-    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"/>
-    <link rel="stylesheet" href="/public/css/main.css">
-    <link rel="stylesheet" href="/public/css/admin.css"/>
-    <link rel="stylesheet" href="/public/css/student.css"/>
-    <link rel="stylesheet" href="/public/css/professor.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" href="/public/images/scholario_favicon.png"/>
+  <title>Scholario</title>
+
+  <!-- Fonts and Icons -->
+  <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"/>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="/public/css/main.css">
+  <link rel="stylesheet" href="/public/css/admin.css"/>
+  <link rel="stylesheet" href="/public/css/student.css"/>
+  <link rel="stylesheet" href="/public/css/professor.css"/>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
 </head>
 <body>
-<div class="container my-4">
+  <div class="container my-4">
     {{{body}}}
-</div>
-<script>
-  const successAlert = document.querySelector(".alert-success");
-  if (successAlert) {
-    // Add fade class for Bootstrap transition
-    successAlert.classList.add("fade", "show");
+  </div>
 
-    setTimeout(() => {
-      successAlert.classList.remove("show"); // triggers fade out
-    }, 3000);
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const successAlert = document.querySelector(".alert-success");
+      if (successAlert) {
+        // Add fade class initially
+        successAlert.classList.add("fade");
 
-    // Optionally remove it from DOM after fade
-    setTimeout(() => {
-      successAlert.remove();
-    }, 4000);
-  }
-</script>
+        // Add show after short delay to trigger animation
+        setTimeout(() => {
+          successAlert.classList.add("show");
+        }, 100);
+
+        // Remove show after 3s
+        setTimeout(() => {
+          successAlert.classList.remove("show");
+        }, 3000);
+
+        // Remove from DOM after fade-out completes
+        setTimeout(() => {
+          successAlert.remove();
+        }, 4000);
+      }
+    });
+  </script>
 </body>
 </html>

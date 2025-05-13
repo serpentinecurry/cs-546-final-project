@@ -155,9 +155,6 @@ router
                     }
                 }
 
-                console.log(
-                    `Found ${absenceRequests.length} absence requests for course ${courseId}`
-                );
             } catch (e) {
                 console.error("Error fetching absence requests:", e);
             }
@@ -275,10 +272,6 @@ router
                 // Set flag to determine if we should show the chart
                 const hasAttendanceData =
                     totalPresent > 0 || totalAbsent > 0 || totalExcused > 0;
-
-                console.log(
-                    `Attendance counts: Present=${totalPresent}, Absent=${totalAbsent}, Excused=${totalExcused}`
-                );
 
                 const feedbackCollection = await feedback();
                 const existingSurvey = await feedbackCollection.findOne({

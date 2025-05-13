@@ -123,7 +123,6 @@ app.use(
 
 // Flash messages / local variables
 app.use((req, res, next) => {
-    console.log(">>> Session check:", req.session?.user);
     res.locals.successMessage = req.session.successMessage || null;
     next();
 });

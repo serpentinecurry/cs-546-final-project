@@ -248,14 +248,10 @@ router.route("/courses/:id").get(checkActiveEnrollment, async (req, res) => {
     try {
         const courseId = stringValidate(req.params.id);
         const studentId = req.session.user._id;
-        console.log("→ courseId:", courseId);
-        console.log("→ studentId:", studentId);
 
         if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
 
         const {course, professor} = await coursesData.getCourseById(courseId);
-        console.log("→ course loaded:", course.courseName);
-        console.log("→ studentEnrollments:", course.studentEnrollments);
 
         const isEnrolled = course.studentEnrollments?.some(
             (r) =>
@@ -263,7 +259,6 @@ router.route("/courses/:id").get(checkActiveEnrollment, async (req, res) => {
                 r.status === "active"
         );
 
-        console.log("→ isEnrolled:", isEnrolled);
 
         if (!isEnrolled) {
             return res.status(403).render("error", {
@@ -1028,7 +1023,6 @@ router.get("/lectures/:courseId", checkActiveEnrollment, async (req, res) => {
 });
 
 router.route("/profile").get(async (req, res) => {
-    console.log("User session at /profile:", req.session.user);
     res.render("student/student", {
         layout: "main",
         partialToRender: "profile",
@@ -1205,8 +1199,6 @@ router.route("/request-status").get(async (req, res) => {
 });
 
 router.route("/calendar").get(async (req, res) => {
-    console.log(">>> Session user in /calendar:", req.session.user);
-
     try {
         const lectures = await calendarData.getStudentLectures(req.session.user._id);
         const officeHours = await calendarData.getOfficeHours(req.session.user._id);

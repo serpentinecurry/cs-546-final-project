@@ -21,7 +21,6 @@ export const isStudent = (req, res, next) => {
 };
 
 // Middleware: Prevent login when already authenticated
-// Middleware: Prevent login when already authenticated
 export const preventDoubleLogin = (req, res, next) => {
   if (req.session.user) {
     const role = req.session.user.role.toLowerCase();
@@ -79,7 +78,6 @@ export const checkActiveEnrollment = async (req, res, next) => {
 
         next();
     } catch (e) {
-        console.error("Enrollment middleware error:", e);
         res.status(500).render("error", {
             layout: "main",
             error: "Server error while verifying enrollment."
@@ -113,9 +111,7 @@ export const verifyProfessorOwnsCourse = async (req, res, next) => {
         }
 
         next();
-    } catch (e) {
-        console.error("Course ownership check failed:", e);
-        return res.status(500).render("error", {
+    } catch (e) {return res.status(500).render("error", {
             layout: "main",
             error: "Server error while verifying course access."
         });

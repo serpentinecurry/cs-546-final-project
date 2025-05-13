@@ -31,7 +31,6 @@ export async function addLectureToCalendars(lecture) {
                 requestBody: event,
             });
             calendarEventIds[role] = response.data.id;
-            console.log(`✅ Synced lecture to ${role} calendar`);
         } catch (err) {
             console.error(`❌ Failed to sync lecture to ${role} calendar:`, err.message);
         }
@@ -79,7 +78,6 @@ export async function addOfficeHourEvent({
             calendarId: CALENDAR_IDS[calendarType],
             requestBody: event,
         });
-        console.log(`✅ Synced office hour to ${calendarType} calendar`);
         return {eventId: response.data.id}; // ✅ return event ID
     } catch (err) {
         console.error(`❌ Failed to sync office hour to ${calendarType}`, err.message);
@@ -94,7 +92,6 @@ export async function deleteOfficeHourEvent(calendarType, eventId) {
             calendarId: CALENDAR_IDS[calendarType],
             eventId: eventId,
         });
-        console.log(`🗑️ Deleted office hour from ${calendarType} calendar`);
     } catch (err) {
         console.error(`⚠️ Failed to delete event from ${calendarType}:`, err.message);
     }
@@ -120,7 +117,6 @@ export async function updateLectureEvent(calendarType, eventId, updatedData) {
             eventId,
             requestBody: event,
         });
-        console.log(`🔁 Updated lecture in ${calendarType} calendar`);
     } catch (err) {
         console.error(`❌ Failed to update event in ${calendarType} calendar:`, err.message);
     }

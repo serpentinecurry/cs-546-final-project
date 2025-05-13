@@ -16,7 +16,6 @@ import {
 import { sendCredentialsEmail } from "../utils/mailer.js";
 
 router.route("/").get(async (req, res) => {
-  console.log(req.session.user);
   const { success } = req.query;
   const usersCollection = await users();
   const coursesCollection = await courses();
