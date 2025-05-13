@@ -1,17 +1,17 @@
 import express from "express";
 
-const app = express();
-
 import session from "express-session";
 import exphbs from "express-handlebars";
 import path from "path";
 import {fileURLToPath} from "url";
+import rateLimit from "express-rate-limit";
+import configRoutes from "./routes/index.js";
+import {preventDoubleLogin, isAdmin, isStudent, isProfessor} from "./middleware.js";
+
+const app = express();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-import configRoutes from "./routes/index.js";
-import {preventDoubleLogin, isAdmin, isStudent, isProfessor} from "./middleware.js";
 
 // View engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -126,6 +126,13 @@ app.use((req, res, next) => {
     res.locals.successMessage = req.session.successMessage || null;
     next();
 });
+
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // Limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
 
 // Access control
 app.use("/register", preventDoubleLogin);
