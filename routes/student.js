@@ -23,8 +23,7 @@ import {
     passwordValidate,
     calculateAge,
 } from "../validation.js";
-import {addOfficeHourEvent, deleteOfficeHourEvent} from "../services/calendarSync.js";
-import {subscribeLinks} from "../services/calendarSync.js"; // ✅ add this
+import {subscribeLinks} from "../services/calendarSync.js";
 import discussionsData from "../data/discussions.js";
 import { addTAOfficeHour , deleteTAOfficeHour} from "../data/officeHours.js";
 
