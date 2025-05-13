@@ -121,6 +121,8 @@ app.use(
     })
 );
 
+app.use(lusca.csrf());
+
 // Flash messages / local variables
 app.use((req, res, next) => {
     res.locals.successMessage = req.session.successMessage || null;
