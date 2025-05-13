@@ -411,7 +411,7 @@ const getLectureNotes = async (studentId, lectureId) => {
   if (indexToRemove === -1) {
     return "";
   } else {
-    return lectureNotes[indexToRemove.noteContent];
+    return lectureNotes[indexToRemove].noteContent;
   }
 }
 

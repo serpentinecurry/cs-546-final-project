@@ -462,6 +462,9 @@ router.get("/courses/:courseId/lectures/:lectureId", checkActiveEnrollment, asyn
                 (r) => r.studentId.toString() === studentId.toString()
             );
 
+            // get student's lecture notes
+            const lectureNotes = await userData.getLectureNotes(studentId, lectureId);
+
             return res.render("student/student", {
                 layout: "main",
                 partialToRender: "lecture-detail",
@@ -492,6 +495,7 @@ router.get("/courses/:courseId/lectures/:lectureId", checkActiveEnrollment, asyn
                 },
                 lectureEndTimestamp,
                 hasRated,
+                lectureNotes
             });
         } catch (error) {
             console.error("Lecture detail error:", error);
