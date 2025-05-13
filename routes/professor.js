@@ -998,13 +998,23 @@ router
       }
 
       for (const [studentId, status] of Object.entries(attendanceFormData)) {
+        // Fetch previous attendance record for this student/lecture
+        const attendanceCollection = await attendance();
+        const prevRecord = await attendanceCollection.findOne({
+          lectureId: new ObjectId(lectureId),
+          studentId: new ObjectId(studentId)
+        });
+
+        const wasAlreadyAbsent = prevRecord && prevRecord.status === "absent";
+
         await attendanceData.createAttendance(
           lectureId,
           courseId,
           studentId,
           status
         );
-        if (status === "absent") {
+        // Only send email if marking as absent and not already absent
+        if (status === "absent" && !wasAlreadyAbsent) {
           // Fetch student info
           const userCollection = await users();
           const student = await userCollection.findOne({ _id: new ObjectId(studentId) });

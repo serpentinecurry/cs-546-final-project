@@ -1,0 +1,405 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f1f5f9;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.login-wrapper {
+  display: flex;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.login-left {
+  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  color: white;
+  padding: 4rem;
+  flex: 1.3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.login-left img {
+  max-width: 160px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  margin-bottom: 1.5rem;
+}
+
+.login-left h1 {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+}
+
+.login-left p {
+  font-size: 1.15rem;
+  max-width: 400px;
+  margin-bottom: 2rem;
+  color: #f0f9ff;
+}
+
+.login-left ul {
+  text-align: left;
+  margin-top: 2rem;
+  padding-left: 0;
+  list-style: none;
+}
+
+.login-left ul li {
+  margin-bottom: 0.75rem;
+  font-size: 1.05rem;
+}
+
+.login-left ul li::before {
+  content: "✅";
+  margin-right: 0.5rem;
+}
+
+.login-right {
+  flex: 1;
+  background-color: white;
+  padding: 4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.login-right h2 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.alert {
+  border-radius: 8px;
+}
+
+.form-label {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.form-control {
+  border-radius: 10px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+}
+
+.btn-custom {
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.btn-custom:hover {
+  background-color: #4338ca;
+}
+
+@media (max-width: 768px) {
+  .login-wrapper {
+    flex-direction: column;
+  }
+
+  .login-left,
+  .login-right {
+    flex: 1;
+    padding: 2rem;
+  }
+}
+
+.register-wrapper {
+  max-width: 850px;
+  margin: 4rem auto;
+  background-color: white;
+  padding: 3rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  position: relative;
+  animation: fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.register-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.register-logo img {
+  height: 90px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.register-logo img:hover {
+  transform: scale(1.05);
+}
+
+.register-title {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.register-title h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+.form-label {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.form-control,
+.form-select {
+  border-radius: 10px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
+}
+
+.error-message {
+  color: #dc3545;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.btn-primary {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+}
+
+.bottom-link {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.bottom-link a {
+  text-decoration: none;
+  color: #4f46e5;
+  font-weight: 500;
+}
+
+.bottom-link a:hover {
+  text-decoration: underline;
+}
+
+.spinner-wrapper {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.6);
+  justify-content: center;
+  align-items: center;
+  border-radius: 20px;
+}
+
+.spinner-wrapper.active {
+  display: flex;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  z-index: 5;
+}
+
+.password-toggle-btn:focus {
+  outline: none;
+}
+
+.toggle-btn {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+}
+.link-hover {
+  color: #4f46e5;
+  transition: all 0.2s ease;
+}
+
+.link-hover:hover {
+  text-decoration: underline;
+  color: #4338ca;
+}
+
+.reset-wrapper {
+  max-width: 850px;
+  margin: 4rem auto;
+  background-color: white;
+  padding: 3rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  animation: fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.reset-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.reset-logo img {
+  height: 90px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.reset-title {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.reset-title h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+.reset-title p {
+  color: #4b5563;
+}
+
+.form-label {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.form-control {
+  border-radius: 10px;
+}
+
+.btn-primary {
+  background-color: #4f46e5;
+  border-color: #4f46e5;
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+}
+
+.text-muted li {
+  margin-bottom: 0.4rem;
+}
+
+.link-hover {
+  color: #4f46e5;
+  transition: all 0.2s ease;
+}
+
+.link-hover:hover {
+  text-decoration: underline;
+  color: #4338ca;
+}
+
+.error-wrapper {
+  max-width: 600px;
+  margin: 5rem auto;
+  padding: 3rem;
+  background-color: #fff3f3;
+  border: 1px solid #f8d7da;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.error-wrapper h2 {
+  color: #dc3545;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.error-wrapper p {
+  color: #842029;
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.error-wrapper a {
+  text-decoration: none;
+  color: #fff;
+  background-color: #0d6efd;
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.error-wrapper a:hover {
+  background-color: #084298;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
