@@ -21,8 +21,18 @@ import {sendAbsentNotificationEmail} from "../utils/mailer.js";
 import {subscribeLinks, syncAllOfficeHoursForCourse} from "../services/calendarSync.js";
 import xss from "xss";
 
-
 const router = Router();
+
+function dayMap(short) {
+    const map = {
+        M: "Monday",
+        T: "Tuesday",
+        W: "Wednesday",
+        Th: "Thursday",
+        F: "Friday",
+    };
+    return map[short] || short;
+}
 
 router.route("/").get(async (req, res) => {
     if (!req.session.user || req.session.user.role !== "professor") {
@@ -241,12 +251,10 @@ router
                     courseId
                 );
 
-                // Count the records
                 totalPresent = presentStudents.length;
                 totalAbsent = absentStudents.length;
                 totalExcused = excusedStudents.length;
 
-                // Set flag to determine if we should show the chart
                 const hasAttendanceData =
                     totalPresent > 0 || totalAbsent > 0 || totalExcused > 0;
 
@@ -302,9 +310,8 @@ router.post("/course/:courseId/feedback/create", async (req, res) => {
         await createFeedbackSurvey(courseId, professorId);
 
         req.session.successMessage =
-            "✅ Course survey created and sent out to students!";
+            "Course survey created and sent out to students!";
 
-        // 👇 Ensure the session is saved before redirect
         req.session.save(() => {
             res.redirect(`/professor/course/${courseId}/analytics`);
         });
@@ -351,7 +358,7 @@ router.post(
                     });
                 }
 
-                
+
                 const [sh, sm] = startTime.split(":").map(Number);
                 const [eh, em] = endTime.split(":").map(Number);
                 const startMinutes = sh * 60 + sm;
@@ -363,7 +370,6 @@ router.post(
                     });
                 }
 
-                // Passed validation
                 meetingDays.push({day: dayMap(shortDay)});
                 meetingTimes.push({startTime, endTime});
             }
@@ -419,8 +425,6 @@ router
 
             const professorOfficeHours = course.professorOfficeHours || [];
 
-            
-
             const weekdayToIndex = {
                 Sunday: 0,
                 Monday: 1,
@@ -439,7 +443,7 @@ router
 
                 events.push({
                     title: `Prof Office Hour (${slot.location})`,
-                    daysOfWeek: [dayIndex],  
+                    daysOfWeek: [dayIndex],
                     startTime: slot.startTime,
                     endTime: slot.endTime,
                     description: slot.notes || '',
@@ -468,14 +472,13 @@ router
             if (role === "ta") calendarSubscribeUrl = subscribeLinks.tas;
             if (role === "professor") calendarSubscribeUrl = subscribeLinks.professors;
 
-            // ✅ Pass all data to the view
             return res.render("professorDashboard/viewOfficeHours", {
                 layout: "main",
                 courseId: course._id.toString(),
                 professorOfficeHours,
                 taOfficeHours,
                 calendarSubscribeUrl,
-                events: events // For frontend
+                events: events
             });
         } catch (e) {
             return res.status(500).render("error", {
@@ -523,7 +526,7 @@ router
             if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
             return res.render("professorDashboard/addOfficeHour", {
                 courseId,
-                layout: "main", // or your professor layout
+                layout: "main",
                 error: null,
             });
         } catch (error) {
@@ -551,6 +554,7 @@ router
 
             await syncAllOfficeHoursForCourse(courseId);
             return res.redirect(`/professor/course/${courseId}/view-office-hours`);
+
         } catch (error) {
             return res.status(400).render("professorDashboard/addOfficeHour", {
                 courseId: req.params.courseId,
@@ -562,18 +566,6 @@ router
             });
         }
     });
-
-// Utility to map short day to full name
-function dayMap(short) {
-    const map = {
-        M: "Monday",
-        T: "Tuesday",
-        W: "Wednesday",
-        Th: "Thursday",
-        F: "Friday",
-    };
-    return map[short] || short;
-}
 
 router
     .route("/course/:id/analytics/manage-tas")
@@ -632,7 +624,7 @@ router
                 $addToSet: {taForCourses: new ObjectId(courseId)},
             };
 
-            
+
             if (student.role === "student") {
                 updates.$set = {role: "ta"};
             }
@@ -667,14 +659,14 @@ router.post(
             });
             if (!user) throw "User not found";
 
-            
+
             await usersCollection.updateOne(
                 {_id: new ObjectId(studentId)},
                 {
                     $pull: {taForCourses: new ObjectId(courseId)},
                 }
             );
-            // Remove TA's office hours from course
+
             await courseCollection.updateOne(
                 {_id: new ObjectId(courseId)},
                 {$pull: {taOfficeHours: {taId: new ObjectId(studentId)}}}
@@ -683,7 +675,6 @@ router.post(
             await syncAllOfficeHoursForCourse(courseId);
 
 
-            
             const updated = await usersCollection.findOne({
                 _id: new ObjectId(studentId),
             });
@@ -813,7 +804,6 @@ router.post("/enrollment/approve", async (req, res) => {
     }
 });
 
-// lecture creation route
 router
     .route("/course/:courseId/lecture/create")
     .get(async (req, res) => {
@@ -883,7 +873,6 @@ router
         }
     });
 
-// lecture Routes
 router
     .route("/course/:courseId/lecture/:lectureId/edit")
     .get(verifyProfessorOwnsCourse, async (req, res) => {
@@ -968,7 +957,6 @@ router
                 });
             }
 
-
             const {course} = await courseData.getCourseById(courseId);
             if (!course) {
                 return res.status(404).render("error", {
@@ -977,14 +965,12 @@ router
                 });
             }
 
-
             const students = await courseData.getStudentsNoTAs(courseId);
 
 
             students.forEach(s => {
                 s._id = s._id.toString();
             });
-
 
             let attendanceMap = {};
             try {
@@ -1002,12 +988,10 @@ router
                 console.error("Error fetching attendance records:", e);
             }
 
-
             const studentAttendanceHistory = students.map((student) => ({
                 ...student,
                 attendanceStatus: attendanceMap[student._id] || "",
             }));
-
 
             let startDateTime = dayjs(
                 `${lecture.lectureDate}T${lecture.lectureStartTime}`
@@ -1082,8 +1066,6 @@ router
         }
     });
 
-
-//attendance submission route
 router
     .route("/course/:courseId/lecture/:lectureId/attendance")
     .post(verifyProfessorOwnsCourse, async (req, res) => {
@@ -1102,29 +1084,29 @@ router
             for (const [studentId, status] of Object.entries(attendanceFormData)) {
                 if (!ObjectId.isValid(studentId)) throw "Invalid student ID";
 
-  const safeStatus = xss(status.trim().toLowerCase());
-  if (!["present", "absent", "excused"].includes(safeStatus)) throw "Invalid status";
-        const attendanceCollection = await attendance();
-        const prevRecord = await attendanceCollection.findOne({
-          lectureId: new ObjectId(lectureId),
-          studentId: new ObjectId(studentId)
-        });
+                const safeStatus = xss(status.trim().toLowerCase());
+                if (!["present", "absent", "excused"].includes(safeStatus)) throw "Invalid status";
+                const attendanceCollection = await attendance();
+                const prevRecord = await attendanceCollection.findOne({
+                    lectureId: new ObjectId(lectureId),
+                    studentId: new ObjectId(studentId)
+                });
 
-        const wasAlreadyAbsent = prevRecord && prevRecord.status === "absent";
+                const wasAlreadyAbsent = prevRecord && prevRecord.status === "absent";
 
-        await attendanceData.createAttendance(
-          lectureId,
-          courseId,
-          studentId,
-          safeStatus
-        );
-        
-        if (status === "absent" && !wasAlreadyAbsent) {
-          
+                await attendanceData.createAttendance(
+                    lectureId,
+                    courseId,
+                    studentId,
+                    safeStatus
+                );
+
+                if (status === "absent" && !wasAlreadyAbsent) {
+
                     const userCollection = await users();
                     const student = await userCollection.findOne({_id: new ObjectId(studentId)});
 
-                    
+
                     const courseCollection = await courses();
                     const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
                     const lecturesCollection = await lectures();
@@ -1153,7 +1135,6 @@ router
         }
     });
 
-// absence request approve or reject route - doesn't mark as absent
 router.post(
     "/absence-request/update/:studentId/:courseId/:action",
     verifyProfessorOwnsCourse,
@@ -1219,7 +1200,6 @@ router.post(
     }
 );
 
-// Use this for discussion routes - copy and paste for student discussion routes
 router.route("/Discussion").get(async (req, res) => {
     try {
         if (!req.session.user || req.session.user.role !== "professor") {
@@ -1362,6 +1342,7 @@ router
             res.redirect(
                 `/professor/course/${courseId}/lecture/${lectureId}/discussions/${newDiscussion._id}`
             );
+
         } catch (error) {
             console.error("Error creating discussion:", error);
 

@@ -25,15 +25,20 @@ const createUser = async (
 ) => {
     firstName = stringValidate(firstName);
     azAZLenValidate(firstName, 2, 20);
+
     lastName = stringValidate(lastName);
     azAZLenValidate(lastName, 2, 20);
+
     let age = calculateAge(dateOfBirth);
-    if (age < 15) throw "Minimum age 15 to signup!";
+    if (age < 15) throw "Minimum age is 15 to Signup!";
+
     if (!["male", "female", "other"].includes(gender)) throw "Invalid gender";
     email = validateEmail(email);
+
     passwordValidate(password);
     if (!["student", "professor", "admin", "ta"].includes(role))
         throw "Invalid user role";
+
     if (!isValidDateString(dateOfBirth)) {
         throw "Invalid date of birth";
     }
@@ -42,6 +47,7 @@ const createUser = async (
         (!major || typeof major !== "string" || major.trim().length === 0)
     )
         throw "Student must have a major";
+
     const usersCollection = await users();
     const existing = await usersCollection.findOne({
         email: {$regex: `^${email}$`, $options: "i"},
@@ -72,7 +78,7 @@ const createUser = async (
         newUser.lectureNotes = [];
     }
     if (role === "professor") {
-        if (major.trim() !== "") throw "Major field is only for students!";
+        if (major.trim() !== "") throw "Major field is only for Students!";
     }
     const insertResult = await usersCollection.insertOne(newUser);
     if (!insertResult.acknowledged) throw "Failed to create user";
@@ -86,11 +92,11 @@ const login = async (email, password) => {
     const user = await usersCollection.findOne({
         email: {$regex: `^${email}$`, $options: "i"},
     });
-    if (!user) throw "Either the emailId or password is invalid";
+    if (!user) throw "Either the Email-ID or the password is invalid";
     if (user.accessStatus !== "approved")
         throw "Your account is not approved yet. Please wait for admin approval.";
     const match = await bcrypt.compare(password, user.password);
-    if (!match) throw "Either the emailId or password is invalid";
+    if (!match) throw "Either the Email-ID or the password is invalid";
     const {
         _id,
         firstName,
@@ -165,7 +171,6 @@ const approveRequest = async (requestId) => {
     if (!req) throw "Change request not found";
     if (req.status !== "pending") throw "Request already resolved";
 
-    // Update user field
     const courseUpdateResult = await userCollection.updateOne(
         {_id: new ObjectId(req.userId)},
         {$set: {[req.field]: req.newValue}}
@@ -173,7 +178,6 @@ const approveRequest = async (requestId) => {
 
     if (!courseUpdateResult.modifiedCount) throw "Failed to update user data";
 
-    // approve requests
     await requestCollection.updateOne(
         {_id: new ObjectId(requestId)},
         {$set: {status: "approved", reviewedAt: new Date()}}
@@ -253,11 +257,9 @@ const approveEnrollmentRequest = async (studentId, courseId) => {
     if (!ObjectId.isValid(studentId)) throw "Invalid studentId";
     if (!ObjectId.isValid(courseId)) throw "Invalid courseId";
 
-    const userCollection = await users();
     const courseCollection = await courses();
 
 
-    // Update course document
     const courseUpdateResult = await courseCollection.updateOne(
         {
             _id: new ObjectId(courseId),
@@ -284,10 +286,8 @@ const rejectEnrollmentRequest = async (studentId, courseId) => {
     if (!ObjectId.isValid(studentId)) throw "Invalid studentId";
     if (!ObjectId.isValid(courseId)) throw "Invalid courseId";
 
-    const userCollection = await users();
     const courseCollection = await courses();
 
-    // Update course document
     const courseUpdateResult = await courseCollection.updateOne(
         {
             _id: new ObjectId(courseId),
@@ -304,7 +304,6 @@ const rejectEnrollmentRequest = async (studentId, courseId) => {
     return {enrollmentRejected: true};
 };
 
-//add a getUserByEmail function
 const getUserByEmail = async (email) => {
     email = validateEmail(email);
     const usersCollection = await users();
@@ -315,9 +314,8 @@ const getUserByEmail = async (email) => {
     return user;
 };
 
-// add/update a student's lecture notes
 const addLectureNotes = async (studentId, lectureId, courseId, notes) => {
-    // error handling
+
     studentId = stringValidate(studentId);
     courseId = stringValidate(courseId);
     lectureId = stringValidate(lectureId);
@@ -327,39 +325,34 @@ const addLectureNotes = async (studentId, lectureId, courseId, notes) => {
     if (!ObjectId.isValid(courseId)) throw "Invalid courseId";
     if (!ObjectId.isValid(lectureId)) throw "Invalid lectureId";
 
-    // get student
     const userCollection = await users();
     const user = await userCollection.findOne({
         _id: new ObjectId(studentId)
     });
 
-    // get student's lecture notes
     let lectureNotes = user.lectureNotes;
     let now = new Date();
 
-    // look to see if the student already has notes for that lecture
     let indexToRemove = lectureNotes.findIndex((obj) => {
         return obj.lectureId.toString() === lectureId
     });
-    // get the object storing the notes or make a new one
+
     const notesObject = indexToRemove !== -1 ? lectureNotes.at(indexToRemove)
         : {
             lectureId: new ObjectId(lectureId),
             courseId: new ObjectId(courseId),
             createdAt: now.toString()
         };
-    // set notes and update time
+
     notesObject.noteContent = notes;
     notesObject.updatedAt = now.toString();
 
-    // add/replace item in lecture notes array
     if (indexToRemove === -1) {
         lectureNotes.push(notesObject);
     } else {
         lectureNotes.splice(indexToRemove, notesObject);
     }
 
-    // update user in db
     const updateInfo = await userCollection.findOneAndUpdate(
         {_id: new ObjectId(studentId)},
         {$set: {lectureNotes: lectureNotes}},
@@ -373,27 +366,24 @@ const addLectureNotes = async (studentId, lectureId, courseId, notes) => {
 }
 
 const getLectureNotes = async (studentId, lectureId) => {
-    // error handing
+
     studentId = stringValidate(studentId);
     lectureId = stringValidate(lectureId);
 
     if (!ObjectId.isValid(studentId)) throw "Invalid studentId";
     if (!ObjectId.isValid(lectureId)) throw "Invalid lectureId";
 
-    // get user
     const userCollection = await users();
     const user = await userCollection.findOne({
         _id: new ObjectId(studentId)
     });
 
-    // get user's lecture notes
     let lectureNotes = user.lectureNotes;
-    // look to see if the student has notes for that lecture
+
     let indexToRemove = lectureNotes.findIndex((obj) => {
         return obj.lectureId.toString() === lectureId
     });
 
-    // if there are no notes, return empty string
     if (indexToRemove === -1) {
         return "";
     } else {

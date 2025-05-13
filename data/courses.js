@@ -1,7 +1,6 @@
 import {ObjectId} from "mongodb";
 import {
     stringValidate,
-    parse12HourTime,
     isStartBeforeEnd,
     isValid24Hour,
 } from "../validation.js";
@@ -19,7 +18,7 @@ const createCourse = async (courseName, courseCode, professorId) => {
         courseCode: {$regex: `^${courseCode}$`, $options: "i"},
     });
     if (existingCourse)
-        throw "Course code already exists. Please choose a different code.";
+        throw "Course Code already exists. Please enter a different Course Code.";
     const newCourse = {
         courseName,
         courseCode,
@@ -60,7 +59,7 @@ const getAllCourses = async () => {
 
 const getCourseById = async (courseId) => {
     courseId = stringValidate(courseId);
-    if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
+    if (!ObjectId.isValid(courseId)) throw "Invalid Course ID.";
 
     const coursesCollection = await courses();
     const usersCollection = await users();
@@ -75,8 +74,8 @@ const getCourseById = async (courseId) => {
 const updateCourseProfessor = async (courseId, newProfessorId) => {
     courseId = stringValidate(courseId);
     newProfessorId = stringValidate(newProfessorId);
-    if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
-    if (!ObjectId.isValid(newProfessorId)) throw "Invalid professor ID.";
+    if (!ObjectId.isValid(courseId)) throw "Invalid Course ID.";
+    if (!ObjectId.isValid(newProfessorId)) throw "Invalid Professor ID.";
 
     const coursesCollection = await courses();
     const updateInfo = await coursesCollection.updateOne(
@@ -146,7 +145,6 @@ const requestEnrollment = async (courseId, studentId) => {
 
     if (!targetCourse) throw "Course not found.";
 
-    // 🟡 Schedule Conflict Check
     const studentActiveCourses = await coursesCollection
         .find({
             studentEnrollments: {
@@ -182,7 +180,6 @@ const requestEnrollment = async (courseId, studentId) => {
         }
     }
 
-    // 🟡 Check if already applied or enrolled
     const alreadyRequested = targetCourse.studentEnrollments?.some(
         (r) =>
             r.studentId.toString() === studentId &&
@@ -193,7 +190,6 @@ const requestEnrollment = async (courseId, studentId) => {
         throw "⚠️ You have already requested enrollment for this course.";
     }
 
-    // 🟡 Reactivate if previously inactive
     const inactiveIndex = targetCourse.studentEnrollments?.findIndex(
         (r) => r.studentId.toString() === studentId && r.status === "inactive"
     );
@@ -220,7 +216,6 @@ const requestEnrollment = async (courseId, studentId) => {
         return {enrollmentReRequested: true};
     }
 
-    // 🟢 New Enrollment Request
     const updateInfo = await coursesCollection.updateOne(
         {_id: new ObjectId(courseId)},
         {
@@ -272,12 +267,10 @@ const getAllCoursesForStudent = async (studentId) => {
             }
         }
 
-        // active enrollment count
         course.activeCount =
             course.studentEnrollments?.filter((r) => r.status === "active").length ||
             0;
 
-        // max limit (not yet defined, so use placeholder for now)
         course.maxLimit = course.maxEnrollment || "N/A";
 
         course.isCourseFull =
@@ -347,13 +340,16 @@ const addProfessorOfficeHour = async (courseId, officeHourObj) => {
     courseId = stringValidate(courseId);
     if (typeof officeHourObj !== "object") throw "Missing or invalid inputs.";
     let {day, startTime, endTime, location, notes} = officeHourObj;
+
     let validDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
     if (!validDays.includes(day))
-        throw "Invalid day. Must be a valid weekday no weekends!";
+        throw "Invalid day. Must be a valid Weekday (Monday - Friday) !";
+
     if (!isValid24Hour(startTime) || !isValid24Hour(endTime))
         throw "Invalid time format. Must be HH:MM (24-hour format).";
+
     if (!isStartBeforeEnd(startTime, endTime))
-        throw "Start time must be earlier than end time.";
+        throw "Start time must be earlier than the End time.";
 
     location = stringValidate(location);
     const courseCollection = await courses();
@@ -388,11 +384,10 @@ const addProfessorOfficeHour = async (courseId, officeHourObj) => {
 
     for (const oh of allOfficeHoursSameDay) {
         if (timesOverlap(startTime, endTime, oh.startTime, oh.endTime)) {
-            throw `Time conflict with existing office hours from ${oh.startTime} to ${oh.endTime} on ${day}`;
+            throw `Time conflicts with existing office hours from ${oh.startTime} to ${oh.endTime} on ${day}`;
         }
     }
 
-    // 🔁 Google Calendar Sync
     const usersCollection = await users();
     const professor = await usersCollection.findOne({_id: professorId});
     if (!professor) throw "Professor not found for calendar sync.";
@@ -414,7 +409,6 @@ const addProfessorOfficeHour = async (courseId, officeHourObj) => {
         }
     }
 
-    // ✅ Now add to MongoDB with calendar IDs included
     const updateResult = await courseCollection.updateOne(
         {_id: new ObjectId(courseId)},
         {
@@ -425,7 +419,7 @@ const addProfessorOfficeHour = async (courseId, officeHourObj) => {
                     endTime,
                     location: location.trim(),
                     notes: notes?.toString().trim() || "",
-                    calendarEventIds, // ✅ safe to insert now
+                    calendarEventIds
                 },
             },
         }
@@ -442,7 +436,7 @@ const deleteProfessorOfficeHour = async (courseId, officeHourObj) => {
     if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
 
     const {day, startTime, endTime} = officeHourObj;
-    if (!day || !startTime || !endTime) throw "Missing office hour info.";
+    if (!day || !startTime || !endTime) throw "Missing office hour Information.";
 
     const courseCollection = await courses();
     const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
@@ -452,9 +446,8 @@ const deleteProfessorOfficeHour = async (courseId, officeHourObj) => {
         (oh) => oh.day === day && oh.startTime === startTime && oh.endTime === endTime
     );
 
-    if (!officeHour) throw "Office hour not found.";
+    if (!officeHour) throw "Office Hour Not Found.";
 
-    // 🗑️ Delete from all calendars
     if (officeHour.calendarEventIds) {
         for (const [calendarType, eventId] of Object.entries(officeHour.calendarEventIds)) {
             if (eventId) {
@@ -463,7 +456,6 @@ const deleteProfessorOfficeHour = async (courseId, officeHourObj) => {
         }
     }
 
-    // 🧹 Remove from DB
     const updateResult = await courseCollection.updateOne(
         {_id: new ObjectId(courseId)},
         {

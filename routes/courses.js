@@ -1,14 +1,14 @@
 import {Router} from "express";
 import {ObjectId} from "mongodb";
 import xss from "xss";
-
-const router = Router();
-
 import {courseData} from "../data/index.js";
 import {stringValidate} from "../validation.js";
 import {users} from "../config/mongoCollections.js";
 
-// GET /admin/courses - List all courses
+const router = Router();
+
+
+//List all courses
 router.route("/").get(async (req, res) => {
     try {
         const allCourses = await courseData.getAllCourses();
@@ -20,7 +20,7 @@ router.route("/").get(async (req, res) => {
     }
 });
 
-// GET /admin/courses/create
+// Creates a New Course
 router
     .route("/create")
     .get(async (req, res) => {
@@ -150,13 +150,11 @@ router.route("/delete/:id").post(async (req, res) => {
 
         const usersCollection = await users();
 
-        // Step 1: Remove course ID from taForCourses for all users
         await usersCollection.updateMany(
             {taForCourses: objectCourseId},
             {$pull: {taForCourses: objectCourseId}}
         );
 
-        // Step 2: Revert role to student if no TA courses left
         const formerTAs = await usersCollection
             .find({
                 role: "ta",

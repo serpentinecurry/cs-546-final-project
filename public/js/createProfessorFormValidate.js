@@ -1,4 +1,5 @@
 (function () {
+
   const stringValidate = (str) => {
     if (str === undefined || str === null)
       throw `Enter a string argument — received: ${str}`;
