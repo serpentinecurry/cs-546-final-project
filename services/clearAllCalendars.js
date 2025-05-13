@@ -7,31 +7,8 @@ const CALENDAR_IDS = {
   professors: '23ce92a59e931bf9c5fa07217060a421ed503fa1f3083157e1fae5d5d9d32162@group.calendar.google.com',
 };
 
-const CONCURRENCY_LIMIT = 20; // 10 deletions at a time
-
-// Run async tasks in batches with concurrency limit
-async function limitedMap(items, limit, asyncFn) {
-  const results = [];
-  const executing = [];
-
-  for (const item of items) {
-    const p = Promise.resolve().then(() => asyncFn(item));
-    results.push(p);
-
-    if (limit <= items.length) {
-      const e = p.then(() => executing.splice(executing.indexOf(e), 1));
-      executing.push(e);
-      if (executing.length >= limit) {
-        await Promise.race(executing);
-      }
-    }
-  }
-
-  return Promise.allSettled(results);
-}
-
 async function clearCalendar(calendarId) {
-  let allEvents = [];
+  const events = [];
   let pageToken;
 
   try {
@@ -43,40 +20,33 @@ async function clearCalendar(calendarId) {
       });
 
       const items = res.data.items || [];
-      allEvents = allEvents.concat(items);
+      events.push(...items);
       pageToken = res.data.nextPageToken;
     } while (pageToken);
   } catch (err) {
-    console.error(`❌ Error fetching events for ${calendarId}: ${err.message}`);
+    console.error(`Error listing events for ${calendarId}: ${err.message}`);
     return;
   }
 
-  console.log(`🔍 Found ${allEvents.length} events in ${calendarId}`);
-
-  await limitedMap(
-    allEvents,
-    CONCURRENCY_LIMIT,
-    async (event) => {
-      try {
-        await calendar.events.delete({
-          calendarId,
-          eventId: event.id,
-        });
-        console.log(`🗑️ Deleted: ${event.summary || event.id}`);
-      } catch (error) {
-        console.error(`⚠️ Failed to delete ${event.id}: ${error.message}`);
-      }
+  for (const event of events) {
+    try {
+      await calendar.events.delete({
+        calendarId,
+        eventId: event.id,
+      });
+      console.log(`🗑️ Deleted: ${event.summary || event.id} from ${calendarId}`);
+    } catch (error) {
+      console.error(`❌ Failed to delete event ${event.id} in ${calendarId}: ${error.message}`);
     }
-  );
+  }
 
-  console.log(`✅ Cleared all events from ${calendarId}`);
+  console.log(`✅ Cleared calendar: ${calendarId}`);
 }
 
 export async function clearAllCalendars() {
-  const calendars = Object.values(CALENDAR_IDS);
-  console.log('🚀 Starting calendar clearance...');
-  for (const calendarId of calendars) {
-    await clearCalendar(calendarId);
-  }
-  console.log('🎉 All calendars cleared successfully.');
+  await clearCalendar(CALENDAR_IDS.students);
+  await clearCalendar(CALENDAR_IDS.tas);
+  await clearCalendar(CALENDAR_IDS.professors);
+
+  console.log('🎉 All calendars successfully cleared.');
 }
