@@ -7,7 +7,6 @@ import {fileURLToPath} from "url";
 import rateLimit from "express-rate-limit";
 import configRoutes from "./routes/index.js";
 import {preventDoubleLogin, isAdmin, isStudent, isProfessor} from "./middleware.js";
-import lusca from "lusca";
 
 const app = express();
 
@@ -122,7 +121,6 @@ app.use(
     })
 );
 
-app.use(lusca.csrf());
 
 // Flash messages / local variables
 app.use((req, res, next) => {
