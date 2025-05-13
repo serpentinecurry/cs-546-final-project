@@ -19,6 +19,7 @@ import {stringValidate} from "../validation.js";
 import {verifyProfessorOwnsCourse} from "../middleware.js";
 import {sendAbsentNotificationEmail} from "../utils/mailer.js";
 import {subscribeLinks, syncAllOfficeHoursForCourse} from "../services/calendarSync.js";
+import xss from "xss";
 
 
 const router = Router();
@@ -68,33 +69,9 @@ router.route("/").get(async (req, res) => {
 router.route("/course/:id").get(verifyProfessorOwnsCourse, async (req, res) => {
     try {
         return res.redirect(`/professor/course/${req.params.id}/analytics`);
-        const courseCollection = await courses();
-        const course = await courseCollection.findOne({
-            _id: new ObjectId(req.params.id),
-        });
-
-        if (!course) {
-            return res.status(404).render("error", {
-                layout: "main",
-                error: "Course not found in the database.",
-            });
-        }
-
-        const lecturesCollection = await lectures();
-        const courseLectures = await lecturesCollection
-            .find({courseId: course._id})
-            .toArray();
-
-        res.render("professorDashboard/courseView", {
-            layout: "main",
-            courseId: course._id.toString(),
-            courseName: course.courseName,
-            courseCode: course.courseCode,
-            lectures: courseLectures,
-        });
     } catch (error) {
         console.error("Error displaying course:", error);
-        res.status(500).render("error", {
+        return res.status(500).render("error", {
             layout: "main",
             error: "Internal server error while loading course details.",
         });
@@ -357,14 +334,12 @@ router.post(
             for (const shortDay in schedule) {
                 const {startTime, endTime} = schedule[shortDay];
 
-                
                 if (!startTime || !endTime) {
                     return res.status(400).json({
                         error: `Missing start or end time for ${dayMap(shortDay)}`,
                     });
                 }
 
-                
                 if (
                     !/^\d{2}:\d{2}$/.test(startTime) ||
                     !/^\d{2}:\d{2}$/.test(endTime)
@@ -522,9 +497,9 @@ router.post(
             const {day, startTime, endTime} = req.body;
 
             await courseData.deleteProfessorOfficeHour(courseId, {
-                day,
-                startTime,
-                endTime,
+                day: xss(day),
+                startTime: xss(startTime),
+                endTime: xss(endTime),
             });
 
             return res.redirect(`/professor/course/${courseId}/view-office-hours`);
@@ -871,12 +846,12 @@ router
             course = await courseData.getCourseById(courseId);
 
             const professorId = req.session.user._id;
-            lectureTitle = req.body.lectureTitle;
-            lectureDate = req.body.lectureDate;
-            lectureStartTime = req.body.lectureStartTime;
-            lectureEndTime = req.body.lectureEndTime;
-            description = req.body.description;
-            materialsLink = req.body.materialsLink;
+            lectureTitle = xss(req.body.lectureTitle);
+            lectureDate = xss(req.body.lectureDate);
+            lectureStartTime = xss(req.body.lectureStartTime);
+            lectureEndTime = xss(req.body.lectureEndTime);
+            description = xss(req.body.description);
+            materialsLink = xss(req.body.materialsLink);
 
             await lectureData.createLecture(
                 courseId,
@@ -957,12 +932,12 @@ router
             } = req.body;
 
             const updates = {
-                lectureTitle: lectureTitle,
-                lectureDate: lectureDate,
-                lectureStartTime: lectureStartTime,
-                lectureEndTime: lectureEndTime,
-                description: lectureDescription,
-                materialsLink: lectureMaterials,
+                lectureTitle: xss(lectureTitle),
+                lectureDate: xss(lectureDate),
+                lectureStartTime: xss(lectureStartTime),
+                lectureEndTime: xss(lectureEndTime),
+                description: xss(lectureDescription),
+                materialsLink: xss(lectureMaterials),
             };
 
             await lectureData.updateLecture(lectureId, updates);
@@ -1125,7 +1100,10 @@ router
             }
 
             for (const [studentId, status] of Object.entries(attendanceFormData)) {
-              
+                if (!ObjectId.isValid(studentId)) throw "Invalid student ID";
+
+  const safeStatus = xss(status.trim().toLowerCase());
+  if (!["present", "absent", "excused"].includes(safeStatus)) throw "Invalid status";
         const attendanceCollection = await attendance();
         const prevRecord = await attendanceCollection.findOne({
           lectureId: new ObjectId(lectureId),
@@ -1138,7 +1116,7 @@ router
           lectureId,
           courseId,
           studentId,
-          status
+          safeStatus
         );
         
         if (status === "absent" && !wasAlreadyAbsent) {
@@ -1182,7 +1160,7 @@ router.post(
     async (req, res) => {
         try {
             const {studentId, courseId, action} = req.params;
-            const {requestIndex} = req.body;
+            const requestIndex = xss(req.body.requestIndex);
 
             if (action !== "approve" && action !== "reject") {
                 return res.status(400).render("error", {
@@ -1363,14 +1341,16 @@ router
         try {
             const {courseId, lectureId} = req.params;
             const {postTitle, postContent} = req.body;
+            const safeTitle = xss(postTitle.trim());
+            const safeContent = xss(postContent.trim());
             const authorId = req.session.user._id;
 
             const newDiscussion = await discussionsData.createDiscussion(
                 lectureId,
                 courseId,
                 authorId,
-                postTitle,
-                postContent
+                safeTitle,
+                safeContent
             );
 
             if (newDiscussion.alreadyExists) {
@@ -1394,8 +1374,8 @@ router
                     lecture,
                     error: "Error creating discussion: " + error,
                     formData: {
-                        postTitle: req.body.postTitle,
-                        postContent: req.body.postContent,
+                        postTitle: xss(req.body.postTitle),
+                        postContent: xss(req.body.postContent),
                     },
                 });
             } catch (e) {
@@ -1508,12 +1488,12 @@ router
             const {courseId, lectureId, discussionId} = req.params;
             const {commentText, isAnonymous} = req.body;
             const commenterId = req.session.user._id;
-
+            const safeCommentText = xss(commentText.trim());
             await discussionsData.addAComment(
                 discussionId,
                 courseId,
                 commenterId,
-                commentText,
+                safeCommentText,
                 isAnonymous === "off"
             );
 
