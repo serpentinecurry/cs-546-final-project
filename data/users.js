@@ -386,6 +386,35 @@ const addLectureNotes = async (studentId, lectureId, courseId, notes) => {
   return {updateSuccessful: true};
 }
 
+const getLectureNotes = async (studentId, lectureId) => {
+  // error handing
+  studentId = stringValidate(studentId);
+  lectureId = stringValidate(lectureId);
+
+  if (!ObjectId.isValid(studentId)) throw "Invalid studentId";
+  if (!ObjectId.isValid(lectureId)) throw "Invalid lectureId";
+
+  // get user
+  const userCollection = await users();
+  const user = await userCollection.findOne({
+    _id: new ObjectId(studentId)
+  });
+
+  // get user's lecture notes
+  let lectureNotes = user.lectureNotes;
+  // look to see if the student has notes for that lecture
+  let indexToRemove = lectureNotes.findIndex((obj) =>{
+    return obj.lectureId.toString() === lectureId
+  });
+
+  // if there are no notes, return empty string
+  if (indexToRemove === -1) {
+    return "";
+  } else {
+    return lectureNotes[indexToRemove.noteContent];
+  }
+}
+
 export default {
   createUser,
   login,
@@ -396,5 +425,6 @@ export default {
   approveEnrollmentRequest,
   rejectEnrollmentRequest,
   getUserByEmail,
-  addLectureNotes
+  addLectureNotes,
+  getLectureNotes
 };
