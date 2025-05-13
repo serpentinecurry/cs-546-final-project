@@ -168,7 +168,9 @@ let averageAttendance = async (courseId) => {
     (record) => record.status === "excused"
   ).length;
 
-  return Number(((AttendanceCount / (AttendanceTotal.length - AttendanceCountExcused)) * 100).toFixed(2));
+  const effectiveTotal = AttendanceTotal.length - AttendanceCountExcused;
+  if (effectiveTotal === 0) return 100; 
+  return Number(((AttendanceCount / effectiveTotal) * 100).toFixed(2));
 };
 
 const getAllPresentStudents = async (courseId) => {
