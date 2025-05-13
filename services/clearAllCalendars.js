@@ -7,7 +7,29 @@ const CALENDAR_IDS = {
   professors: '23ce92a59e931bf9c5fa07217060a421ed503fa1f3083157e1fae5d5d9d32162@group.calendar.google.com',
 };
 
-// Fetch and delete events concurrently
+const CONCURRENCY_LIMIT = 20; // 10 deletions at a time
+
+// Run async tasks in batches with concurrency limit
+async function limitedMap(items, limit, asyncFn) {
+  const results = [];
+  const executing = [];
+
+  for (const item of items) {
+    const p = Promise.resolve().then(() => asyncFn(item));
+    results.push(p);
+
+    if (limit <= items.length) {
+      const e = p.then(() => executing.splice(executing.indexOf(e), 1));
+      executing.push(e);
+      if (executing.length >= limit) {
+        await Promise.race(executing);
+      }
+    }
+  }
+
+  return Promise.allSettled(results);
+}
+
 async function clearCalendar(calendarId) {
   let allEvents = [];
   let pageToken;
@@ -31,36 +53,30 @@ async function clearCalendar(calendarId) {
 
   console.log(`🔍 Found ${allEvents.length} events in ${calendarId}`);
 
-  // Parallel deletion
-  await Promise.allSettled(
-    allEvents.map(event =>
-      calendar.events
-        .delete({
+  await limitedMap(
+    allEvents,
+    CONCURRENCY_LIMIT,
+    async (event) => {
+      try {
+        await calendar.events.delete({
           calendarId,
           eventId: event.id,
-        })
-        .then(() => {
-          console.log(`🗑️ Deleted: ${event.summary || event.id}`);
-        })
-        .catch(err => {
-          console.error(`⚠️ Failed to delete ${event.id}: ${err.message}`);
-        })
-    )
+        });
+        console.log(`🗑️ Deleted: ${event.summary || event.id}`);
+      } catch (error) {
+        console.error(`⚠️ Failed to delete ${event.id}: ${error.message}`);
+      }
+    }
   );
 
   console.log(`✅ Cleared all events from ${calendarId}`);
 }
 
 export async function clearAllCalendars() {
-  const calendarList = [
-    { name: 'students', id: CALENDAR_IDS.students },
-    { name: 'TAs', id: CALENDAR_IDS.tas },
-    { name: 'professors', id: CALENDAR_IDS.professors },
-  ];
-
+  const calendars = Object.values(CALENDAR_IDS);
   console.log('🚀 Starting calendar clearance...');
-
-  await Promise.all(calendarList.map(cal => clearCalendar(cal.id)));
-
+  for (const calendarId of calendars) {
+    await clearCalendar(calendarId);
+  }
   console.log('🎉 All calendars cleared successfully.');
 }
