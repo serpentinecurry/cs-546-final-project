@@ -231,12 +231,25 @@
         return;
       }
 
+
+      const presentCount = {{lecturePresentCount}} || 0;
+      const absentCount = {{lectureAbsentCount}} || 0;
+      const excusedCount = {{lectureExcusedCount}} || 0;
+      
+      
+      const totalWithoutExcused = presentCount + absentCount;
+      const totalWithExcused = presentCount + absentCount + excusedCount;
+      
+      
+      const attendanceRate = totalWithoutExcused > 0 ? 
+        ((presentCount / totalWithoutExcused) * 100).toFixed(1) : 0;
+
       new Chart(ctx, {
         type: 'pie',
         data: {
           labels: ['Present', 'Absent', 'Excused'],
           datasets: [{
-            data: [{{lecturePresentCount}} || 0, {{lectureAbsentCount}} || 0, {{lectureExcusedCount}} || 0],
+            data: [presentCount, absentCount, excusedCount],
             backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
             borderColor: ['#fff', '#fff', '#fff'],
             borderWidth: 1
@@ -253,7 +266,17 @@
             tooltip: {
               callbacks: {
                 label: function (context) {
-                  return context.label + ': ' + context.raw + ' students';
+                  const value = context.raw;
+                  const label = context.label;
+                  
+                  if (label === 'Present') {
+                    return `Present: ${value} (${attendanceRate}% of non-excused)`;
+                  } else if (label === 'Absent') {
+                    return `Absent: ${value} students`;
+                  } else if (label === 'Excused') {
+                    return `Excused: ${value} (not counted in rate)`;
+                  }
+                  return `${label}: ${value}`;
                 }
               }
             }

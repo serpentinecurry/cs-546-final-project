@@ -211,16 +211,20 @@ router
 
                 if (activeStudentIds.length > 0) {
                     const usersCollection = await users();
-                    enrolledStudents = await usersCollection
+                    const studentsData = await usersCollection
                         .find({
                             _id: {$in: activeStudentIds},
                         })
                         .toArray();
 
-                    enrolledStudents = enrolledStudents.map((student) => ({
-                        ...student,
-                        _id: student._id.toString(),
-                    }));
+                    for (const student of studentsData) {
+                        const totalAbsences = await attendanceData.getTotalAbsencesFromStudent(student._id.toString());
+                        enrolledStudents.push({
+                            ...student,
+                            _id: student._id.toString(),
+                            totalAbsences
+                        });
+                    }
                 }
 
                 enrolledStudentsCount = enrolledStudents.length;
@@ -286,7 +290,6 @@ router
                 const successMessage = req.session.successMessage || null;
                 req.session.successMessage = null;
 
-                // Pass this to the template
                 res.render("professorDashboard/DataAnalyticsView", {
                     layout: "main",
                     course: course,
@@ -361,14 +364,14 @@ router.post(
             for (const shortDay in schedule) {
                 const {startTime, endTime} = schedule[shortDay];
 
-                // Validation: all fields required for active days
+                
                 if (!startTime || !endTime) {
                     return res.status(400).json({
                         error: `Missing start or end time for ${dayMap(shortDay)}`,
                     });
                 }
 
-                // Validation: valid time format HH:MM (24-hour)
+                
                 if (
                     !/^\d{2}:\d{2}$/.test(startTime) ||
                     !/^\d{2}:\d{2}$/.test(endTime)
@@ -380,7 +383,7 @@ router.post(
                     });
                 }
 
-                // Validation: start < end
+                
                 const [sh, sm] = startTime.split(":").map(Number);
                 const [eh, em] = endTime.split(":").map(Number);
                 const startMinutes = sh * 60 + sm;
@@ -448,7 +451,7 @@ router
 
             const professorOfficeHours = course.professorOfficeHours || [];
 
-            // 🔁 Utility function to get upcoming ISO date string
+            
 
             const weekdayToIndex = {
                 Sunday: 0,
@@ -468,7 +471,7 @@ router
 
                 events.push({
                     title: `Prof Office Hour (${slot.location})`,
-                    daysOfWeek: [dayIndex],  // recurring weekly
+                    daysOfWeek: [dayIndex],  
                     startTime: slot.startTime,
                     endTime: slot.endTime,
                     description: slot.notes || '',
@@ -661,7 +664,7 @@ router
                 $addToSet: {taForCourses: new ObjectId(courseId)},
             };
 
-            // Only update role if the user isn't already a TA
+            
             if (student.role === "student") {
                 updates.$set = {role: "ta"};
             }
@@ -696,7 +699,7 @@ router.post(
             });
             if (!user) throw "User not found";
 
-            // Remove course from taForCourses
+            
             await usersCollection.updateOne(
                 {_id: new ObjectId(studentId)},
                 {
@@ -712,7 +715,7 @@ router.post(
             await syncAllOfficeHoursForCourse(courseId);
 
 
-            // If this was the only course, change role back to student
+            
             const updated = await usersCollection.findOne({
                 _id: new ObjectId(studentId),
             });
@@ -1129,7 +1132,7 @@ router
             }
 
             for (const [studentId, status] of Object.entries(attendanceFormData)) {
-                // Fetch previous attendance record for this student/lecture
+              
         const attendanceCollection = await attendance();
         const prevRecord = await attendanceCollection.findOne({
           lectureId: new ObjectId(lectureId),
@@ -1144,13 +1147,13 @@ router
           studentId,
           status
         );
-        // Only send email if marking as absent and not already absent
+        
         if (status === "absent" && !wasAlreadyAbsent) {
-                    // Fetch student info
+          
                     const userCollection = await users();
                     const student = await userCollection.findOne({_id: new ObjectId(studentId)});
 
-                    // Fetch course and lecture info
+                    
                     const courseCollection = await courses();
                     const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
                     const lecturesCollection = await lectures();

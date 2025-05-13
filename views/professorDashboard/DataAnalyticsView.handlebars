@@ -384,6 +384,7 @@
                         <th>Name</th>
                         <th>Email</th>
                         <th>Major</th>
+                        <th>Absence Total</th> <!-- Added new column -->
                     </tr>
                     </thead>
                     <tbody>
@@ -392,6 +393,7 @@
                             <td>{{this.firstName}} {{this.lastName}}</td>
                             <td>{{this.email}}</td>
                             <td>{{this.major}}</td>
+                            <td>{{this.totalAbsences}}</td> <!-- Display the total absences -->
                         </tr>
                     {{/each}}
                     </tbody>
