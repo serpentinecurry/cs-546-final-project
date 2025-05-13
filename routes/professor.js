@@ -1171,7 +1171,7 @@ router
             }
 
             req.session.successMessage = "Attendance submitted successfully!";
-            res.redirect(`/professor/course/${courseId}/analytics`);
+            res.redirect(`/professor/course/${courseId}/lecture/${lectureId}`);
         } catch (error) {
             console.error("Error submitting attendance:", error);
             res.status(500).render("error", {
