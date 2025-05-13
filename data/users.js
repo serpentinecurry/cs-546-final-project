@@ -353,7 +353,7 @@ const addLectureNotes = async (studentId, lectureId, courseId, notes) => {
 
   // look to see if the student already has notes for that lecture
   let indexToRemove = lectureNotes.findIndex((obj) =>{
-    return obj.lectureId.toString === lectureId
+    return obj.lectureId.toString() === lectureId
   });
   // get the object storing the notes or make a new one
   const notesObject = indexToRemove !== -1 ? lectureNotes.at(indexToRemove)
@@ -363,7 +363,7 @@ const addLectureNotes = async (studentId, lectureId, courseId, notes) => {
       createdAt: now.toString()
     };
   // set notes and update time
-  notesObject.notes = notes;
+  notesObject.noteContent = notes;
   notesObject.updatedAt = now.toString();
 
   // add/replace item in lecture notes array
