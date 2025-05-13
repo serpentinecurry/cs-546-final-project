@@ -1,34 +1,5 @@
-<style>
-    /* ✅ Fix wrapping and font size */
-    .fc-event-title,
-    .fc-event-time,
-    .fc-event-main {
-        white-space: normal !important;
-        overflow-wrap: break-word;
-        font-size: 13px;
-        line-height: 1.25;
-    }
-
-    /* ✅ Capitalize FullCalendar buttons */
-    .fc-button {
-        text-transform: capitalize !important;
-        font-weight: 500;
-    }
-
-    /* ✅ Custom subscribe button */
-    .btn-primary {
-        background-color: #4285f4;
-        border-color: #4285f4;
-    }
-
-    .btn-primary:hover {
-        background-color: #357ae8;
-        border-color: #357ae8;
-    }
-</style>
-
 <!-- 🗂️ Hidden events -->
-<ol hidden="true">
+<ol hidden>
     {{#each events}}
         <li class="event">{{this}}</li>
     {{/each}}

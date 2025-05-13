@@ -1,15 +1,11 @@
 import express from "express";
 
 const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer);
 
 import session from "express-session";
 import exphbs from "express-handlebars";
 import path from "path";
 import {fileURLToPath} from "url";
-import { createServer } from 'http';
-import { Server } from 'socket.io';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -127,7 +123,6 @@ app.use(
 
 // Flash messages / local variables
 app.use((req, res, next) => {
-    console.log(">>> Session check:", req.session?.user);
     res.locals.successMessage = req.session.successMessage || null;
     next();
 });
@@ -149,30 +144,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-httpServer.listen(3000, () => {
-  console.log("Server + Socket.IO running on http://localhost:3000");
-});
-
-
-// Socket event listeners
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-
-  socket.on('student-message', (data) => {
-    // Broadcast to TAs in the same room
-    io.to(data.courseId).emit('ta-receive', data);
-  });
-
-  socket.on('ta-message', (data) => {
-    // Broadcast to students in the same room
-    io.to(data.courseId).emit('student-receive', data);
-  });
-
-  socket.on('join-room', (courseId) => {
-    socket.join(courseId);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
+app.listen(3000, () => {
+  console.log("We've now got a server!");
+  console.log("Your routes will be running on http://localhost:3000");
 });

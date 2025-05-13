@@ -1,55 +1,3 @@
-<style>
-  body {
-    background-color: #f1f5f9;
-    font-family: "Segoe UI", sans-serif;
-  }
-
-  .attendance-form {
-    margin-bottom: 2rem;
-  }
-
-  .student-card {
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background-color: white;
-  }
-
-  .student-card select {
-    margin-top: 0.5rem;
-  }
-
-  .lecture-details {
-    background-color: white;
-    padding: 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  }
-
-  .lecture-details h2 {
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-  }
-
-  .btn-custom {
-    background-color: #4f46e5;
-    color: white;
-    font-weight: 500;
-    border: none;
-  }
-
-  .btn-custom:hover {
-    background-color: #4338ca;
-  }
-
-  .btn-outline {
-    border: 1px solid #cbd5e0;
-    font-weight: 500;
-  }
-</style>
-
 <div class="container py-4">
   <a href="/professor/course/{{course._id}}" class="btn btn-outline-secondary mb-3">
     <i class="bi bi-arrow-left"></i> Back to Course
@@ -59,16 +7,49 @@
 
   <h2 class="h4 mb-3">Attendance Sheet</h2>
 
+<!-- Filter Tabs -->
+  <div class="mb-3">
+    <ul class="nav nav-tabs" id="attendanceFilterTabs">
+      <li class="nav-item">
+        <button class="nav-link active" data-filter="all">All Students</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-filter="present">Present</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-filter="absent">Absent</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-filter="excused">Excused</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-filter="none">No Data</button>
+      </li>
+    </ul>
+  </div>
+
   <form method="POST" action="/professor/course/{{course._id}}/lecture/{{lecture._id}}/attendance" class="attendance-form">
     {{#each students}}
-      <div class="student-card student">
+      <div class="student-card student" data-status="{{this.attendanceStatus}}">
         <p class="fw-semibold mb-1">{{this.firstName}} {{this.lastName}}</p>
-        <select name="attendanceData[{{this._id}}]" class="form-select w-auto">
-          <option value="" disabled {{#unless this.attendanceStatus}}selected{{/unless}}>Select Attendance</option>
-          <option value="present" {{#if (eq this.attendanceStatus "present")}}selected{{/if}}>Present</option>
-          <option value="absent" {{#if (eq this.attendanceStatus "absent")}}selected{{/if}}>Absent</option>
-          <option value="excused" {{#if (eq this.attendanceStatus "excused")}}selected{{/if}}>Excused</option>
-        </select>
+        <div class="attendance-controls">
+          <select name="attendanceData[{{this._id}}]" class="form-select w-auto">
+            <option value="" disabled {{#unless this.attendanceStatus}}selected{{/unless}}>Select Attendance</option>
+            <option value="present" {{#if (eq this.attendanceStatus "present")}}selected{{/if}}>Present</option>
+            <option value="absent" {{#if (eq this.attendanceStatus "absent")}}selected{{/if}}>Absent</option>
+            <option value="excused" {{#if (eq this.attendanceStatus "excused")}}selected{{/if}}>Excused</option>
+          </select>
+          
+          {{#if this.attendanceStatus}}
+            <span class="attendance-status status-{{this.attendanceStatus}}">
+              {{#if (eq this.attendanceStatus "present")}}Present{{/if}}
+              {{#if (eq this.attendanceStatus "absent")}}Absent{{/if}}
+              {{#if (eq this.attendanceStatus "excused")}}Excused{{/if}}
+            </span>
+          {{else}}
+            <span class="attendance-status status-none">No attendance data</span>
+          {{/if}}
+        </div>
       </div>
     {{/each}}
 
@@ -132,6 +113,29 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    
+    const filterTabs = document.querySelectorAll('#attendanceFilterTabs .nav-link');
+    
+    filterTabs.forEach(tab => {
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        filterTabs.forEach(t => t.classList.remove('active'))
+        this.classList.add('active');
+        const filter = this.getAttribute('data-filter');
+        const studentCards = document.querySelectorAll('.student-card');
+        
+        studentCards.forEach(card => {
+          const status = card.getAttribute('data-status') || 'none';
+          
+          if (filter === 'all' || filter === status) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
     try {
       const ctx = document.getElementById('attendanceChart');
       if (!ctx) {
@@ -139,12 +143,25 @@
         return;
       }
 
+
+      const presentCount = {{lecturePresentCount}} || 0;
+      const absentCount = {{lectureAbsentCount}} || 0;
+      const excusedCount = {{lectureExcusedCount}} || 0;
+      
+      
+      const totalWithoutExcused = presentCount + absentCount;
+      const totalWithExcused = presentCount + absentCount + excusedCount;
+      
+      
+      const attendanceRate = totalWithoutExcused > 0 ? 
+        ((presentCount / totalWithoutExcused) * 100).toFixed(1) : 0;
+
       new Chart(ctx, {
         type: 'pie',
         data: {
           labels: ['Present', 'Absent', 'Excused'],
           datasets: [{
-            data: [{{lecturePresentCount}} || 0, {{lectureAbsentCount}} || 0, {{lectureExcusedCount}} || 0],
+            data: [presentCount, absentCount, excusedCount],
             backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
             borderColor: ['#fff', '#fff', '#fff'],
             borderWidth: 1
@@ -161,7 +178,17 @@
             tooltip: {
               callbacks: {
                 label: function (context) {
-                  return context.label + ': ' + context.raw + ' students';
+                  const value = context.raw;
+                  const label = context.label;
+                  
+                  if (label === 'Present') {
+                    return `Present: ${value} (${attendanceRate}% of non-excused)`;
+                  } else if (label === 'Absent') {
+                    return `Absent: ${value} students`;
+                  } else if (label === 'Excused') {
+                    return `Excused: ${value} (not counted in rate)`;
+                  }
+                  return `${label}: ${value}`;
                 }
               }
             }

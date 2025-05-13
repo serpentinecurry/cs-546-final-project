@@ -1,118 +1,4 @@
-<style>
-    body {
-        margin: 0;
-        padding: 0;
-        background-color: #f8fafc;
-        font-family: "Segoe UI", sans-serif;
-        color: #1f2937;
-    }
 
-    .dashboard-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem 1.5rem;
-    }
-
-    .dashboard-header h1 {
-        font-size: 2.25rem;
-        font-weight: 700;
-        margin-bottom: 2rem;
-        color: #1e3a8a;
-    }
-
-    .card {
-        border-radius: 1rem;
-        border: none;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        margin-bottom: 2rem;
-    }
-
-    .card-header {
-        font-weight: 600;
-        font-size: 1.125rem;
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid #e5e7eb;
-    }
-
-    .card-body {
-        padding: 1.25rem;
-    }
-
-    .analytics-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 1rem;
-    }
-
-    .analytics-card {
-        background-color: white;
-        padding: 1rem 1.25rem;
-        border-radius: 1rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        border-left: 4px solid #2563eb;
-    }
-
-    .analytics-card h3 {
-        font-size: 0.875rem;
-        color: #6b7280;
-        margin-bottom: 0.25rem;
-    }
-
-    .analytics-value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .alert {
-        margin-bottom: 2rem;
-    }
-
-    .feedback-card {
-        border-left: 4px solid #2563eb;
-        background-color: #ffffff;
-        border-radius: 1rem;
-        padding: 1rem 1.5rem;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    }
-
-    .feedback-card h5 {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: #2563eb;
-    }
-
-    .feedback-section p {
-        margin-bottom: 0.5rem;
-        font-size: 0.95rem;
-    }
-
-    .section-heading {
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-    }
-
-    .btn {
-        font-weight: 500;
-        border-radius: 0.5rem;
-        padding: 0.5rem 1.25rem;
-    }
-
-    .btn-outline-primary,
-    .btn-outline-secondary,
-    .btn-outline-success,
-    .btn-outline-warning,
-    .btn-outline-info {
-        border-width: 2px;
-    }
-
-    @media (max-width: 768px) {
-        .dashboard-container {
-            padding: 1.5rem 1rem;
-        }
-    }
-</style>
 <div class="dashboard-container">
     <div class="dashboard-header">
         <h1>📊 Class Dashboard – {{course.courseCode}} {{course.courseName}}</h1>
@@ -201,10 +87,7 @@
                                 </label>
                             </td>
                             <td>
-                            <label>
-                                    <input type="checkbox" name="{{this}}_active"
-                                {{#if (getScheduleTime ../scheduleMap this 'startTime')}}checked
-                                </label>{{/if}}
+                                <input type="checkbox" name="{{this}}_active" {{#if (getScheduleTime ../scheduleMap this 'startTime')}}checked{{/if}}>
                             </td>
                         </tr>
                     {{/each}}
@@ -365,23 +248,35 @@
     {{!-- Enrolled Students Section --}}
     <!-- Enrolled Students -->
     <div class="card mb-4">
-        <div class="card-header bg-light fw-bold">Enrolled Students</div>
+        <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
+            <span>Enrolled Students</span>
+            <div class="search-container">
+                <div class="input-group">
+                    <input type="text" id="studentSearchInput" class="form-control" placeholder="Search students...">
+                    <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
         <div class="card-body p-0">
             {{#if enrolledStudents.length}}
-                <table class="table table-striped mb-0">
+                <table class="table table-striped mb-0" id="enrolledStudentsTable">
                     <thead>
                     <tr>
                         <th>Name</th>
                         <th>Email</th>
                         <th>Major</th>
+                        <th>Absence Total</th> <!-- Added new column -->
                     </tr>
                     </thead>
                     <tbody>
                     {{#each enrolledStudents}}
-                        <tr>
+                        <tr class="student-row">
                             <td>{{this.firstName}} {{this.lastName}}</td>
                             <td>{{this.email}}</td>
                             <td>{{this.major}}</td>
+                            <td>{{this.totalAbsences}}</td> <!-- Display the total absences -->
                         </tr>
                     {{/each}}
                     </tbody>
@@ -454,7 +349,7 @@
 
     function filterStudents() {
         const searchText = document.getElementById('studentSearchInput').value.toLowerCase();
-        const tableRows = document.querySelectorAll('.enrolled-students-section tbody tr');
+        const tableRows = document.querySelectorAll('#enrolledStudentsTable tbody tr');
 
         tableRows.forEach(row => {
             const text = row.textContent.toLowerCase();
@@ -499,18 +394,18 @@
             alert.className = "alert alert-success alert-dismissible fade show mt-3";
             alert.setAttribute("role", "alert");
             alert.innerHTML = `
-    ✅ Schedule saved successfully!
+    Schedule successfully done
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 `;
             document.querySelector(".dashboard-header").after(alert);
 
-// Fade out after 5 seconds, then remove
+
             setTimeout(() => {
                 alert.classList.remove("show");
                 alert.classList.add("fade");
                 setTimeout(() => {
                     alert.remove();
-                }, 500); // Bootstrap fade transition duration is 500ms
+                }, 500); 
             }, 5000);
 
         } else {

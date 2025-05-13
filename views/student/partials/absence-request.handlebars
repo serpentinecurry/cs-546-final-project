@@ -6,6 +6,11 @@
         <div class="alert alert-danger">{{error}}</div>
     {{/if}}
 
+    {{#if successMessage}}
+        <div class="alert alert-success">{{successMessage}}</div>
+    {{/if}}
+
+
     <div class="mb-3">
         <label for="courseId" class="form-label">Select Course</label>
         <select class="form-select {{#if error}}is-invalid{{/if}}" id="courseId" name="courseId" required>

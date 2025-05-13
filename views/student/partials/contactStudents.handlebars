@@ -1,4 +1,4 @@
-<h2 class="mb-4">Contact TAs</h2>
+<h2 class="mb-4">Contact Students</h2>
 
 {{#if error}}
   <div class="alert alert-danger" role="alert">
@@ -19,47 +19,30 @@
         <h4 class="mb-0">{{this.courseName}} ({{this.courseCode}})</h4>
       </div>
       <div class="card-body">
-        {{#if this.tas.length}}
+        {{#if this.students.length}}
           <div class="table-responsive">
             <table class="table table-hover">
               <thead>
                 <tr>
                   <th>Name</th>
                   <th>Email</th>
-                  <th>Office Hours</th>
+                  <th>Major</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {{#each this.tas}}
+                {{#each this.students}}
                   <tr>
                     <td>{{this.fullName}}</td>
                     <td>{{this.email}}</td>
-                    <td>
-                      {{#if this.officeHours.length}}
-                        <ul class="list-unstyled mb-0">
-                          {{#each this.officeHours}}
-                            <li>
-                              <small>
-                                {{this.day}} {{this.startTime}}-{{this.endTime}}
-                                {{#if this.location}}
-                                  at {{this.location}}
-                                {{/if}}
-                              </small>
-                            </li>
-                          {{/each}}
-                        </ul>
-                      {{else}}
-                        <span class="text-muted">No office hours set</span>
-                      {{/if}}
-                    </td>
+                    <td>{{this.major}}</td>
                     <td>
                       <button type="button" 
                               class="btn btn-sm btn-primary" 
                               data-bs-toggle="modal" 
-                              data-bs-target="#messageModal"
-                              data-ta-id="{{this._id}}"
-                              data-ta-name="{{this.fullName}}"
+                              data-bs-target="#messageStudentModal"
+                              data-student-id="{{this._id}}"
+                              data-student-name="{{this.fullName}}"
                               data-course-name="{{../courseName}}">
                         <i class="bi bi-envelope"></i> Message
                       </button>
@@ -70,29 +53,28 @@
             </table>
           </div>
         {{else}}
-          <p class="text-muted mb-0">No TAs assigned to this course yet.</p>
+          <p class="text-muted mb-0">No students enrolled in this course yet.</p>
         {{/if}}
       </div>
     </div>
   {{/each}}
 {{else}}
   <div class="alert alert-info">
-    You are not enrolled in any courses with TAs.
+    You are not assigned as a TA for any courses with students.
   </div>
 {{/if}}
 
-<!-- Sent Messages Section -->
 {{#if sentMessages.length}}
   <div class="card mt-4">
     <div class="card-header bg-info text-dark">
-      <h5 class="mb-0">Your Sent Messages to TAs</h5>
+      <h5 class="mb-0">Your Sent Messages to Students</h5>
     </div>
     <div class="card-body">
       <div class="table-responsive">
         <table class="table table-bordered">
           <thead>
             <tr>
-              <th>To (TA)</th>
+              <th>To (Student)</th>
               <th>Course</th>
               <th>Subject</th>
               <th>Message</th>
@@ -102,7 +84,7 @@
           <tbody>
             {{#each sentMessages}}
               <tr>
-                <td>{{this.taName}}</td>
+                <td>{{this.studentName}}</td>
                 <td>{{this.courseName}}</td>
                 <td>{{this.subject}}</td>
                 <td>{{this.message}}</td>
@@ -117,23 +99,23 @@
 {{/if}}
 
 <!-- Message Modal -->
-<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+<div class="modal fade" id="messageStudentModal" tabindex="-1" aria-labelledby="messageStudentModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="messageModalLabel">Send Message to TA</h5>
+        <h5 class="modal-title" id="messageStudentModalLabel">Send Message to Student</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form action="/student/send-message" method="POST">
+      <form action="/student/ta/send-message" method="POST">
         <div class="modal-body">
-          <input type="hidden" name="taId" id="taId">
+          <input type="hidden" name="studentId" id="studentId">
           <div class="mb-3">
             <label class="form-label">To:</label>
-            <input type="text" class="form-control" id="taName" readonly>
+            <input type="text" class="form-control" id="studentName" readonly>
           </div>
           <div class="mb-3">
             <label class="form-label">Course:</label>
-            <input type="text" class="form-control" id="courseName" readonly>
+            <input type="text" class="form-control" id="studentCourseName" readonly>
           </div>
           <div class="mb-3">
             <label for="subject" class="form-label">Subject:</label>
@@ -155,17 +137,16 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const messageModal = document.getElementById('messageModal');
+  const messageModal = document.getElementById('messageStudentModal');
   if (messageModal) {
     messageModal.addEventListener('show.bs.modal', function(event) {
       const button = event.relatedTarget;
-      const taId = button.getAttribute('data-ta-id');
-      const taName = button.getAttribute('data-ta-name');
+      const studentId = button.getAttribute('data-student-id');
+      const studentName = button.getAttribute('data-student-name');
       const courseName = button.getAttribute('data-course-name');
-      
-      document.getElementById('taId').value = taId;
-      document.getElementById('taName').value = taName;
-      document.getElementById('courseName').value = courseName;
+      document.getElementById('studentId').value = studentId;
+      document.getElementById('studentName').value = studentName;
+      document.getElementById('studentCourseName').value = courseName;
     });
   }
 });

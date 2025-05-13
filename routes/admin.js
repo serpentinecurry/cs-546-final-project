@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { ObjectId } from "mongodb";
 import { sendApprovalEmail } from "../utils/mailer.js";
+import xss from "xss";
 
 const router = Router();
 
@@ -16,7 +17,6 @@ import {
 import { sendCredentialsEmail } from "../utils/mailer.js";
 
 router.route("/").get(async (req, res) => {
-  console.log(req.session.user);
   const { success } = req.query;
   const usersCollection = await users();
   const coursesCollection = await courses();
@@ -181,7 +181,11 @@ router.route("/delete/:id").post(async (req, res) => {
 });
 
 router.route("/searchUsers").get(async (req, res) => {
-  const { searchTerm, role } = req.query;
+  const rawSearchTerm = req.query.searchTerm || "";
+  const rawRole = req.query.role || "";
+
+  const searchTerm = xss(rawSearchTerm.trim());
+  const role = xss(rawRole.trim());
 
   try {
     const usersCollection = await users();
@@ -323,7 +327,8 @@ router.route("/change-requests/:id/approve").post(async (req, res) => {
 
 router.route("/change-requests/:id/reject").post(async (req, res) => {
   try {
-    const { adminNote } = req.body;
+    const rawNote = req.body.adminNote || "";
+    const adminNote = xss(rawNote); // sanitize input
     await userData.rejectRequest(req.params.id, adminNote || "");
     return res.redirect("/admin/change-requests?success=request-resolved");
   } catch (error) {
@@ -361,12 +366,12 @@ router
       major,
     } = req.body;
     try {
-      firstName = stringValidate(firstName);
+      firstName = xss(stringValidate(firstName));
       azAZLenValidate(firstName, 2, 20);
-      lastName = stringValidate(lastName);
+      lastName = xss(stringValidate(lastName));
       azAZLenValidate(lastName, 2, 20);
       if (!["male", "female", "other"].includes(gender)) throw "Invalid Gender";
-      email = validateEmail(email);
+      email = xss(validateEmail(email));
       passwordValidate(password);
       if (!confirmPassword || typeof confirmPassword !== "string")
         throw "Enter confirm Password of type string";
@@ -381,6 +386,7 @@ router
         (!major || typeof major !== "string" || major.trim().length === 0)
       )
         throw "Student must have a major";
+      major = xss(major);
 
       const result = await userData.createUser(
         firstName,

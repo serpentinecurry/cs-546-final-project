@@ -8,20 +8,19 @@
     <a href="/professor/course/{{courseId}}/lecture/create" class="createLecture">Create Lecture</a>
 
 
-{{#if lectures.length}}
+    {{#if lectures.length}}
     <ul class="Lectures">
-    {{#each lectures}}
+        {{#each lectures}}
             <li class="lectureItem">
                 <a href="/professor/course/{{../courseId}}/lecture/{{this._id}}">{{this.title}}</a>
                 <span class="lectureDate">{{formatDate this.date}}</span>
                 <a href="DataAnalytics/{{this._id}}" class="dataAnalytics">Lecture Attendance statistics</a>
             </li>
-    {{/each}}
-{{else}}
+        {{/each}}
+    {{else}}
         <div class="noLectures">
             <p>No lectures available for this course.</p>
         </div>
     </ul>
-
-    </div>
-    </div>
+    {{/if}}
+</div>

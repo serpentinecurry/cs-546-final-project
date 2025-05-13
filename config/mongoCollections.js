@@ -20,3 +20,4 @@ export const attendance = getCollectionFn('attendance');
 export const discussions = getCollectionFn('discussions');
 export const changeRequests = getCollectionFn("ChangeRequests");
 export const feedback = getCollectionFn("feedback");
+export const messages = getCollectionFn('messages');

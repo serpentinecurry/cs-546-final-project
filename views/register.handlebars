@@ -1,164 +1,3 @@
-<style>
-  body {
-    background: #f1f5f9;
-    font-family: "Segoe UI", sans-serif;
-  }
-
-  .register-wrapper {
-    max-width: 850px;
-    margin: 4rem auto;
-    background-color: white;
-    padding: 3rem;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-    position: relative;
-    animation: fadeInUp 0.6s ease;
-  }
-
-  @keyframes fadeInUp {
-    0% {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    100% {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  .register-logo {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 2rem;
-  }
-
-  .register-logo img {
-    height: 90px;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
-  }
-
-  .register-logo img:hover {
-    transform: scale(1.05);
-  }
-
-  .register-title {
-    text-align: center;
-    margin-bottom: 1.5rem;
-  }
-
-  .register-title h1 {
-    font-size: 2.2rem;
-    font-weight: 700;
-    color: #4f46e5;
-  }
-
-  .form-label {
-    font-weight: 500;
-    color: #1f2937;
-  }
-
-  .form-control,
-  .form-select {
-    border-radius: 10px;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  }
-
-  .form-control:focus,
-  .form-select:focus {
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.25);
-  }
-
-  .error-message {
-    color: #dc3545;
-    font-weight: 500;
-    text-align: center;
-    margin-bottom: 1.25rem;
-  }
-
-  .btn-primary {
-    background-color: #4f46e5;
-    border-color: #4f46e5;
-    font-weight: 600;
-    border-radius: 10px;
-  }
-
-  .btn-primary:hover {
-    background-color: #4338ca;
-  }
-
-  .bottom-link {
-    text-align: center;
-    margin-top: 2rem;
-  }
-
-  .bottom-link a {
-    text-decoration: none;
-    color: #4f46e5;
-    font-weight: 500;
-  }
-
-  .bottom-link a:hover {
-    text-decoration: underline;
-  }
-
-  .spinner-wrapper {
-    display: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.6);
-    justify-content: center;
-    align-items: center;
-    border-radius: 20px;
-  }
-
-  .spinner-wrapper.active {
-    display: flex;
-  }
-
-  .password-toggle-btn {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    border: none;
-    background: none;
-    color: #6b7280;
-    cursor: pointer;
-    padding: 0;
-    z-index: 5;
-  }
-
-  .password-toggle-btn:focus {
-    outline: none;
-  }
-
-  .toggle-btn {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: transparent;
-    border: none;
-    color: #6b7280;
-    cursor: pointer;
-  }
-  .link-hover {
-    color: #4f46e5;
-    transition: all 0.2s ease;
-  }
-
-  .link-hover:hover {
-    text-decoration: underline;
-    color: #4338ca;
-  }
-</style>
-
 <div class="register-wrapper position-relative">
   <!-- Spinner Overlay -->
   <div id="spinner" class="spinner-wrapper">
@@ -244,6 +83,7 @@
       <div class="col-md-3">
         <label class="form-label" for="gender">Gender</label>
         <select class="form-select" name="gender" id="gender" required>
+          <option value="" disabled selected>Select Gender</option>
           <option value="male" {{#if (eq formData.gender 'male')}}selected{{/if}}>Male</option>
           <option value="female" {{#if (eq formData.gender 'female')}}selected{{/if}}>Female</option>
           <option value="other" {{#if (eq formData.gender 'other')}}selected{{/if}}>Other</option>
@@ -252,7 +92,7 @@
 
       <div class="col-md-9">
         <label class="form-label" for="major">Major</label>
-        <input class="form-control" name="major" id="major" value="{{formData.major}}" />
+        <input class="form-control" name="major" id="major" value="{{formData.major}}">
       </div>
     </div>
 
@@ -325,4 +165,6 @@
     }
   }
 </script>
+
+</div>
 

@@ -4,15 +4,14 @@
             <i class="bi bi-chat-left-dots-fill me-2"></i>Course Feedback Survey
         </h2>
         <form action="/student/course/{{courseId}}/feedback" method="POST" id="feedbackForm">
-            <input type="hidden" name="feedbackId" value="{{feedbackId}}"/>
+            <input type="hidden" name="feedbackId" value="{{feedbackId}}" />
 
             <div class="mb-3">
+                <label for="rating" class="form-label fw-semibold">Rating</label>
                 <div class="input-group">
-                    <label for="rating"></label><input type="number" min="0" max="10" step="0.5" class="form-control"
-                                                       id="rating" name="rating" required/>
+                    <input type="number" min="0" max="10" step="0.5" class="form-control" id="rating" name="rating" required />
                     <span class="input-group-text">/ 10</span>
                 </div>
-
             </div>
 
             <div class="mb-3">
@@ -39,11 +38,47 @@
 
 <script>
 document.getElementById('feedbackForm').addEventListener('submit', function (e) {
-    const rating = parseFloat(document.getElementById('rating').value);
-    if (isNaN(rating) || rating < 0 || rating > 10 || rating % 0.5 !== 0) {
+    const ratingInput = document.getElementById('rating');
+    const q1 = document.getElementById('q1answer');
+    const q2 = document.getElementById('q2answer');
+    const q3 = document.getElementById('q3answer');
+
+    const rating = parseFloat(ratingInput.value);
+    const isValidRating = !isNaN(rating) && rating >= 0 && rating <= 10 && rating * 10 % 5 === 0;
+
+    const isValidText = (val) => val && val.trim().length > 0;
+
+    if (!isValidRating) {
         e.preventDefault();
         alert("Rating must be a number between 0 and 10 in 0.5 steps.");
+        ratingInput.focus();
+        return;
+    }
+
+    if (!isValidText(q1.value)) {
+        e.preventDefault();
+        alert("Please answer question 1.");
+        q1.focus();
+        return;
+    }
+
+    if (!isValidText(q2.value)) {
+        e.preventDefault();
+        alert("Please answer question 2.");
+        q2.focus();
+        return;
+    }
+
+    if (!isValidText(q3.value)) {
+        e.preventDefault();
+        alert("Please answer question 3.");
+        q3.focus();
+        return;
+    }
+
+    const confirmed = confirm("Are you sure you want to submit your feedback?");
+    if (!confirmed) {
+        e.preventDefault();
     }
 });
-
 </script>

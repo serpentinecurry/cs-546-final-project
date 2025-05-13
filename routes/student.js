@@ -6,11 +6,13 @@ import {
     changeRequests,
     attendance,
     lectures,
-    feedback
+    feedback,
+    messages,
+    discussions
 } from "../config/mongoCollections.js";
-import {absenceProofUpload, checkActiveEnrollment} from "../middleware.js";
+import {absenceProofUpload, checkActiveEnrollment, isTA} from "../middleware.js";
 import {ObjectId} from "mongodb";
-import {userData, calendarData} from "../data/index.js";
+import {userData, calendarData, lectureData} from "../data/index.js";
 import coursesData from "../data/courses.js";
 import bcrypt from "bcrypt";
 import dayjs from "dayjs";
@@ -23,7 +25,8 @@ import {
 } from "../validation.js";
 import {addOfficeHourEvent, deleteOfficeHourEvent} from "../services/calendarSync.js";
 import {subscribeLinks} from "../services/calendarSync.js"; // ✅ add this
-
+import discussionsData from "../data/discussions.js";
+import { addTAOfficeHour , deleteTAOfficeHour} from "../data/officeHours.js";
 
 const router = Router();
 
@@ -245,14 +248,10 @@ router.route("/courses/:id").get(checkActiveEnrollment, async (req, res) => {
     try {
         const courseId = stringValidate(req.params.id);
         const studentId = req.session.user._id;
-        console.log("→ courseId:", courseId);
-        console.log("→ studentId:", studentId);
 
         if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
 
         const {course, professor} = await coursesData.getCourseById(courseId);
-        console.log("→ course loaded:", course.courseName);
-        console.log("→ studentEnrollments:", course.studentEnrollments);
 
         const isEnrolled = course.studentEnrollments?.some(
             (r) =>
@@ -260,7 +259,6 @@ router.route("/courses/:id").get(checkActiveEnrollment, async (req, res) => {
                 r.status === "active"
         );
 
-        console.log("→ isEnrolled:", isEnrolled);
 
         if (!isEnrolled) {
             return res.status(403).render("error", {
@@ -331,54 +329,64 @@ router.route("/courses/:id").get(checkActiveEnrollment, async (req, res) => {
     }
 });
 
-router.route("/course/:courseId/feedback").get(async (req, res) => {
-    try {
-        const courseId = req.params.courseId;
-        const studentId = req.session.user._id;
 
-        const feedbackCollection = await feedback();
-        const feedbackSurvey = await feedbackCollection.findOne({
-            courseId: new ObjectId(courseId),
-            addedAt: {$gte: dayjs().subtract(5, "day").toDate()},
-            "studentResponses.studentId": {$ne: studentId}
-        });
+router
+    .route("/course/:courseId/feedback")
+    .get(async (req, res) => {
+        try {
+            const courseId = req.params.courseId;
+            const studentId = req.session.user._id;
 
-        if (!feedbackSurvey) {
-            return res.status(403).render("error", {
-                error: "Survey not available or already submitted."
+            const feedbackCollection = await feedback();
+            const feedbackSurvey = await feedbackCollection.findOne({
+                courseId: new ObjectId(courseId),
+                addedAt: {$gte: dayjs().subtract(5, "day").toDate()},
+                "studentResponses.studentId": {$ne: studentId},
             });
+
+            if (!feedbackSurvey) {
+                return res.status(403).render("error", {
+                    error: "Survey not available or already submitted.",
+                });
+            }
+
+            const content = feedbackSurvey.content[0];
+
+            res.render("student/feedbackForm", {
+                layout: "main",
+                courseId,
+                feedbackId: feedbackSurvey._id.toString(),
+                content,
+            });
+        } catch (e) {
+            console.error("GET feedback error:", e);
+            res.status(500).render("error", {error: "Failed to load survey."});
         }
-
-        const content = feedbackSurvey.content[0];
-
-        res.render("student/feedbackForm", {
-            layout: "main",
-            courseId,
-            feedbackId: feedbackSurvey._id.toString(),
-            content
-        });
-    } catch (e) {
-        console.error("GET feedback error:", e);
-        res.status(500).render("error", {error: "Failed to load survey."});
-    }
-})
+    })
     .post(async (req, res) => {
         try {
             const {feedbackId, rating, q1answer, q2answer, q3answer} = req.body;
             const studentId = req.session.user._id;
 
-            // Validation
+            // Validate rating
+            const parsedRating = parseFloat(rating);
+            const isRatingValid =
+                !isNaN(parsedRating) &&
+                parsedRating >= 0 &&
+                parsedRating <= 10 &&
+                parsedRating * 10 % 5 === 0;
+
+            // Validate answers
+            const isNonEmpty = (val) => typeof val === "string" && val.trim().length > 0;
+
             if (
-                !rating ||
-                isNaN(rating) ||
-                rating < 0 ||
-                rating > 10 ||
-                !q1answer?.trim() ||
-                !q2answer?.trim() ||
-                !q3answer?.trim()
+                !isRatingValid ||
+                !isNonEmpty(q1answer) ||
+                !isNonEmpty(q2answer) ||
+                !isNonEmpty(q3answer)
             ) {
                 return res.status(400).render("error", {
-                    error: "All fields are required. Rating must be between 1 and 10."
+                    error: "All fields are required. Rating must be between 0 and 10 in 0.5 steps.",
                 });
             }
 
@@ -386,38 +394,46 @@ router.route("/course/:courseId/feedback").get(async (req, res) => {
             const feedbackDoc = await feedbackCollection.findOne({
                 _id: new ObjectId(feedbackId),
                 "studentResponses.studentId": {$ne: studentId},
-                addedAt: {$gte: dayjs().subtract(5, "day").toDate()}
+                addedAt: {$gte: dayjs().subtract(5, "day").toDate()},
             });
 
             if (!feedbackDoc) {
                 return res.status(403).render("error", {
-                    error: "Invalid or already submitted survey."
+                    error: "Invalid or already submitted survey.",
                 });
             }
 
-            await feedbackCollection.updateOne(
+            const updateResult = await feedbackCollection.updateOne(
                 {_id: new ObjectId(feedbackId)},
                 {
                     $push: {
                         studentResponses: {
                             studentId,
-                            rating: parseInt(rating),
+                            rating: parsedRating,
                             q1answer: q1answer.trim(),
                             q2answer: q2answer.trim(),
-                            q3answer: q3answer.trim()
-                        }
-                    }
+                            q3answer: q3answer.trim(),
+                        },
+                    },
                 }
             );
+
+            if (!updateResult.acknowledged || updateResult.modifiedCount === 0) {
+                return res.status(500).render("error", {
+                    error: "Failed to save feedback. Please try again.",
+                });
+            }
+
             req.session.successMessage = "🎉 Survey submitted successfully!";
             res.redirect(`/student/courses/${req.params.courseId}`);
         } catch (e) {
             console.error("POST feedback error:", e);
             res.status(500).render("error", {
-                error: "Failed to submit feedback. Please try again."
+                error: "Failed to submit feedback. Please try again.",
             });
         }
     });
+
 
 router.get("/courses/:courseId/lectures/:lectureId", checkActiveEnrollment, async (req, res) => {
         try {
@@ -431,6 +447,7 @@ router.get("/courses/:courseId/lectures/:lectureId", checkActiveEnrollment, asyn
             const lecturesCollection = await lectures();
             const courseCollection = await courses();
             const userCollection = await users();
+            const discussionsCollection = await discussions();
 
             const lecture = await lecturesCollection.findOne({
                 _id: new ObjectId(lectureId),
@@ -446,6 +463,15 @@ router.get("/courses/:courseId/lectures/:lectureId", checkActiveEnrollment, asyn
                 _id: new ObjectId(lecture.professorId),
             });
 
+            // Check if a discussion exists for this lecture
+            const discussion = await discussionsCollection.findOne({
+                lectureId: new ObjectId(lectureId),
+                courseId: new ObjectId(courseId)
+            });
+
+            const hasDiscussion = !!discussion;
+            const discussionId = discussion ? discussion._id.toString() : null;
+
             // Determine if a lecture ended
             let lectureEndTimestamp = null;
             if (lecture.lectureDate && lecture.lectureEndTime) {
@@ -460,6 +486,9 @@ router.get("/courses/:courseId/lectures/:lectureId", checkActiveEnrollment, asyn
             const hasRated = lecture.ratings?.some(
                 (r) => r.studentId.toString() === studentId.toString()
             );
+
+            // get student's lecture notes
+            const lectureNotes = await userData.getLectureNotes(studentId, lectureId);
 
             return res.render("student/student", {
                 layout: "main",
@@ -491,6 +520,9 @@ router.get("/courses/:courseId/lectures/:lectureId", checkActiveEnrollment, asyn
                 },
                 lectureEndTimestamp,
                 hasRated,
+                lectureNotes,
+                hasDiscussion,
+                discussionId
             });
         } catch (error) {
             console.error("Lecture detail error:", error);
@@ -566,6 +598,38 @@ router.post("/courses/:courseId/lectures/:lectureId/rate", checkActiveEnrollment
         console.error("Rating submission failed:", err);
         return res.status(500).json({message: "Internal Server Error"});
     }
+});
+
+router.post("/courses/:courseId/lectures/:lectureId/notes", checkActiveEnrollment, async (req, res) => {
+    let studentId, courseId, lectureId;
+    try {
+        [studentId, courseId, lectureId] = [
+            stringValidate(req.session.user._id),
+            stringValidate(req.params.courseId),
+            stringValidate(req.params.lectureId)
+        ]
+    } catch (error) {
+        return res.status(400).render("error", {error});
+    }
+
+    let lectureNotes;
+    try {
+        lectureNotes = stringValidate(req.body.lecture_notes_input); // needs xss
+        req.body.emptyNotes = false;
+    } catch (error) {
+        req.body.emptyNotes = true;
+        return res.status(400).render("error", {error});
+    }
+
+    try {
+        const lectureNotesUpdate = await userData.addLectureNotes(studentId, lectureId, courseId, lectureNotes);
+        if (lectureNotesUpdate.updateSuccessful) {
+            return res.redirect(`/student/courses/${req.params.courseId}/lectures/${req.params.lectureId}`);
+        }
+    } catch (error) {
+        return res.status(500).render("error", {error});
+    }
+
 });
 
 // GET /student/courses/:id/members
@@ -752,6 +816,9 @@ router.route("/absence-request").get(async (req, res) => {
         })
     );
 
+    const successMessage = req.session.successMessage || null;
+    delete req.session.successMessage;
+
     res.render("student/student", {
         layout: "main",
         partialToRender: "absence-request",
@@ -761,6 +828,7 @@ router.route("/absence-request").get(async (req, res) => {
         },
         enrolledCourses,
         currentPage: "absence-request",
+        successMessage
     });
 })
     .post(absenceProofUpload.single("proof"), async (req, res) => {
@@ -955,7 +1023,6 @@ router.get("/lectures/:courseId", checkActiveEnrollment, async (req, res) => {
 });
 
 router.route("/profile").get(async (req, res) => {
-    console.log("User session at /profile:", req.session.user);
     res.render("student/student", {
         layout: "main",
         partialToRender: "profile",
@@ -1084,6 +1151,7 @@ router.route("/request-change").get(async (req, res) => {
     } catch (error) {
         console.log(error);
     }
+
 })
     .post(async (req, res) => {
         try {
@@ -1131,8 +1199,6 @@ router.route("/request-status").get(async (req, res) => {
 });
 
 router.route("/calendar").get(async (req, res) => {
-    console.log(">>> Session user in /calendar:", req.session.user);
-
     try {
         const lectures = await calendarData.getStudentLectures(req.session.user._id);
         const officeHours = await calendarData.getOfficeHours(req.session.user._id);
@@ -1158,7 +1224,7 @@ router.route("/calendar").get(async (req, res) => {
     }
 });
 
-router.route("/ta/officeHour").get(async (req, res) => {
+router.route("/ta/officeHour").get(isTA, async (req, res) => {
     try {
         const userId = new ObjectId(req.session.user._id);
         const userCollection = await users();
@@ -1216,64 +1282,20 @@ router.route("/ta/officeHour").get(async (req, res) => {
     }
 })
 
-router.route("/ta/officeHour/add").post(async (req, res) => {
+router.route("/ta/officeHour/add").post(isTA, async (req, res) => {
     try {
-        const {courseId, day, startTime, endTime, location, notes} = req.body;
-        const userId = new ObjectId(req.session.user._id);
-        const courseObjectId = new ObjectId(courseId);
-        if (!ObjectId.isValid(courseId)) throw "Invalid course ID";
-        if (!day || !startTime || !endTime || !location)
-            throw "All fields except notes are required.";
-        const courseCollection = await courses();
-        const userCollection = await users();
+        const { courseId, day, startTime, endTime, location, notes } = req.body;
+        const userId = req.session.user._id;
 
-        // Check if user is actually a TA for this course
-        const user = await userCollection.findOne({_id: userId});
-        if (!user || !user.taForCourses?.some(id => id.toString() === courseObjectId.toString())) {
-            return res.status(403).render("error", {
-                layout: "main",
-                error: "You are not authorized to modify office hours for this course.",
-            });
-        }
-
-        // ✅ Google Calendar Sync
-        const name = `${user.firstName} ${user.lastName}`;
-        const eventIds = {};
-        for (const calendarType of ["students", "tas", "professors"]) {
-            const result = await addOfficeHourEvent({
-                name,
-                day,
-                startTime,
-                endTime,
-                location,
-                calendarType
-            });
-            if (result?.eventId) {
-                eventIds[calendarType] = result.eventId;
-            }
-        }
-
-
-        const newOfficeHour = {
-            _id: new ObjectId(),
-            taId: userId,
-            day: day.trim(),
+        await addTAOfficeHour({
+            courseId,
+            userId,
+            day,
             startTime,
             endTime,
-            location: location.trim(),
-            notes: notes?.trim() || "",
-            googleCalendarEventIds: eventIds
-        };
-
-        const updateResult = await courseCollection.updateOne(
-            {_id: new ObjectId(courseId)},
-            {$push: {taOfficeHours: newOfficeHour}}
-        );
-
-        if (updateResult.modifiedCount === 0) {
-            throw "Failed to add office hour.";
-        }
-
+            location,
+            notes
+        });
 
         return res.redirect("/student/ta/officeHour");
     } catch (error) {
@@ -1283,60 +1305,18 @@ router.route("/ta/officeHour/add").post(async (req, res) => {
             error: typeof error === "string" ? error : "Could not add office hour.",
         });
     }
-})
+});
 
-router.post("/ta/officeHour/delete", async (req, res) => {
+router.post("/ta/officeHour/delete", isTA, async (req, res) => {
     try {
-        const {courseId, officeHourId} = req.body;
-        const userId = new ObjectId(req.session.user._id);
+        const { courseId, officeHourId } = req.body;
+        const userId = req.session.user._id;
 
-        if (!ObjectId.isValid(courseId) || !ObjectId.isValid(officeHourId)) {
-            throw "Invalid course or office hour ID.";
-        }
-
-        const courseCollection = await courses();
-        const userCollection = await users();
-
-        const user = await userCollection.findOne({_id: userId});
-
-        if (
-            !user ||
-            !user.taForCourses?.some(
-                (id) => id.toString() === courseId.toString()
-            )
-        ) {
-            return res.status(403).render("error", {
-                layout: "main",
-                error: "You are not authorized to delete office hours for this course.",
-            });
-        }
-
-        const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
-        const targetHour = course.taOfficeHours.find(
-            (oh) => oh._id.toString() === officeHourId && oh.taId.toString() === userId.toString()
-        );
-
-        if (targetHour?.googleCalendarEventIds) {
-            for (const [calendarType, eventId] of Object.entries(targetHour.googleCalendarEventIds)) {
-                await deleteOfficeHourEvent(calendarType, eventId);
-            }
-        }
-        // Remove the TA’s office hour that matches officeHourId and taId
-        const updateResult = await courseCollection.updateOne(
-            {_id: new ObjectId(courseId)},
-            {
-                $pull: {
-                    taOfficeHours: {
-                        _id: new ObjectId(officeHourId),
-                        taId: userId,
-                    },
-                },
-            }
-        );
-
-        if (updateResult.modifiedCount === 0) {
-            throw "No matching office hour was found to delete.";
-        }
+        await deleteTAOfficeHour({
+            courseId,
+            officeHourId,
+            userId
+        });
 
         res.redirect("/student/ta/officeHour");
     } catch (error) {
@@ -1348,43 +1328,519 @@ router.post("/ta/officeHour/delete", async (req, res) => {
     }
 });
 
-router.get("/contact-tas", async (req, res) => {
-    try {
-        const user = req.session.user;
-        const studentCourses = user.enrolledCourses || [];
-        const allCourses = await coursesData.getAllCourses();
-        const usersCollection = await users();
-        const taList = [];
 
-        for (const course of allCourses) {
-            if (studentCourses.some((id) => id.toString() === course._id.toString())) {
-                if (Array.isArray(course.taOfficeHours)) {
-                    for (const taEntry of course.taOfficeHours) {
-                        const taUser = await usersCollection.findOne({_id: new ObjectId(taEntry.taId)});
-                        if (taUser) {
-                            taList.push({
-                                _id: taUser._id,
-                                fullName: `${taUser.firstName} ${taUser.lastName}`,
-                                courseName: course.courseName,
-                                courseId: course._id.toString(),
-                            });
-                        }
-                    }
+router.route("/contact-tas").get(async (req, res) => {
+    try {
+        const studentId = new ObjectId(req.session.user._id);
+        const userIdStr = studentId.toString();
+        const courseCollection = await courses();
+        const userCollection = await users();
+        const messagesCollection = await messages();
+
+        // Get all courses where the student is enrolled
+        const enrolledCourses = await courseCollection.find({
+            studentEnrollments: {
+                $elemMatch: {
+                    studentId,
+                    status: "active"
                 }
             }
+        }).toArray();
+
+        // Filter out courses where the user is a TA
+        const filteredCourses = enrolledCourses.filter(course => {
+            return !(course.taOfficeHours || []).some(oh => oh.taId.toString() === userIdStr);
+        });
+
+        const coursesWithTAs = [];
+        // For each course, get the TAs from taOfficeHours
+        for (const course of filteredCourses) {
+            // Get unique TA IDs from taOfficeHours
+            const taIds = [...new Set((course.taOfficeHours || []).map(oh => oh.taId.toString()))];
+
+            let tas = [];
+            if (taIds.length > 0) {
+                tas = await userCollection.find({
+                    _id: {$in: taIds.map(id => new ObjectId(id))}
+                }).project({
+                    firstName: 1,
+                    lastName: 1,
+                    email: 1
+                }).toArray();
+            }
+
+            // Format TA data
+            const formattedTAs = tas.map(ta => ({
+                _id: ta._id.toString(),
+                fullName: `${ta.firstName} ${ta.lastName}`,
+                email: ta.email,
+                officeHours: (course.taOfficeHours || [])
+                    .filter(oh => oh.taId.toString() === ta._id.toString())
+                    .map(oh => ({
+                        day: oh.day,
+                        startTime: oh.startTime,
+                        endTime: oh.endTime,
+                        location: oh.location
+                    }))
+            }));
+
+            coursesWithTAs.push({
+                _id: course._id.toString(),
+                courseName: course.courseName,
+                courseCode: course.courseCode,
+                tas: formattedTAs
+            });
         }
 
-        return res.render("student/student", {
-            layout: "main",
-            user,
-            currentPage: "contactTas",
-            partialToRender: "contactTas",
-            taList,
+        // Fetch sent messages by the student (only to TAs, and only for courses where sender is not a TA)
+        const rawSentMessages = await messagesCollection.find({fromId: studentId}).sort({sentAt: -1}).toArray();
+        // For each message, check if sender is a TA for that course
+        const courseIdsSet = new Set(rawSentMessages.map(m => m.courseId.toString()));
+        const courseDocs = await courseCollection.find({_id: {$in: Array.from(courseIdsSet).map(id => new ObjectId(id))}}).project({
+            _id: 1,
+            courseName: 1,
+            taOfficeHours: 1
+        }).toArray();
+        const courseTAmap = {};
+        courseDocs.forEach(c => {
+            courseTAmap[c._id.toString()] = c;
         });
-    } catch (e) {
-        return res.status(500).render("error", {error: "Error loading TA contact page."});
+        const filteredSentMessages = rawSentMessages.filter(m => {
+            const course = courseTAmap[m.courseId.toString()];
+            if (!course) return false;
+            // Sender should NOT be a TA for this course
+            return !(course.taOfficeHours || []).some(oh => oh.taId.toString() === studentId.toString());
+        });
+        // Get all TA IDs for name lookup
+        const taIdsSet = new Set(filteredSentMessages.map(m => m.toId.toString()));
+        const taUsers = await userCollection.find({_id: {$in: Array.from(taIdsSet).map(id => new ObjectId(id))}}).project({
+            firstName: 1,
+            lastName: 1
+        }).toArray();
+        const taMap = {};
+        taUsers.forEach(ta => {
+            taMap[ta._id.toString()] = `${ta.firstName} ${ta.lastName}`;
+        });
+        const sentMessages = filteredSentMessages.map(m => ({
+            taName: taMap[m.toId.toString()] || 'Unknown TA',
+            courseName: courseTAmap[m.courseId.toString()]?.courseName || 'Unknown Course',
+            subject: m.subject,
+            message: m.message,
+            date: m.sentAt ? new Date(m.sentAt).toLocaleString() : ''
+        }));
+
+        res.render("student/student", {
+            layout: "main",
+            partialToRender: "contactTAs",
+            user: withUser(req),
+            currentPage: "contactTAs",
+            courses: coursesWithTAs,
+            sentMessages,
+            successMessage: req.session.successMessage
+        });
+    } catch (error) {
+        console.error("Error loading TAs:", error);
+        res.status(500).render("student/student", {
+            layout: "main",
+            partialToRender: "contactTAs",
+            user: withUser(req),
+            currentPage: "contactTAs",
+            error: "Failed to load TAs. Please try again."
+        });
     }
 });
+
+router.route("/send-message").post(async (req, res) => {
+    try {
+        const {taId, subject, message} = req.body;
+        const studentId = req.session.user._id;
+
+        if (!taId || !subject || !message) {
+            throw "All fields are required";
+        }
+
+        const userCollection = await users();
+        const courseCollection = await courses();
+        const messagesCollection = await messages();
+
+        // Verify the TA exists and is actually a TA
+        const ta = await userCollection.findOne({
+            _id: new ObjectId(taId),
+            role: "ta"
+        });
+        if (!ta) {
+            throw "Invalid TA selected";
+        }
+
+        // Get all courses where student is enrolled
+        const studentCourses = await courseCollection.find({
+            studentEnrollments: {
+                $elemMatch: {
+                    studentId: new ObjectId(studentId),
+                    status: "active"
+                }
+            }
+        }).toArray();
+
+        // Check if student and TA share any course (using taOfficeHours)
+        let sharedCourseId = null;
+        for (const course of studentCourses) {
+            // Check: sender is NOT a TA for this course
+            const isSenderTAForCourse = (course.taOfficeHours || []).some(oh => oh.taId.toString() === studentId.toString());
+            // Check: recipient is a TA for this course
+            const isRecipientTAForCourse = (course.taOfficeHours || []).some(oh => oh.taId.toString() === taId);
+            if (!isSenderTAForCourse && isRecipientTAForCourse) {
+                sharedCourseId = course._id;
+                break;
+            }
+        }
+        if (!sharedCourseId) {
+            throw "You can only message TAs from your courses where you are a student (not a TA)";
+        }
+
+        // Store the message in the messages collection
+        await messagesCollection.insertOne({
+            fromId: new ObjectId(studentId),
+            toId: new ObjectId(taId),
+            courseId: new ObjectId(sharedCourseId),
+            subject,
+            message,
+            sentAt: new Date(),
+            read: false
+        });
+
+        req.session.successMessage = "Message sent successfully!";
+        res.redirect("/student/contact-tas");
+    } catch (error) {
+        console.error("Error sending message:", error);
+        res.status(400).render("student/student", {
+            layout: "main",
+            partialToRender: "contactTAs",
+            user: withUser(req),
+            currentPage: "contactTAs",
+            error: typeof error === "string" ? error : "Failed to send message"
+        });
+    }
+});
+
+router.route("/ta/messages").get(isTA, async (req, res) => {
+    try {
+        const taId = new ObjectId(req.session.user._id);
+        const userCollection = await users();
+        const courseCollection = await courses();
+        const messagesCollection = await messages();
+
+        // Verify user is a TA
+        const ta = await userCollection.findOne({
+            _id: taId,
+            role: "ta"
+        });
+        if (!ta) {
+            return res.status(403).render("error", {
+                layout: "main",
+                error: "You must be a TA to access this page."
+            });
+        }
+
+        // Get all course IDs where this user is a TA
+        const taCourses = await courseCollection.find({
+            taOfficeHours: {$elemMatch: {taId: taId}}
+        }).project({_id: 1, studentEnrollments: 1, taOfficeHours: 1}).toArray();
+        const taCourseIds = new Set(taCourses.map(c => c._id.toString()));
+        // Build a map of courseId to set of studentIds who are active and NOT TAs for that course
+        const courseStudentMap = {};
+        for (const course of taCourses) {
+            const taIdsForCourse = new Set((course.taOfficeHours || []).map(oh => oh.taId.toString()));
+            const studentIds = (course.studentEnrollments || [])
+                .filter(enr => enr.status === "active" && !taIdsForCourse.has(enr.studentId.toString()))
+                .map(enr => enr.studentId.toString());
+            courseStudentMap[course._id.toString()] = new Set(studentIds);
+        }
+
+        // Fetch messages sent to this TA
+        const rawMessages = await messagesCollection.find({toId: taId}).sort({sentAt: -1}).toArray();
+        // Only include messages where:
+        // - The sender is a student (not a TA for that course)
+        // - The sender is actively enrolled in a course where this user is a TA
+        // - The message is for a course where this user is a TA
+        const filteredMessages = rawMessages.filter(m => {
+            const senderId = m.fromId.toString();
+            const courseId = m.courseId.toString();
+            return taCourseIds.has(courseId) && courseStudentMap[courseId]?.has(senderId);
+        });
+        // Fetch student names for display
+        const studentIds = filteredMessages.map(m => m.fromId);
+        const students = await userCollection.find({_id: {$in: studentIds}}).project({
+            firstName: 1,
+            lastName: 1
+        }).toArray();
+        const studentMap = {};
+        students.forEach(s => {
+            studentMap[s._id.toString()] = `${s.firstName} ${s.lastName}`;
+        });
+
+        const messagess = filteredMessages.map(m => ({
+            _id: m._id.toString(),
+            subject: m.subject,
+            message: m.message,
+            date: m.sentAt ? new Date(m.sentAt).toLocaleString() : '',
+            studentName: studentMap[m.fromId.toString()] || 'Unknown Student',
+            isActive: false
+        }));
+
+        res.render("student/student", {
+            layout: "main",
+            partialToRender: "taMessages",
+            user: withUser(req),
+            currentPage: "taMessages",
+            messages: messagess,
+            successMessage: req.session.successMessage
+        });
+    } catch (error) {
+        console.error("Error loading messages:", error);
+        res.status(500).render("student/student", {
+            layout: "main",
+            partialToRender: "taMessages",
+            user: withUser(req),
+            currentPage: "taMessages",
+            error: "Failed to load messages. Please try again."
+        });
+    }
+});
+
+// GET: TA Contact Students page
+router.get("/ta/contact-students", isTA, async (req, res) => {
+    try {
+        const taId = new ObjectId(req.session.user._id);
+        const userCollection = await users();
+        const courseCollection = await courses();
+
+        // Get all courses where the user is a TA
+        const taCourses = await courseCollection.find({
+            taOfficeHours: {$elemMatch: {taId}}
+        }).toArray();
+
+        // For each course, get active students (not TAs)
+        const coursess = [];
+        for (const course of taCourses) {
+            // Get all active student enrollments
+            const studentEnrollments = (course.studentEnrollments || []).filter(e => e.status === "active");
+            const studentIds = studentEnrollments.map(e => new ObjectId(e.studentId));
+            // Fetch all users enrolled as students in this course
+            const students = await userCollection.find({
+                _id: {$in: studentIds}
+            }).project({firstName: 1, lastName: 1, email: 1, major: 1, taForCourses: 1}).toArray();
+            // Exclude users who are TAs for this course (but allow TAs for other courses)
+            const formattedStudents = students
+                .filter(s => !(s.taForCourses || []).some(cid => cid.toString() === course._id.toString()))
+                .map(s => ({
+                    _id: s._id.toString(),
+                    fullName: `${s.firstName} ${s.lastName}`,
+                    email: s.email,
+                    major: s.major || "-"
+                }));
+            coursess.push({
+                _id: course._id.toString(),
+                courseName: course.courseName,
+                courseCode: course.courseCode,
+                students: formattedStudents
+            });
+        }
+
+        // Fetch sent messages by the TA (to students only, and only for courses where the recipient is an active student and not a TA for that course)
+        const messagesCollection = await messages();
+        const rawSentMessages = await messagesCollection.find({fromId: taId}).sort({sentAt: -1}).toArray();
+        // Build a map of courseId to set of studentIds who are active and NOT TAs for that course
+        const courseStudentMap = {};
+        for (const course of taCourses) {
+            const taIdsForCourse = new Set((course.taOfficeHours || []).map(oh => oh.taId.toString()));
+            const studentIds = (course.studentEnrollments || [])
+                .filter(enr => enr.status === "active" && !taIdsForCourse.has(enr.studentId.toString()))
+                .map(enr => enr.studentId.toString());
+            courseStudentMap[course._id.toString()] = new Set(studentIds);
+        }
+        // Only include messages where recipient is an active student (not a TA for that course) and course is one where this user is a TA
+        const filteredSentMessages = rawSentMessages.filter(m => {
+            const studentId = m.toId.toString();
+            const courseId = m.courseId.toString();
+            return courseStudentMap[courseId]?.has(studentId);
+        });
+        // Get all student and course IDs for name lookup
+        const studentIdsSet = new Set(filteredSentMessages.map(m => m.toId.toString()));
+        const courseIdsSet = new Set(filteredSentMessages.map(m => m.courseId.toString()));
+        const studentUsers = await userCollection.find({_id: {$in: Array.from(studentIdsSet).map(id => new ObjectId(id))}}).project({
+            firstName: 1,
+            lastName: 1
+        }).toArray();
+        const courseDocs = await courseCollection.find({_id: {$in: Array.from(courseIdsSet).map(id => new ObjectId(id))}}).project({courseName: 1}).toArray();
+        const studentMap = {};
+        studentUsers.forEach(s => {
+            studentMap[s._id.toString()] = `${s.firstName} ${s.lastName}`;
+        });
+        const courseMap = {};
+        courseDocs.forEach(c => {
+            courseMap[c._id.toString()] = c.courseName;
+        });
+        const sentMessages = filteredSentMessages.map(m => ({
+            studentName: studentMap[m.toId.toString()] || 'Unknown Student',
+            courseName: courseMap[m.courseId.toString()] || 'Unknown Course',
+            subject: m.subject,
+            message: m.message,
+            date: m.sentAt ? new Date(m.sentAt).toLocaleString() : ''
+        }));
+
+        res.render("student/student", {
+            layout: "main",
+            partialToRender: "contactStudents",
+            user: withUser(req),
+            currentPage: "contactStudents",
+            courses: coursess,
+            sentMessages
+        });
+    } catch (error) {
+        console.error("Error loading TA contact students page:", error);
+        res.status(500).render("student/student", {
+            layout: "main",
+            partialToRender: "contactStudents",
+            user: withUser(req),
+            currentPage: "contactStudents",
+            courses: [],
+            error: "Failed to load students. Please try again."
+        });
+    }
+});
+
+// POST: TA sends message to student
+router.post("/ta/send-message", isTA, async (req, res) => {
+    try {
+        const {studentId, subject, message} = req.body;
+        const taId = req.session.user._id;
+        if (!studentId || !subject || !message) {
+            throw "All fields are required";
+        }
+        const userCollection = await users();
+        const courseCollection = await courses();
+        const messagesCollection = await messages();
+
+        // Verify the student exists and is actually a student
+        const student = await userCollection.findOne({
+            _id: new ObjectId(studentId)
+        });
+        if (!student) {
+            throw "Invalid student selected";
+        }
+        // Find a course where this TA and student are both present
+        const taCourses = await courseCollection.find({
+            taOfficeHours: {$elemMatch: {taId: new ObjectId(taId)}},
+            studentEnrollments: {$elemMatch: {studentId: new ObjectId(studentId), status: "active"}}
+        }).toArray();
+        if (!taCourses.length) {
+            throw "You can only message students from your courses";
+        }
+        const courseId = taCourses[0]._id;
+
+        // Store the message in the messages collection
+        await messagesCollection.insertOne({
+            fromId: new ObjectId(taId),
+            toId: new ObjectId(studentId),
+            courseId: new ObjectId(courseId),
+            subject,
+            message,
+            sentAt: new Date(),
+            read: false
+        });
+
+        req.session.successMessage = "Message sent to student successfully!";
+        res.redirect("/student/ta/contact-students");
+    } catch (error) {
+        console.error("Error sending message to student:", error);
+        res.status(400).render("student/student", {
+            layout: "main",
+            partialToRender: "contactStudents",
+            user: withUser(req),
+            currentPage: "contactStudents",
+            courses: [],
+            error: typeof error === "string" ? error : "Failed to send message"
+        });
+    }
+});
+
+// GET: Student Inbox (messages from TAs)
+router.get("/inbox", async (req, res) => {
+    try {
+        const studentId = new ObjectId(req.session.user._id);
+        const userCollection = await users();
+        const courseCollection = await courses();
+        const messagesCollection = await messages();
+
+        // Fetch all courses where the user is an active student (not a TA for that course)
+        const enrolledCourses = await courseCollection.find({
+            studentEnrollments: {
+                $elemMatch: {
+                    studentId,
+                    status: "active"
+                }
+            }
+        }).project({_id: 1, taOfficeHours: 1}).toArray();
+        // Exclude courses where the user is a TA
+        const filteredCourses = enrolledCourses.filter(course => {
+            return !(course.taOfficeHours || []).some(oh => oh.taId.toString() === studentId.toString());
+        });
+        const studentCourseIds = new Set(filteredCourses.map(c => c._id.toString()));
+
+        // Fetch messages sent to this student
+        const rawMessages = await messagesCollection.find({toId: studentId}).sort({sentAt: -1}).toArray();
+        // Only include messages where the sender is a TA and the course is one where the user is a student (not a TA)
+        const taUsersList = await userCollection.find({role: "ta"}).project({_id: 1}).toArray();
+        const taIdSet = new Set(taUsersList.map(u => u._id.toString()));
+        const filteredMessages = rawMessages.filter(m => {
+            return taIdSet.has(m.fromId.toString()) && studentCourseIds.has(m.courseId.toString());
+        });
+        // Get all TA and course IDs for name lookup
+        const taIdsSet = new Set(filteredMessages.map(m => m.fromId.toString()));
+        const courseIdsSet = new Set(filteredMessages.map(m => m.courseId.toString()));
+        const taUsers = await userCollection.find({_id: {$in: Array.from(taIdsSet).map(id => new ObjectId(id))}}).project({
+            firstName: 1,
+            lastName: 1
+        }).toArray();
+        const courseDocs = await courseCollection.find({_id: {$in: Array.from(courseIdsSet).map(id => new ObjectId(id))}}).project({courseName: 1}).toArray();
+        const taMap = {};
+        taUsers.forEach(ta => {
+            taMap[ta._id.toString()] = `${ta.firstName} ${ta.lastName}`;
+        });
+        const courseMap = {};
+        courseDocs.forEach(c => {
+            courseMap[c._id.toString()] = c.courseName;
+        });
+        const messagess = filteredMessages.map(m => ({
+            _id: m._id.toString(),
+            taName: taMap[m.fromId.toString()] || 'Unknown TA',
+            courseName: courseMap[m.courseId.toString()] || 'Unknown Course',
+            subject: m.subject,
+            message: m.message,
+            date: m.sentAt ? new Date(m.sentAt).toLocaleString() : ''
+        }));
+
+        res.render("student/student", {
+            layout: "main",
+            partialToRender: "studentInbox",
+            user: withUser(req),
+            currentPage: "studentInbox",
+            messages: messagess
+        });
+    } catch (error) {
+        console.error("Error loading student inbox:", error);
+        res.status(500).render("student/student", {
+            layout: "main",
+            partialToRender: "studentInbox",
+            user: withUser(req),
+            currentPage: "studentInbox",
+            messages: [],
+            error: "Failed to load inbox. Please try again."
+        });
+    }
+});
+
 //
 // router.route("/messages").get(async (req, res) => {
 //     res.render("student/student", {
@@ -1403,5 +1859,136 @@ router.get("/contact-tas", async (req, res) => {
 //         currentPage: "settings"
 //     });
 // });
+
+
+router.route("/courses/:courseId/lectures/:lectureId/discussions/:discussionId")
+    .get(checkActiveEnrollment, async (req, res) => {
+        try {
+            const {courseId, lectureId, discussionId} = req.params;
+            const studentId = req.session.user._id;
+
+            if (!ObjectId.isValid(courseId) || !ObjectId.isValid(lectureId) || !ObjectId.isValid(discussionId)) {
+                throw "Invalid IDs provided";
+            }
+
+            const discussionsCollection = await discussions();
+            const discussion = await discussionsCollection.findOne({
+                _id: new ObjectId(discussionId),
+                courseId: new ObjectId(courseId),
+                lectureId: new ObjectId(lectureId),
+            });
+
+            if (!discussion) {
+                throw "Discussion not found";
+            }
+
+            const courseCollection = await courses();
+            const course = await courseCollection.findOne({
+                _id: new ObjectId(courseId),
+            });
+
+            if (!course) {
+                throw "Course not found";
+            }
+
+            const usersCollection = await users();
+            const author = await usersCollection.findOne({
+                _id: discussion.authorId,
+            });
+
+            const discussionData = {
+                ...discussion,
+                _id: discussion._id.toString(),
+                lectureId: discussion.lectureId.toString(),
+                courseId: discussion.courseId.toString(),
+                authorId: discussion.authorId.toString(),
+                authorName: author
+                    ? `${author.firstName} ${author.lastName}`
+                    : "Unknown User",
+                createdAt: new Date(discussion.createdAt).toLocaleString(),
+                updatedAt: new Date(discussion.updatedAt).toLocaleString(),
+                comments:
+                    discussion.comments?.map((c) => ({
+                        ...c,
+                        _id: c._id.toString(),
+                        commenterId: c.commenterId.toString(),
+                    })) || [],
+            };
+
+            if (discussionData.comments.length > 0) {
+                const commenterIds = discussionData.comments
+                    .filter((c) => !c.isAnonymous)
+                    .map((c) => new ObjectId(c.commenterId));
+
+                if (commenterIds.length > 0) {
+                    const commenters = await usersCollection
+                        .find({
+                            _id: {$in: commenterIds},
+                        })
+                        .toArray();
+
+                    const commenterMap = {};
+                    commenters.forEach((u) => {
+                        commenterMap[u._id.toString()] = `${u.firstName} ${u.lastName}`;
+                    });
+
+                    discussionData.comments.forEach((c) => {
+                        c.commenterName = c.isAnonymous
+                            ? "Anonymous"
+                            : commenterMap[c.commenterId] || "Unknown User";
+                        c.timestamp = new Date(c.timestamp).toLocaleString();
+                    });
+                }
+            }
+
+            const lecture = await lectureData.getLectureById(lectureId);
+
+            res.render("student/student", {
+                layout: "main",
+                partialToRender: "discussionView",
+                currentPage: "courses",
+                user: withUser(req),
+                course,
+                lecture,
+                discussion: discussionData,
+                title: discussionData.postTitle,
+                successMessage: req.session.successMessage,
+            });
+
+            req.session.successMessage = null;
+        } catch (error) {
+            console.error("Error viewing discussion:", error);
+            res.status(500).render("error", {
+                layout: "main",
+                error: "Error viewing discussion: " + error,
+            });
+        }
+    })
+    .post(checkActiveEnrollment, async (req, res) => {
+        try {
+            const {courseId, lectureId, discussionId} = req.params;
+            const {commentText, isAnonymous} = req.body;
+            const commenterId = req.session.user._id;
+
+            await discussionsData.addAComment(
+                discussionId,
+                courseId,
+                commenterId,
+                commentText,
+                isAnonymous === "on"
+            );
+
+            req.session.successMessage = "Comment added successfully";
+            res.redirect(
+                `/student/courses/${courseId}/lectures/${lectureId}/discussions/${discussionId}`
+            );
+        } catch (error) {
+            console.error("Error adding comment:", error);
+            res.status(400).render("error", {
+                layout: "main",
+                error: "Error adding comment: " + error,
+            });
+        }
+    });
 
 export default router;

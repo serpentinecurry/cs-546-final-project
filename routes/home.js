@@ -15,12 +15,13 @@ import {
   calculateAge,
 } from "../validation.js";
 import { preventDoubleLogin } from "../middleware.js";
+import xss from "xss";
 
 router
   .route("/")
   .get(preventDoubleLogin, async (req, res) => {
     const logout = req.query.loggedOut ? "Successfully logged out!" : null;
-    const { success } = req.query;
+    const success = xss(req.query.success || "");
     res.render("home", {
       error: false,
       logout,
@@ -30,7 +31,7 @@ router
   .post(async (req, res) => {
     let { email, password } = req.body;
     try {
-      email = validateEmail(email);
+      email = xss(validateEmail(email));
       passwordValidate(password);
       const user = await userData.login(email, password);
       req.session.user = {
@@ -56,7 +57,7 @@ router
           typeof error === "string"
             ? error
             : error.message || "Invalid userId or password",
-        formData: { email },
+        formData: { email: xss(email) },
       });
     }
   });
@@ -79,12 +80,12 @@ router
       major,
     } = req.body;
     try {
-      firstName = stringValidate(firstName);
+      firstName = xss(stringValidate(firstName));
       azAZLenValidate(firstName, 2, 20);
-      lastName = stringValidate(lastName);
+      lastName = xss(stringValidate(lastName));
       azAZLenValidate(lastName, 2, 20);
       if (!["male", "female", "other"].includes(gender)) throw "Invalid Gender";
-      email = validateEmail(email);
+      email = xss(validateEmail(email));
       passwordValidate(password);
       if (!confirmPassword || typeof confirmPassword !== "string")
         throw "Enter confirm Password of type string";
@@ -99,6 +100,7 @@ router
         (!major || typeof major !== "string" || major.trim().length === 0)
       )
         throw "Student must have a major";
+      major = xss(major);
       const result = await userData.createUser(
         firstName,
         lastName,
@@ -149,7 +151,7 @@ router
     res.render("forgotPassword", { error: null });
   })
   .post(async (req, res) => {
-    const { email } = req.body;
+    let email = xss(req.body.email);
     const usersCollection = await users();
     const user = await usersCollection.findOne({ email: email.toLowerCase() });
 
