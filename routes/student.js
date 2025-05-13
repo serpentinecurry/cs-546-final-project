@@ -821,6 +821,9 @@ router.route("/absence-request").get(async (req, res) => {
         })
     );
 
+    const successMessage = req.session.successMessage || null;
+    delete req.session.successMessage;
+
     res.render("student/student", {
         layout: "main",
         partialToRender: "absence-request",
@@ -830,6 +833,7 @@ router.route("/absence-request").get(async (req, res) => {
         },
         enrolledCourses,
         currentPage: "absence-request",
+        successMessage
     });
 })
     .post(absenceProofUpload.single("proof"), async (req, res) => {
