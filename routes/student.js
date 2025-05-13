@@ -598,9 +598,7 @@ router.post("/courses/:courseId/lectures/:lectureId/notes", checkActiveEnrollmen
     let lectureNotes;
     try {
         lectureNotes = xss(stringValidate(req.body.lecture_notes_input));
-        req.body.emptyNotes = false;
     } catch (error) {
-        req.body.emptyNotes = true;
         return res.status(400).render("error", {error});
     }
 
