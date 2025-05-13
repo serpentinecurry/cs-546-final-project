@@ -34,15 +34,15 @@ let createLecture = async (
     materialsLink = stringValidate(materialsLink);
 
     if (!ObjectId.isValid(courseId)) {
-        throw "Invalid course ID.";
+        throw "Invalid Course ID.";
     }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(lectureDate)) {
-        throw "Lecture date must be in YYYY-MM-DD format.";
+        throw "Lecture Date must be in YYYY-MM-DD format.";
     }
 
     if (lectureDate < new Date().toISOString().split("T")[0]) {
-        throw "Lecture date must be today or in the future.";
+        throw "Lecture Date must either be today or in the future.";
     }
 
     if (!/^\d{2}:\d{2}$/.test(lectureStartTime)) {
@@ -52,7 +52,6 @@ let createLecture = async (
     const startDateTime = new Date(`${lectureDate}T${lectureStartTime}:00`);
     let endDateTime = new Date(`${lectureDate}T${lectureEndTime}:00`);
 
-    // If end time is earlier than or equal to start, assume it goes to next day
     if (endDateTime <= startDateTime) {
         endDateTime.setDate(endDateTime.getDate() + 1);
     }
@@ -76,12 +75,11 @@ let createLecture = async (
 
     const professorId = courseDoc.professorId?.toString();
     if (!ObjectId.isValid(professorId)) {
-        throw "Invalid professor ID in course.";
+        throw "Invalid Professor ID in course.";
     }
 
     const lectureCollection = await lectures();
 
-    // Check for duplicate lecture title in the same course
     const existingTitle = await lectureCollection.findOne({
         courseId: new ObjectId(courseId),
         lectureTitle: {$regex: `^${lectureTitle}$`, $options: "i"},
@@ -91,7 +89,6 @@ let createLecture = async (
         throw "Lecture title already exists for this course. Please choose a different title.";
     }
 
-    // ✅ Check for conflict on date and time
     const existingConflict = await lectureCollection.findOne({
         courseId: new ObjectId(courseId),
         lectureDate,
@@ -122,7 +119,6 @@ let createLecture = async (
         throw "Could not create lecture.";
     }
 
-// 🔄 Attach courseCode and lectureId for calendar sync
     newLecture._id = insertion.insertedId;
     newLecture.courseCode = courseDoc.courseCode;
 
@@ -152,7 +148,6 @@ const updateLecture = async (lectureId, updates) => {
     const oldLecture = await lectureCollection.findOne({_id: new ObjectId(lectureId)});
     if (!oldLecture) throw "Lecture not found";
 
-    // Validate inputs
     if (updates.lectureTitle) updates.lectureTitle = stringValidate(updates.lectureTitle);
     if (updates.lectureDate) updates.lectureDate = stringValidate(updates.lectureDate);
     if (updates.lectureStartTime) updates.lectureStartTime = stringValidate(updates.lectureStartTime);
@@ -167,11 +162,9 @@ const updateLecture = async (lectureId, updates) => {
         {$set: updates}
     );
 
-    // Fetch courseCode
     const courseDoc = await courseCollection.findOne({_id: oldLecture.courseId});
     if (!courseDoc) throw "Course not found";
 
-    // If lecture had calendarEventIds, update them
     if (oldLecture.calendarEventIds) {
         const updatedData = {
             ...oldLecture,
@@ -194,7 +187,7 @@ let insertRating = async (lectureId, studentId, rating) => {
     studentId = stringValidate(studentId);
     rating = parseInt(rating);
     if (isNaN(rating) || rating < 1 || rating > 5) {
-        throw "Rating must be a number between 1 and 5.";
+        throw "Rating must be a number between 1 and 5 and in increments of 0.5.";
     }
     if (!ObjectId.isValid(lectureId)) {
         throw "Invalid lecture ID.";
@@ -244,7 +237,6 @@ const getLectureById = async (lectureId) => {
     }
 };
 
-// Add this function to lectures.js
 const getAverageRating = async (lectureId) => {
     if (!lectureId) throw "Lecture ID is required";
 

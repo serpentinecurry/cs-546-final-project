@@ -59,18 +59,13 @@ const lecturesToEventObjects = (lectures) => {
 
   for (let l of lectures) {
     const eventObject = {};
-    // event id: "coursecode-date" (e.g. CS-546-2025-04-15)
     eventObject.id = l.courseCode + "-" + l.lectureDate;
-    // CS-546 - Learn AJAX
     eventObject.title = l.courseCode + " - " + l.lectureTitle;
-    // event color
     eventObject.backgroundColor = " #d00000 ";
     eventObject.borderColor = " #d00000 ";
 
-    // get individual parts of the date
     let date = l.lectureDate.split("-");
 
-    // get start and end time
     let startTime = l.lectureStartTime.split(":");
     let endTime = l.lectureEndTime.split(":");
 

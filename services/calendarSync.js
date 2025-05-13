@@ -166,7 +166,7 @@ export async function syncAllOfficeHoursForCourse(courseId) {
         }
 
         if (failed) {
-            updatedOfficeHours.push(oh); // keep as-is
+            updatedOfficeHours.push(oh);
             continue;
         }
 

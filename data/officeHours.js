@@ -1,4 +1,5 @@
 // data/officeHours.js
+
 import {ObjectId} from "mongodb";
 import {courses, users} from "../config/mongoCollections.js";
 import {addOfficeHourEvent, deleteOfficeHourEvent} from ".././services/calendarSync.js";
@@ -15,10 +16,9 @@ export const addTAOfficeHour = async ({courseId, userId, day, startTime, endTime
 
     const user = await userCollection.findOne({_id: taObjectId});
     if (!user || !user.taForCourses?.some(id => id.toString() === courseObjectId.toString())) {
-        throw "You are not authorized to modify office hours for this course.";
+        throw "You are Not Authorized to Modify Office Hours for this Course.";
     }
 
-    // ✅ Google Calendar Sync
     const name = `${user.firstName} ${user.lastName}`;
     const eventIds = {};
     for (const calendarType of ["students", "tas", "professors"]) {
@@ -71,7 +71,7 @@ export const deleteTAOfficeHour = async ({courseId, officeHourId, userId}) => {
 
     const user = await userCollection.findOne({_id: taObjectId});
     if (!user || !user.taForCourses?.some(id => id.toString() === courseObjectId.toString())) {
-        throw "You are not authorized to delete office hours for this course.";
+        throw "You are Not Authorized to Modify Office Hours for this Course";
     }
 
     const course = await courseCollection.findOne({_id: courseObjectId});
@@ -82,7 +82,7 @@ export const deleteTAOfficeHour = async ({courseId, officeHourId, userId}) => {
         return oh._id.toString() === officeHourId && oh.taId.toString() === userId;
     });
 
-    if (!targetHour) throw "No matching office hour found.";
+    if (!targetHour) throw "No Matching Office Hour Found.";
 
     if (targetHour.googleCalendarEventIds) {
         for (const [calendarType, eventId] of Object.entries(targetHour.googleCalendarEventIds)) {
@@ -103,7 +103,7 @@ export const deleteTAOfficeHour = async ({courseId, officeHourId, userId}) => {
     );
 
     if (updateResult.modifiedCount === 0) {
-        throw "No matching office hour was found to delete.";
+        throw "No Matching Office Hour was found to delete.";
     }
 
     return true;

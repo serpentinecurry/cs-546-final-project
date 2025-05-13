@@ -1,239 +1,245 @@
 /* 🌐 Base styles already in place */
 body {
-  background-color: #f8f9fa;
-  font-family: 'Inter', "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+    background-color: #f8f9fa;
+    font-family: 'Inter', "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
 }
 
 .card {
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  background: white;
-  border-radius: 10px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: white;
+    border-radius: 10px;
 }
 
 .btn {
-  min-width: 120px;
-  padding: 8px 12px;
-  border-radius: 5px;
-  font-weight: 500;
+    min-width: 120px;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-weight: 500;
 }
 
 .btn-success {
-  background-color: #28a745;
-  color: white;
-  border: none;
+    background-color: #28a745;
+    color: white;
+    border: none;
 }
 
 .btn-danger {
-  background-color: #dc3545;
-  color: white;
-  border: none;
+    background-color: #dc3545;
+    color: white;
+    border: none;
 }
 
 .btn-secondary {
-  background-color: #6c757d;
-  color: white;
-  text-decoration: none;
-  border: none;
+    background-color: #6c757d;
+    color: white;
+    text-decoration: none;
+    border: none;
 }
 
 .btn-secondary:hover,
 .btn-success:hover,
 .btn-danger:hover {
-  opacity: 0.9;
+    opacity: 0.9;
 }
 
 .list-group-item-action:hover {
-  background-color: #e2e6ea;
-  color: #000;
+    background-color: #e2e6ea;
+    color: #000;
 }
 
 .d-flex.justify-content-center.flex-wrap.gap-2 > form {
-  margin-bottom: 10px;
+    margin-bottom: 10px;
 }
 
 .row.mb-4.text-center .col {
-  font-size: 1.1rem;
+    font-size: 1.1rem;
 }
 
 hr.my-5 {
-  border-top: 2px solid #dc3545;
+    border-top: 2px solid #dc3545;
 }
 
 h2.text-danger {
-  font-weight: bold;
+    font-weight: bold;
 }
 
 form.card.p-4 {
-  background: white;
-  border-radius: 10px;
+    background: white;
+    border-radius: 10px;
 }
 
 .list-group a {
-  text-decoration: none;
+    text-decoration: none;
 }
 
 .list-group a:hover {
-  font-weight: bold;
+    font-weight: bold;
 }
 
 .alert {
-  font-weight: bold;
-  padding: 12px 18px;
-  border-radius: 6px;
+    font-weight: bold;
+    padding: 12px 18px;
+    border-radius: 6px;
 }
 
 .alert-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
 }
 
 .alert-secondary {
-  background-color: #f1f1f1;
-  color: #333;
-  border: 1px solid #ddd;
+    background-color: #f1f1f1;
+    color: #333;
+    border: 1px solid #ddd;
 }
 
 .table {
-  width: 100%;
-  margin-top: 1rem;
+    width: 100%;
+    margin-top: 1rem;
 }
 
 .table th,
 .table td {
-  padding: 12px;
-  border: 1px solid #ddd;
+    padding: 12px;
+    border: 1px solid #ddd;
 }
 
 .thead-light th {
-  background-color: #f8f9fa;
+    background-color: #f8f9fa;
 }
 
 input.form-control {
-  min-width: 150px;
-  padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+    min-width: 150px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
+
 .btn-primary {
-  background-color: #007bff;
-  color: white;
-  border: none;
+    background-color: #007bff;
+    color: white;
+    border: none;
 }
 
 .btn-primary:hover {
-  background-color: #0069d9;
-  box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+    background-color: #0069d9;
+    box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
 }
 
 .admin-create-form label {
-  font-weight: 600;
+    font-weight: 600;
 }
 
 .admin-create-form input,
 .admin-create-form select {
-  padding: 0.75rem;
-  border-radius: var(--radius);
-  font-size: 1rem;
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    font-size: 1rem;
 }
 
 /* courseList.handlebars */
 .course-card {
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
-  background: #ffffff;
-  padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    background: #ffffff;
+    padding: 1.5rem;
 }
 
 .course-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
 }
 
 .course-link {
-  text-decoration: none;
-  color: inherit;
+    text-decoration: none;
+    color: inherit;
 }
 
 .course-title {
-  font-weight: 600;
-  font-size: 1.25rem;
-  margin-bottom: 0.25rem;
+    font-weight: 600;
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
 }
 
 .course-code {
-  font-size: 0.95rem;
-  color: #6b7280;
-  margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
 }
 
 .course-professor {
-  font-size: 0.9rem;
-  color: #374151;
+    font-size: 0.9rem;
+    color: #374151;
 }
 
 .btn-animated {
-  transition: all 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .btn-animated:hover {
-  transform: scale(1.05);
+    transform: scale(1.05);
 }
 
 /* createCourse.handlebars */
 .form-card {
-  background: linear-gradient(to bottom right, #ffffff, #f9f9f9);
-  border-radius: 1rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-  padding: 2.5rem;
-  max-width: 700px;
-  margin: auto;
-  transition: 0.3s ease-in-out;
+    background: linear-gradient(to bottom right, #ffffff, #f9f9f9);
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    padding: 2.5rem;
+    max-width: 700px;
+    margin: auto;
+    transition: 0.3s ease-in-out;
 }
 
 .form-card:hover {
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.12);
 }
 
 .form-label {
-  font-weight: 500;
-  color: #374151;
+    font-weight: 500;
+    color: #374151;
 }
 
 .btn-animated {
-  transition: all 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .btn-animated:hover {
-  transform: scale(1.05);
+    transform: scale(1.05);
 }
 
 /* userProfile.handlebars */
 .profile-card {
-  background: linear-gradient(145deg, #ffffff, #f0f0f0);
-  border-radius: 1rem;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-  padding: 2.5rem;
-  max-width: 900px;
-  margin: auto;
-  transition: 0.3s ease;
+    background: linear-gradient(145deg, #ffffff, #f0f0f0);
+    border-radius: 1rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+    padding: 2.5rem;
+    max-width: 900px;
+    margin: auto;
+    transition: 0.3s ease;
 }
+
 .profile-card:hover {
-  transform: scale(1.01);
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.15);
+    transform: scale(1.01);
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.15);
 }
+
 .label {
-  font-weight: 500;
-  color: #6b7280;
+    font-weight: 500;
+    color: #6b7280;
 }
+
 .value {
-  color: #111827;
+    color: #111827;
 }
+
 .btn-group-custom button {
-  min-width: 150px;
+    min-width: 150px;
 }
+
 p {
-  font-size: 1.4rem;
+    font-size: 1.4rem;
 }

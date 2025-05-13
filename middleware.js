@@ -1,50 +1,50 @@
 import multer from 'multer';
-import { storage } from './config/cloudinary.js';
-import { courses } from "./config/mongoCollections.js";
-import { ObjectId } from "mongodb";
+import {storage} from './config/cloudinary.js';
+import {courses} from "./config/mongoCollections.js";
+import {ObjectId} from "mongodb";
 
 // Middleware: Admin-only access
 export const isAdmin = (req, res, next) => {
-  if (!req.session.user || req.session.user.role !== 'admin') {
-    return res.status(403).render('error', { error: 'Unauthorized: Admins only' });
-  }
-  next();
+    if (!req.session.user || req.session.user.role !== 'admin') {
+        return res.status(403).render('error', {error: 'Unauthorized: Admins only'});
+    }
+    next();
 };
 
 // Middleware: Student or TA access
 export const isStudent = (req, res, next) => {
-  const role = req.session.user?.role;
-  if (!req.session.user || (role !== 'student' && role !== 'ta')) {
-    return res.status(403).render('error', { error: 'Unauthorized: Students only' });
-  }
-  next();
+    const role = req.session.user?.role;
+    if (!req.session.user || (role !== 'student' && role !== 'ta')) {
+        return res.status(403).render('error', {error: 'Unauthorized: Students only'});
+    }
+    next();
 };
 
 // Middleware: Prevent login when already authenticated
 export const preventDoubleLogin = (req, res, next) => {
-  if (req.session.user) {
-    const role = req.session.user.role.toLowerCase();
-    if (role === 'ta' || role === 'student') {
-      return res.redirect('/student');
-    } else if (role === 'admin') {
-      return res.redirect('/admin');
-    } else if (role === 'professor') {
-      return res.redirect('/professor');
+    if (req.session.user) {
+        const role = req.session.user.role.toLowerCase();
+        if (role === 'ta' || role === 'student') {
+            return res.redirect('/student');
+        } else if (role === 'admin') {
+            return res.redirect('/admin');
+        } else if (role === 'professor') {
+            return res.redirect('/professor');
+        }
     }
-  }
-  next();
+    next();
 };
 
 
 export const isProfessor = (req, res, next) => {
-  if (!req.session.user || req.session.user.role !== 'professor') {
-    return res.status(403).render('error', { error: 'Unauthorized: Professors only' });
-  }
-  next();
+    if (!req.session.user || req.session.user.role !== 'professor') {
+        return res.status(403).render('error', {error: 'Unauthorized: Professors only'});
+    }
+    next();
 };
 
 // Multer middleware for uploading proof to Cloudinary
-export const absenceProofUpload = multer({ storage });
+export const absenceProofUpload = multer({storage});
 
 export const checkActiveEnrollment = async (req, res, next) => {
     try {
@@ -111,7 +111,8 @@ export const verifyProfessorOwnsCourse = async (req, res, next) => {
         }
 
         next();
-    } catch (e) {return res.status(500).render("error", {
+    } catch (e) {
+        return res.status(500).render("error", {
             layout: "main",
             error: "Server error while verifying course access."
         });
@@ -120,8 +121,8 @@ export const verifyProfessorOwnsCourse = async (req, res, next) => {
 
 // Middleware: TA-only access
 export const isTA = (req, res, next) => {
-  if (!req.session.user || req.session.user.role !== 'ta') {
-    return res.status(403).render('error', { error: 'Unauthorized: TAs only' });
-  }
-  next();
+    if (!req.session.user || req.session.user.role !== 'ta') {
+        return res.status(403).render('error', {error: 'Unauthorized: TAs only'});
+    }
+    next();
 };
