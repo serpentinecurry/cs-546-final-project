@@ -164,7 +164,13 @@ let averageAttendance = async (courseId) => {
     (record) => record.status === "present"
   ).length;
 
-  return Number(((AttendanceCount / AttendanceTotal.length) * 100).toFixed(2));
+  const AttendanceCountExcused = AttendanceTotal.filter(
+    (record) => record.status === "excused"
+  ).length;
+
+  const effectiveTotal = AttendanceTotal.length - AttendanceCountExcused;
+  if (effectiveTotal === 0) return 100; 
+  return Number(((AttendanceCount / effectiveTotal) * 100).toFixed(2));
 };
 
 const getAllPresentStudents = async (courseId) => {
@@ -347,6 +353,25 @@ const getLectureExcusedStudents = async (lectureId) => {
   return excusedRecords;
 };
 
+
+const getTotalAbsencesFromStudent = async (studentId) => {
+  studentId = stringValidate(studentId);
+  if (!ObjectId.isValid(studentId)) {
+    throw "Invalid student ID";
+  }
+
+  const attendanceCollection = await attendance();
+  const absentRecords = await attendanceCollection
+    .find({ 
+      studentId: new ObjectId(studentId), 
+      status: "absent"
+    })
+    .toArray();
+
+  return absentRecords.length;
+};
+
+
 export default {
   createAttendance,
   updateAttendance,
@@ -357,5 +382,6 @@ export default {
   getLectureAbsentStudents,
   getLecturePresentStudents,
   getLectureExcusedStudents,
+  getTotalAbsencesFromStudent
 };
 

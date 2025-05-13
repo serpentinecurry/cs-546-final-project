@@ -384,6 +384,7 @@
                         <th>Name</th>
                         <th>Email</th>
                         <th>Major</th>
+                        <th>Absence Total</th> <!-- Added new column -->
                     </tr>
                     </thead>
                     <tbody>
@@ -392,6 +393,7 @@
                             <td>{{this.firstName}} {{this.lastName}}</td>
                             <td>{{this.email}}</td>
                             <td>{{this.major}}</td>
+                            <td>{{this.totalAbsences}}</td> <!-- Display the total absences -->
                         </tr>
                     {{/each}}
                     </tbody>
@@ -509,18 +511,18 @@
             alert.className = "alert alert-success alert-dismissible fade show mt-3";
             alert.setAttribute("role", "alert");
             alert.innerHTML = `
-    ✅ Schedule saved successfully!
+    Schedule successfully done
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 `;
             document.querySelector(".dashboard-header").after(alert);
 
-// Fade out after 5 seconds, then remove
+
             setTimeout(() => {
                 alert.classList.remove("show");
                 alert.classList.add("fade");
                 setTimeout(() => {
                     alert.remove();
-                }, 500); // Bootstrap fade transition duration is 500ms
+                }, 500); 
             }, 5000);
 
         } else {
