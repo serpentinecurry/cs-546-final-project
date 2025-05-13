@@ -7,8 +7,9 @@ const CALENDAR_IDS = {
   professors: '23ce92a59e931bf9c5fa07217060a421ed503fa1f3083157e1fae5d5d9d32162@group.calendar.google.com',
 };
 
+// Fetch and delete events concurrently
 async function clearCalendar(calendarId) {
-  const events = [];
+  let allEvents = [];
   let pageToken;
 
   try {
@@ -20,33 +21,46 @@ async function clearCalendar(calendarId) {
       });
 
       const items = res.data.items || [];
-      events.push(...items);
+      allEvents = allEvents.concat(items);
       pageToken = res.data.nextPageToken;
     } while (pageToken);
   } catch (err) {
-    console.error(`Error listing events for ${calendarId}: ${err.message}`);
+    console.error(`❌ Error fetching events for ${calendarId}: ${err.message}`);
     return;
   }
 
-  for (const event of events) {
-    try {
-      await calendar.events.delete({
-        calendarId,
-        eventId: event.id,
-      });
-      console.log(`🗑️ Deleted: ${event.summary || event.id} from ${calendarId}`);
-    } catch (error) {
-      console.error(`❌ Failed to delete event ${event.id} in ${calendarId}: ${error.message}`);
-    }
-  }
+  console.log(`🔍 Found ${allEvents.length} events in ${calendarId}`);
 
-  console.log(`✅ Cleared calendar: ${calendarId}`);
+  // Parallel deletion
+  await Promise.allSettled(
+    allEvents.map(event =>
+      calendar.events
+        .delete({
+          calendarId,
+          eventId: event.id,
+        })
+        .then(() => {
+          console.log(`🗑️ Deleted: ${event.summary || event.id}`);
+        })
+        .catch(err => {
+          console.error(`⚠️ Failed to delete ${event.id}: ${err.message}`);
+        })
+    )
+  );
+
+  console.log(`✅ Cleared all events from ${calendarId}`);
 }
 
 export async function clearAllCalendars() {
-  await clearCalendar(CALENDAR_IDS.students);
-  await clearCalendar(CALENDAR_IDS.tas);
-  await clearCalendar(CALENDAR_IDS.professors);
+  const calendarList = [
+    { name: 'students', id: CALENDAR_IDS.students },
+    { name: 'TAs', id: CALENDAR_IDS.tas },
+    { name: 'professors', id: CALENDAR_IDS.professors },
+  ];
 
-  console.log('🎉 All calendars successfully cleared.');
+  console.log('🚀 Starting calendar clearance...');
+
+  await Promise.all(calendarList.map(cal => clearCalendar(cal.id)));
+
+  console.log('🎉 All calendars cleared successfully.');
 }
