@@ -6,7 +6,7 @@ import {
     isValid24Hour,
 } from "../validation.js";
 import {users, courses} from "../config/mongoCollections.js";
-import {addOfficeHourEvent} from "../services/calendarSync.js";
+import {addOfficeHourEvent, deleteOfficeHourEvent} from "../services/calendarSync.js";
 
 
 const createCourse = async (courseName, courseCode, professorId) => {
@@ -352,21 +352,22 @@ const addProfessorOfficeHour = async (courseId, officeHourObj) => {
         throw "Invalid day. Must be a valid weekday no weekends!";
     if (!isValid24Hour(startTime) || !isValid24Hour(endTime))
         throw "Invalid time format. Must be HH:MM (24-hour format).";
-
     if (!isStartBeforeEnd(startTime, endTime))
         throw "Start time must be earlier than end time.";
 
     location = stringValidate(location);
     const courseCollection = await courses();
-    // Get the professorId from the current course
+
     const currentCourse = await courseCollection.findOne({
         _id: new ObjectId(courseId),
     });
     if (!currentCourse) throw "Course not found.";
     const professorId = currentCourse.professorId;
+
     const allCourses = await courseCollection
         .find({professorId: professorId})
         .toArray();
+
     const allOfficeHoursSameDay = [];
 
     for (const course of allCourses) {
@@ -380,16 +381,40 @@ const addProfessorOfficeHour = async (courseId, officeHourObj) => {
             }
         }
     }
+
     const timesOverlap = (startA, endA, startB, endB) => {
         return startA < endB && startB < endA;
     };
 
     for (const oh of allOfficeHoursSameDay) {
         if (timesOverlap(startTime, endTime, oh.startTime, oh.endTime)) {
-            throw `Time conflict with existing office hours for course from ${oh.startTime} to ${oh.endTime} on ${day}`;
+            throw `Time conflict with existing office hours from ${oh.startTime} to ${oh.endTime} on ${day}`;
         }
     }
 
+    // 🔁 Google Calendar Sync
+    const usersCollection = await users();
+    const professor = await usersCollection.findOne({_id: professorId});
+    if (!professor) throw "Professor not found for calendar sync.";
+
+    const name = `${professor.firstName} ${professor.lastName}`;
+    const calendarEventIds = {};
+
+    for (const calendarType of ["students", "tas", "professors"]) {
+        const result = await addOfficeHourEvent({
+            name,
+            day,
+            startTime,
+            endTime,
+            location,
+            calendarType,
+        });
+        if (result?.eventId) {
+            calendarEventIds[calendarType] = result.eventId; // ✅ store just the ID
+        }
+    }
+
+    // ✅ Now add to MongoDB with calendar IDs included
     const updateResult = await courseCollection.updateOne(
         {_id: new ObjectId(courseId)},
         {
@@ -400,33 +425,18 @@ const addProfessorOfficeHour = async (courseId, officeHourObj) => {
                     endTime,
                     location: location.trim(),
                     notes: notes?.toString().trim() || "",
+                    calendarEventIds, // ✅ safe to insert now
                 },
             },
         }
     );
+
     if (updateResult.modifiedCount === 0)
         throw "Failed to add office hour. Course may not exist.";
-    // 🔁 Google Calendar Sync
-    const usersCollection = await users();
-    const professor = await usersCollection.findOne({_id: professorId});
-    if (!professor) throw "Professor not found for calendar sync.";
-
-    const name = `${professor.firstName} ${professor.lastName}`;
-
-    for (const calendarType of ["students", "tas", "professors"]) {
-        await addOfficeHourEvent({
-            name,
-            day,
-            startTime,
-            endTime,
-            location,
-            calendarType
-        });
-    }
 
     return {added: true};
-
 };
+
 
 const deleteProfessorOfficeHour = async (courseId, officeHourObj) => {
     if (!ObjectId.isValid(courseId)) throw "Invalid course ID.";
@@ -435,7 +445,25 @@ const deleteProfessorOfficeHour = async (courseId, officeHourObj) => {
     if (!day || !startTime || !endTime) throw "Missing office hour info.";
 
     const courseCollection = await courses();
+    const course = await courseCollection.findOne({_id: new ObjectId(courseId)});
+    if (!course) throw "Course not found.";
 
+    const officeHour = course.professorOfficeHours.find(
+        (oh) => oh.day === day && oh.startTime === startTime && oh.endTime === endTime
+    );
+
+    if (!officeHour) throw "Office hour not found.";
+
+    // 🗑️ Delete from all calendars
+    if (officeHour.calendarEventIds) {
+        for (const [calendarType, eventId] of Object.entries(officeHour.calendarEventIds)) {
+            if (eventId) {
+                await deleteOfficeHourEvent(calendarType, eventId);
+            }
+        }
+    }
+
+    // 🧹 Remove from DB
     const updateResult = await courseCollection.updateOne(
         {_id: new ObjectId(courseId)},
         {
@@ -460,47 +488,47 @@ const getStudentsNoTAs = async (courseId) => {
 
     const coursesCollection = await courses();
     const usersCollection = await users();
-    
+
     const course = await coursesCollection.findOne({
         _id: new ObjectId(courseId),
     });
     if (!course) throw "Course not found.";
 
-    
+
     const activeEnrollments = course.studentEnrollments.filter(
         enrollment => enrollment.status === "active"
     );
-    
-    
+
+
     const studentIds = activeEnrollments.map(
         enrollment => enrollment.studentId
     );
-    
-    
+
+
     const enrolledUsers = await usersCollection
         .find({
-            _id: { $in: studentIds }
+            _id: {$in: studentIds}
         })
         .toArray();
-    
-        
+
+
     const nonTAUsers = enrolledUsers.filter(user => {
-        
-        const isTAForThisCourse = 
-            user.role === "ta" && 
-            user.taForCourses && 
+
+        const isTAForThisCourse =
+            user.role === "ta" &&
+            user.taForCourses &&
             user.taForCourses.some(cid => cid.toString() === courseId);
-            
-            
+
+
         const enrollment = course.studentEnrollments.find(
             e => e.studentId.toString() === user._id.toString()
         );
         const hasTARole = enrollment && enrollment.role === "TA";
-        
-        
+
+
         return !isTAForThisCourse && !hasTARole;
     });
-    
+
     return nonTAUsers;
 }
 

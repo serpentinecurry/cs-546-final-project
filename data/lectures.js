@@ -1,25 +1,8 @@
 import {lectures, courses} from "../config/mongoCollections.js";
 import {ObjectId} from "mongodb";
 import {stringValidate} from "../validation.js";
-import {addLectureToCalendars} from "../services/calendarSync.js";
+import {addLectureToCalendars, updateLectureEvent} from "../services/calendarSync.js";
 
-// {
-//     "_id": "ObjectId",
-//     "courseId": "ObjectId_course",
-//     "professorId": "ObjectId_professor",
-//     "lectureTitle": "Week 5: AJAX and Fetch API",
-//     "lectureDate": "2025-04-01",
-//     "description": "Covered asynchronous JavaScript.",
-//     "materialsLink": "https://drive.google.com/some-slides",
-//     "ratings": [{
-//         "studentId": "ObjectId_student1",
-//         "rating": 5
-//       }],
-//     "createdAt": "timestamp",
-//     "updatedAt": "timestamp"
-//   }
-
-//functions include creating, updating, inserting a rating,
 
 let createLecture = async (
     courseId,
@@ -144,7 +127,12 @@ let createLecture = async (
     newLecture.courseCode = courseDoc.courseCode;
 
     try {
-        await addLectureToCalendars(newLecture);
+        const calendarEventIds = await addLectureToCalendars(newLecture);
+        await lectureCollection.updateOne(
+            {_id: insertion.insertedId},
+            {$set: {calendarEventIds}}
+        );
+        newLecture.calendarEventIds = calendarEventIds;
     } catch (err) {
         console.error("⚠️ Lecture created but calendar sync failed:", err.message);
     }
@@ -158,38 +146,47 @@ let createLecture = async (
 
 const updateLecture = async (lectureId, updates) => {
     lectureId = stringValidate(lectureId);
-    let lectureList = await lectures();
-    try {
-        lectureList = await lectureList.findOne({_id: new ObjectId(lectureId)});
-        if (!lectureList) {
-            throw "Lecture not found";
-        }
-        if (updates.lectureTitle) {
-            updates.lectureTitle = stringValidate(updates.lectureTitle);
-        }
-        if (updates.lectureDate) {
-            updates.lectureDate = stringValidate(updates.lectureDate);
-        }
-        if (updates.description) {
-            updates.description = stringValidate(updates.description);
-        }
-        if (updates.materialsLink) {
-            updates.materialsLink = stringValidate(updates.materialsLink);
-        }
+    const lectureCollection = await lectures();
+    const courseCollection = await courses();
 
-        updates.updatedAt = new Date();
+    const oldLecture = await lectureCollection.findOne({_id: new ObjectId(lectureId)});
+    if (!oldLecture) throw "Lecture not found";
 
-        const lectureCollection = await lectures();
+    // Validate inputs
+    if (updates.lectureTitle) updates.lectureTitle = stringValidate(updates.lectureTitle);
+    if (updates.lectureDate) updates.lectureDate = stringValidate(updates.lectureDate);
+    if (updates.lectureStartTime) updates.lectureStartTime = stringValidate(updates.lectureStartTime);
+    if (updates.lectureEndTime) updates.lectureEndTime = stringValidate(updates.lectureEndTime);
+    if (updates.description) updates.description = stringValidate(updates.description);
+    if (updates.materialsLink) updates.materialsLink = stringValidate(updates.materialsLink);
 
-        const updateInfo = await lectureCollection.updateOne(
-            {_id: new ObjectId(lectureId)},
-            {$set: updates}
-        );
+    updates.updatedAt = new Date();
 
-        return updateInfo;
-    } catch (error) {
-        throw error;
+    const updateInfo = await lectureCollection.updateOne(
+        {_id: new ObjectId(lectureId)},
+        {$set: updates}
+    );
+
+    // Fetch courseCode
+    const courseDoc = await courseCollection.findOne({_id: oldLecture.courseId});
+    if (!courseDoc) throw "Course not found";
+
+    // If lecture had calendarEventIds, update them
+    if (oldLecture.calendarEventIds) {
+        const updatedData = {
+            ...oldLecture,
+            ...updates,
+            courseCode: courseDoc.courseCode
+        };
+
+        for (const [calendarType, eventId] of Object.entries(oldLecture.calendarEventIds)) {
+            if (eventId) {
+                await updateLectureEvent(calendarType, eventId, updatedData);
+            }
+        }
     }
+
+    return updateInfo;
 };
 
 let insertRating = async (lectureId, studentId, rating) => {
