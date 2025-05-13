@@ -1520,7 +1520,7 @@ router.route("/contact-tas").get(async (req, res) => {
 
         res.render("student/student", {
             layout: "main",
-            partialToRender: "contactTAs",
+            partialToRender: "contactTas",
             user: withUser(req),
             currentPage: "contactTAs",
             courses: coursesWithTAs,
