@@ -1,7 +1,7 @@
 /* 🌐 Base styles already in place */
 body {
   background-color: #f8f9fa;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Inter', "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
 }
 
 .card {
@@ -136,4 +136,104 @@ input.form-control {
   padding: 0.75rem;
   border-radius: var(--radius);
   font-size: 1rem;
+}
+
+/* courseList.handlebars */
+.course-card {
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  background: #ffffff;
+  padding: 1.5rem;
+}
+
+.course-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+}
+
+.course-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.course-title {
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.course-code {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.course-professor {
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.btn-animated {
+  transition: all 0.3s ease;
+}
+
+.btn-animated:hover {
+  transform: scale(1.05);
+}
+
+/* createCourse.handlebars */
+.form-card {
+  background: linear-gradient(to bottom right, #ffffff, #f9f9f9);
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem;
+  max-width: 700px;
+  margin: auto;
+  transition: 0.3s ease-in-out;
+}
+
+.form-card:hover {
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.12);
+}
+
+.form-label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.btn-animated {
+  transition: all 0.3s ease;
+}
+
+.btn-animated:hover {
+  transform: scale(1.05);
+}
+
+/* userProfile.handlebars */
+.profile-card {
+  background: linear-gradient(145deg, #ffffff, #f0f0f0);
+  border-radius: 1rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem;
+  max-width: 900px;
+  margin: auto;
+  transition: 0.3s ease;
+}
+.profile-card:hover {
+  transform: scale(1.01);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.15);
+}
+.label {
+  font-weight: 500;
+  color: #6b7280;
+}
+.value {
+  color: #111827;
+}
+.btn-group-custom button {
+  min-width: 150px;
+}
+p {
+  font-size: 1.4rem;
 }

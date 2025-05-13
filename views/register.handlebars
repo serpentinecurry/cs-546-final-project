@@ -83,6 +83,7 @@
       <div class="col-md-3">
         <label class="form-label" for="gender">Gender</label>
         <select class="form-select" name="gender" id="gender" required>
+          <option value="" disabled selected>Select Gender</option>
           <option value="male" {{#if (eq formData.gender 'male')}}selected{{/if}}>Male</option>
           <option value="female" {{#if (eq formData.gender 'female')}}selected{{/if}}>Female</option>
           <option value="other" {{#if (eq formData.gender 'other')}}selected{{/if}}>Other</option>
@@ -91,7 +92,7 @@
 
       <div class="col-md-9">
         <label class="form-label" for="major">Major</label>
-        <input class="form-control" name="major" id="major" value="{{formData.major}}" />
+        <input class="form-control" name="major" id="major" value="{{formData.major}}">
       </div>
     </div>
 
@@ -164,4 +165,6 @@
     }
   }
 </script>
+
+</div>
 

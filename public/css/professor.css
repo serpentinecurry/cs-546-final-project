@@ -1,0 +1,359 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f1f5f9;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.wrapper {
+  display: flex;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.left-panel {
+  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  color: white;
+  padding: 4rem;
+  flex: 1.3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.left-panel img {
+  max-width: 160px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  margin-bottom: 1.5rem;
+}
+
+.left-panel h1 {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+}
+
+.left-panel p {
+  font-size: 1.15rem;
+  max-width: 400px;
+  margin-bottom: 2rem;
+  color: #f0f9ff;
+}
+
+.right-panel {
+  flex: 1;
+  background-color: white;
+  padding: 4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.right-panel h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.courseList {
+  list-style: none;
+  padding-left: 0;
+}
+
+.courseList li {
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  background-color: #e2e8f0;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.courseList a {
+  text-decoration: none;
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.courseList a:hover {
+  text-decoration: underline;
+}
+
+.logout-btn {
+  margin-top: 2rem;
+  background-color: #ef4444;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-block;
+  font-weight: 600;
+}
+
+.logout-btn:hover {
+  background-color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    flex-direction: column;
+  }
+
+  .left-panel,
+  .right-panel {
+    padding: 2rem;
+  }
+}
+
+/* Data Analytics View Styles */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+.dashboard-header h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: #1e3a8a;
+}
+
+.card {
+    border-radius: 1rem;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+}
+
+.card-header {
+    font-weight: 600;
+    font-size: 1.125rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.analytics-card {
+    background-color: white;
+    padding: 1rem 1.25rem;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid #2563eb;
+}
+
+.analytics-card h3 {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.analytics-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.alert {
+    margin-bottom: 2rem;
+}
+
+.feedback-card {
+    border-left: 4px solid #2563eb;
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.feedback-card h5 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #2563eb;
+}
+
+.feedback-section p {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.section-heading {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.btn {
+    font-weight: 500;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1.25rem;
+}
+
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-success,
+.btn-outline-warning,
+.btn-outline-info {
+    border-width: 2px;
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1.5rem 1rem;
+    }
+}
+
+/* Lecture Views Styles */
+.attendance-form {
+  margin-bottom: 2rem;
+}
+
+.student-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: white;
+}
+
+.student-card select {
+  margin-top: 0.5rem;
+}
+
+.attendance-status {
+  display: inline-block;
+  margin-left: 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-present {
+  background-color: rgba(40, 167, 69, 0.15);
+  color: #28a745;
+}
+
+.status-absent {
+  background-color: rgba(220, 53, 69, 0.15);
+  color: #dc3545;
+}
+
+.status-excused {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+}
+
+.status-none {
+  background-color: rgba(108, 117, 125, 0.15);
+  color: #6c757d;
+}
+
+.lecture-details {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.lecture-details h2 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.btn-custom {
+  background-color: #4f46e5;
+  color: white;
+  font-weight: 500;
+  border: none;
+}
+
+.btn-custom:hover {
+  background-color: #4338ca;
+}
+
+.btn-outline {
+  border: 1px solid #cbd5e0;
+  font-weight: 500;
+}
+
+.attendance-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Add Office Hour Styles */
+.form-section h2 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.btn-custom {
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+}
+
+.btn-custom:hover {
+  background-color: #4338ca;
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    flex-direction: column;
+  }
+
+  .left-panel,
+  .right-panel {
+    flex: 1;
+    padding: 2rem;
+  }
+}
+
+/* View Office Hours & Calendar Styles */
+.fc-event-title,
+.fc-event-time,
+.fc-event-main {
+    white-space: normal !important;
+    overflow-wrap: break-word;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.fc-button {
+    text-transform: capitalize !important;
+    font-weight: 500;
+}
+
+.fc-toolbar-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.calendar-container {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.05);
+} 
