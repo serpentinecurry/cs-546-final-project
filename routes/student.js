@@ -27,6 +27,7 @@ import {addOfficeHourEvent, deleteOfficeHourEvent} from "../services/calendarSyn
 import {subscribeLinks} from "../services/calendarSync.js"; // ✅ add this
 
 import discussionsData from "../data/discussions.js";
+import xss from "xss";
 
 const router = Router();
 
@@ -410,9 +411,9 @@ router
                         studentResponses: {
                             studentId,
                             rating: parsedRating,
-                            q1answer: q1answer.trim(),
-                            q2answer: q2answer.trim(),
-                            q3answer: q3answer.trim(),
+                            q1answer: xss(q1answer.trim()),
+                            q2answer: xss(q2answer.trim()),
+                            q3answer: xss(q3answer.trim()),
                         },
                     },
                 }
@@ -614,7 +615,7 @@ router.post("/courses/:courseId/lectures/:lectureId/notes", checkActiveEnrollmen
 
     let lectureNotes;
     try {
-        lectureNotes = stringValidate(req.body.lecture_notes_input); // needs xss
+        lectureNotes = xss(stringValidate(req.body.lecture_notes_input));
         req.body.emptyNotes = false;
     } catch (error) {
         req.body.emptyNotes = true;
@@ -834,8 +835,8 @@ router.route("/absence-request").get(async (req, res) => {
     .post(absenceProofUpload.single("proof"), async (req, res) => {
         let {courseId, lectureId, reason, proofType} = req.body;
         lectureId = lectureId?.trim();
-        reason = reason?.trim();
-        proofType = proofType?.trim();
+        reason = xss(reason?.trim());
+        proofType = xss(proofType?.trim());
 
         const studentId = req.session.user._id;
         const userCollection = await users();
@@ -951,8 +952,8 @@ router.route("/absence-request").get(async (req, res) => {
             const newRequest = {
                 courseId,
                 lectureId,
-                reason,
-                proofType,
+                reason: xss(reason),
+                proofType: xss(proofType),
                 proofDocumentLink: req.file.path,
                 status: "pending",
                 requestedAt: new Date(),
@@ -1049,8 +1050,8 @@ router.route("/profile/edit").get((req, res) => {
 router.route("/profile/edit").post(async (req, res) => {
     let {firstName, lastName, dateOfBirth} = req.body;
     try {
-        firstName = stringValidate(firstName);
-        lastName = stringValidate(lastName);
+        firstName = xss(stringValidate(firstName));
+        lastName = xss(stringValidate(lastName));
         if (!isValidDateString(dateOfBirth)) {
             throw "Invalid date of birth";
         }
@@ -1157,8 +1158,8 @@ router.route("/request-change").get(async (req, res) => {
         try {
             const userId = req.session.user._id;
             let {field, newValue} = req.body;
-            field = stringValidate(field);
-            newValue = stringValidate(newValue);
+            field = xss(stringValidate(field));
+            newValue = xss(stringValidate(newValue));
             if (!["major", "email"].includes(field)) throw "Invalid field selection.";
             if (field === "email") {
                 newValue = validateEmail(newValue);
@@ -1588,8 +1589,8 @@ router.route("/send-message").post(async (req, res) => {
             fromId: new ObjectId(studentId),
             toId: new ObjectId(taId),
             courseId: new ObjectId(sharedCourseId),
-            subject,
-            message,
+            subject: xss(subject.trim()),
+            message: xss(message.trim()),
             sentAt: new Date(),
             read: false
         });
@@ -1829,8 +1830,8 @@ router.post("/ta/send-message", isTA, async (req, res) => {
             fromId: new ObjectId(taId),
             toId: new ObjectId(studentId),
             courseId: new ObjectId(courseId),
-            subject,
-            message,
+            subject: xss(subject.trim()),
+            message: xss(message.trim()),
             sentAt: new Date(),
             read: false
         });
@@ -2054,12 +2055,13 @@ router.route("/courses/:courseId/lectures/:lectureId/discussions/:discussionId")
             const {courseId, lectureId, discussionId} = req.params;
             const {commentText, isAnonymous} = req.body;
             const commenterId = req.session.user._id;
+            const safeCommentText = xss(commentText.trim());
 
             await discussionsData.addAComment(
                 discussionId,
                 courseId,
                 commenterId,
-                commentText,
+                safeCommentText,
                 isAnonymous === "on"
             );
 
