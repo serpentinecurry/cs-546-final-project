@@ -9,8 +9,8 @@
 ### ⚙️ **Setup Instructions**
 
 1. Run `npm i` to install all dependencies.
-2. Start the application with `npm start`.
-3. Seed the database using `npm run seed`.
+2. Seed the database using `npm run seed`.
+3. Start the application with `npm start`.
 
 ---
 
