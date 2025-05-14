@@ -23,24 +23,19 @@
 * 📧 [admin@scholario.com](mailto:admin@scholario.com)
 * 🔑 Password: `AdminForScholario$2025`
 
-| Email                                           | Password               
-| ----------------------------------------------- | ---------------------- 
-| [phill@stevens.edu](mailto:phill@stevens.edu)   | ProfWebDBMS\$2025      
-| [zackam@stevens.edu](mailto:zackam@stevens.edu) | ProfHCIIntro\$2025     
-| [jhong@stevens.edu](mailto:jhong@stevens.edu)   | ProfMLDataStruct\$2025 
 
-| Email                                                   | Password            
-| ------------------------------------------------------- | ------------------- 
-| [slynn@stevens.edu](mailto:slynn@stevens.edu)           | TAWeb546\$2025      
-| [psharma@stevens.edu](mailto:psharma@stevens.edu)       | TADatabase542\$2025 
-| [mrodriguez@stevens.edu](mailto:mrodriguez@stevens.edu) | TADatabase542\$2025 
+phill@stevens.edu – ProfWebDBMS$2025
+zackam@stevens.edu – ProfHCIIntro$2025
+jhong@stevens.edu – ProfMLDataStruct$2025
 
+slynn@stevens.edu – TAWebLynn546$2025
+psharma@stevens.edu – TADatabaseSharm542$2025
+mrodriguez@stevens.edu – TADatabaseRod542$2025
 
-| Email                                             | Password               
-| ------------------------------------------------- | ---------------------- 
-| [cmiller@stevens.edu](mailto:cmiller@stevens.edu) | StudentCharlotte\$2025 
-| [lwilson@stevens.edu](mailto:lwilson@stevens.edu) | StudentLiam\$2025      
-| [btaylor@stevens.edu](mailto:btaylor@stevens.edu) | StudentBenjamin\$2025  
+cmiller@stevens.edu – StudentCharlotte$2025
+lwilson@stevens.edu – StudentLiam$2025
+btaylor@stevens.edu – StudentBenjamin$2025
+
 
 
 ---
