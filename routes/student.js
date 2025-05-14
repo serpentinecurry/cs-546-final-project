@@ -1489,9 +1489,9 @@ router.route("/contact-tas").get(async (req, res) => {
 
     res.render("student/student", {
       layout: "main",
-      partialToRender: "contactTas",
+      partialToRender: "cta",
       user: withUser(req),
-      currentPage: "contactTAs",
+      currentPage: "cta",
       courses: coursesWithTAs,
       sentMessages,
       successMessage: req.session.successMessage,
@@ -1500,9 +1500,9 @@ router.route("/contact-tas").get(async (req, res) => {
     console.error("Error loading TAs:", error);
     res.status(500).render("student/student", {
       layout: "main",
-      partialToRender: "contactTAs",
+      partialToRender: "cta",
       user: withUser(req),
-      currentPage: "contactTAs",
+      currentPage: "cta",
       error: "Failed to load TAs. Please try again.",
     });
   }
