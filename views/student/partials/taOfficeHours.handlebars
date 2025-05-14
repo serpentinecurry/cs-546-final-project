@@ -1,5 +1,11 @@
 <h2 class="mb-4">Manage Your Office Hours as a TA</h2>
 
+{{#if notificationMessage}}
+  <div class="alert alert-warning" role="alert">
+    {{notificationMessage}}
+  </div>
+{{/if}}
+
 {{#if taCourses.length}}
   {{#each taCourses}}
     <div class="content-card mb-4">
