@@ -21,7 +21,7 @@
 #### 👨‍💼 **Admin**
 
 * 📧 [admin@scholario.com](mailto:admin@scholario.com)
-* 🔑 Password: `Admin@911`
+* 🔑 Password: `AdminForScholario$2025`
 
 | Email                                           | Password               
 | ----------------------------------------------- | ---------------------- 
