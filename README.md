@@ -25,21 +25,21 @@
 
 #### 👨‍🏫 **Professors**
 
-* [phill@stevens.edu](mailto:phill@stevens.edu) – `Password@123`
-* [zackam@stevens.edu](mailto:zackam@stevens.edu) – `Password@123`
-* [jhong@stevens.edu](mailto:jhong@stevens.edu) – `Password@123`
+* [phill@stevens.edu](mailto:phill@stevens.edu) – `TAphill$2025`
+* [zackam@stevens.edu](mailto:zackam@stevens.edu) – `TAzackam$2025`
+* [jhong@stevens.edu](mailto:jhong@stevens.edu) – `TAjhong$2025`
 
 #### 👨‍🔬 **TAs**
 
-* [slynn@stevens.edu](mailto:slynn@stevens.edu) – `Password@123` (CS 546 Web Dev)
-* [psharma@stevens.edu](mailto:psharma@stevens.edu) – `Password@123` (CS 542)
-* [mrodriguez@stevens.edu](mailto:mrodriguez@stevens.edu) – `Password@123` (CS 542)
+* [slynn@stevens.edu](mailto:slynn@stevens.edu) – `TAWebLynn546$2025` (CS 546 Web Dev)
+* [psharma@stevens.edu](mailto:psharma@stevens.edu) – `TADatabaseSharm542$2025` (CS 542)
+* [mrodriguez@stevens.edu](mailto:mrodriguez@stevens.edu) – `TADatabaseRod542$2025` (CS 542)
 
 #### 👨‍🎓 **Students**
 
-* [cmiller@stevens.edu](mailto:cmiller@stevens.edu) – `Password@123`
-* [lwilson@stevens.edu](mailto:lwilson@stevens.edu) – `password@123`
-* [btaylor@stevens.edu](mailto:btaylor@stevens.edu) – `password@123`
+* [cmiller@stevens.edu](mailto:cmiller@stevens.edu) – `StudentCharlotte$2025`
+* [lwilson@stevens.edu](mailto:lwilson@stevens.edu) – `StudentLiam$2025`
+* [btaylor@stevens.edu](mailto:btaylor@stevens.edu) – `StudentBenjamin$2025`
 
 ---
 
