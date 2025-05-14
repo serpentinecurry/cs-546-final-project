@@ -1,4 +1,4 @@
-import { users, changeRequests, courses } from "../config/mongoCollections.js";
+import { users, changeRequests, courses, lectures } from "../config/mongoCollections.js";
 import { ObjectId } from "mongodb";
 import bcrypt from "bcrypt";
 import { sendChangeApprovalEmail } from "../utils/mailer.js";
@@ -10,6 +10,7 @@ import {
   isValidDateString,
   calculateAge,
 } from "../validation.js";
+import {addLectureToCalendars, addOfficeHourEvent, createPersonalCalendar} from "../services/calendarSync.js"; // adjust path
 
 const SALT_ROUNDS = 10;
 
@@ -54,6 +55,9 @@ const createUser = async (
   });
   if (existing) throw "Email already exists";
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+  const calendarId = await createPersonalCalendar(email, role);
+
   const newUser = {
     firstName,
     lastName,
@@ -65,6 +69,7 @@ const createUser = async (
     dateOfBirth,
     accessStatus: "Pending",
     userCreatedAt: new Date(),
+    calendarId: calendarId || null
   };
   if (role === "student") {
     newUser.major = major;
@@ -257,7 +262,9 @@ const approveEnrollmentRequest = async (studentId, courseId) => {
   if (!ObjectId.isValid(courseId)) throw "Invalid courseId";
 
   const courseCollection = await courses();
+  const lectureCollection = await lectures();
 
+  // 1. Approve the student's enrollment status
   const courseUpdateResult = await courseCollection.updateOne(
     {
       _id: new ObjectId(courseId),
@@ -272,8 +279,33 @@ const approveEnrollmentRequest = async (studentId, courseId) => {
     throw "Failed to approve enrollment request";
   }
 
+  // 2. Sync all existing lectures of this course to the student's calendar
+  const courseLectures = await lectureCollection
+    .find({ courseId: new ObjectId(courseId) })
+    .toArray();
+
+  for (const lecture of courseLectures) {
+    try {
+      // Add courseCode to lecture object if not present
+      if (!lecture.courseCode) {
+        const courseDoc = await courseCollection.findOne({
+          _id: new ObjectId(courseId),
+        });
+        lecture.courseCode = courseDoc.courseCode;
+      }
+
+      await addLectureToCalendars(lecture);
+    } catch (e) {
+      console.warn(
+        `⚠️ Failed to sync lecture ${lecture.lectureTitle} to student ${studentId}`,
+        e.message
+      );
+    }
+  }
+
   return { enrollmentApproved: true };
 };
+
 
 const rejectEnrollmentRequest = async (studentId, courseId) => {
   studentId = stringValidate(studentId);
