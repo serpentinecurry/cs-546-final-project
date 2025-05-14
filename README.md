@@ -113,6 +113,7 @@
 
 * ➕ Add/Delete office hours
 * 📩 Respond to student messages
+* Note: The TA must add their office hours for all the TA related features to work properly.
 
 <img width="468" src="https://github.com/user-attachments/assets/0cc5be07-9a81-4e8b-a38a-6b6d4f647ce7" />
 
