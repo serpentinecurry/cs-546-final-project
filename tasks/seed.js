@@ -46,7 +46,7 @@ await usersCollection.updateOne(
   { email: "admin@scholorio.com" },
   { $set: { accessStatus: "approved" } }
 );
-const admin = await userData.getUserByEmail("admin@scholorio.com");
+const admin = await userData.getUserByEmail("admin@scholario.com");
 
 console.log("Creating professors...");
 const professors = [];
