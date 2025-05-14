@@ -103,12 +103,36 @@ router.get("/dashboard", async (req, res) => {
     });
   }
 
+  // Check if user is a TA and has courses without office hours
+  let taNotificationMessage = null;
+  if (req.session.user.role === "ta") {
+    const taCourses = await courseCollection
+      .find({
+        taOfficeHours: {
+          $elemMatch: {
+            taId: studentId,
+          },
+        },
+      })
+      .toArray();
+
+    const coursesWithoutOfficeHours = enrolledCourses.filter(
+      (course) =>
+        !taCourses.some((taCourse) => taCourse._id.toString() === course._id.toString())
+    );
+
+    if (coursesWithoutOfficeHours.length > 0) {
+      taNotificationMessage = `⚠️ You need to set up your office hours for ${coursesWithoutOfficeHours.length} course(s) to enable TA messaging features.`;
+    }
+  }
+
   res.render("student/student", {
     layout: "main",
     partialToRender: "dashboard",
     user: withUser(req),
     attendanceData,
     currentPage: "dashboard",
+    taNotificationMessage,
   });
 });
 
@@ -1264,6 +1288,12 @@ router.route("/ta/officeHour").get(isTA, async (req, res) => {
       ),
     }));
 
+    // Check if any courses have no office hours set up
+    const hasNoOfficeHours = formattedCourses.some(course => course.officeHours.length === 0);
+    const notificationMessage = hasNoOfficeHours 
+      ? "⚠️ Important: You need to set up your office hours to enable messaging features with students. Please add your office hours below."
+      : null;
+
     return res.render("student/student", {
       layout: "main",
       partialToRender: "taOfficeHours",
@@ -1273,8 +1303,15 @@ router.route("/ta/officeHour").get(isTA, async (req, res) => {
       },
       currentPage: "taOfficeHours",
       taCourses: formattedCourses,
+      notificationMessage
     });
-  } catch (error) {}
+  } catch (error) {
+    console.error("Error loading TA office hours:", error);
+    res.status(500).render("error", {
+      layout: "main",
+      error: "Failed to load office hours. Please try again."
+    });
+  }
 });
 
 router.route("/ta/officeHour/add").post(isTA, async (req, res) => {
