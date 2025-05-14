@@ -36,14 +36,14 @@ const adminInfo = await userData.createUser(
   "Anik",
   "Doshi",
   "male",
-  "admin@scholorio.com",
+  "admin@scholario.com",
   "Admin@911",
   "admin",
   "1990-01-01",
   ""
 );
 await usersCollection.updateOne(
-  { email: "admin@scholorio.com" },
+  { email: "admin@scholario.com" },
   { $set: { accessStatus: "approved" } }
 );
 const admin = await userData.getUserByEmail("admin@scholario.com");
@@ -597,7 +597,7 @@ for (const course of coursesList) {
       startTime,
       endTime,
       topic.desc,
-      `https://scholorio.com/materials/${course.code}/${topic.title
+      `https://scholario.com/materials/${course.code}/${topic.title
         .toLowerCase()
         .replace(/\s+/g, "-")}`
     );
@@ -701,7 +701,7 @@ for (const request of pendingRequests) {
           status: "pending",
           requestedAt: new Date(),
         },
-      },
+      }
     }
   );
 }
@@ -784,6 +784,13 @@ for (const courseCode in taAssignments) {
 
   for (let i = 0; i < tas.length; i++) {
     const ta = tas[i];
+    
+    
+    if (ta.firstName === "Sarah" && ta.lastName === "Lynn") {
+      console.log("Skipping office hours for Sarah Lynn");
+      continue;
+    }
+    
     const day = taDays[i];
     const officeHour = {
       taId: ta._id,
@@ -792,15 +799,15 @@ for (const courseCode in taAssignments) {
       startTime: "14:00",
       endTime: "15:00",
       location: `Library, Floor ${i + 1}`,
-      notes: "Help with assignments and lab work.",
+      notes: "Help with assignments and lab work."
     };
 
     await coursesCollection.updateOne(
-      { _id: new ObjectId(courseId) },
+      {_id: new ObjectId(courseId)},
       {
         $push: {
-          taOfficeHours: officeHour,
-        },
+          taOfficeHours: officeHour
+        }
       }
     );
   }
