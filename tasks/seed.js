@@ -37,7 +37,7 @@ const adminInfo = await userData.createUser(
   "Doshi",
   "male",
   "admin@scholario.com",
-  "Admin@911",
+  "AdminForScholario$2025",
   "admin",
   "1990-01-01",
   ""
@@ -78,12 +78,24 @@ const professorData = [
 ];
 
 for (const prof of professorData) {
+  let password;
+
+  if (prof.email === "phill@stevens.edu") {
+    password = "ProfWebDBMS$2025";
+  } else if (prof.email === "zackam@stevens.edu") {
+    password = "ProfHCIIntro$2025";
+  } else if (prof.email === "jhong@stevens.edu") {
+    password = "ProfMLDataStruct$2025";
+  } else if (prof.email === "mzhang@stevens.edu") {
+    password = "ProfNetworksSE$2025";
+  }
+
   const profInfo = await userData.createUser(
     prof.firstName,
     prof.lastName,
     prof.gender,
     prof.email,
-    "Password@123",
+    password,
     "professor",
     "1975-01-01",
     ""
@@ -262,12 +274,36 @@ const studentData = [
 ];
 
 for (const student of studentData) {
+  let password;
+
+  if (student.email === "slynn@stevens.edu") {
+    password = "TAWebLynn546$2025";
+  } else if (student.email === "jcastepoint@stevens.edu") {
+    password = "TAWebCas546$2025";
+  } else if (student.email === "psharma@stevens.edu") {
+    password = "TADatabaseSharm542$2025";
+  } else if (student.email === "mrodriguez@stevens.edu") {
+    password = "TADatabaseRod542$2025";
+  } else if (student.email === "ewatson@stevens.edu") {
+    password = "TAHCI5Was45$2025";
+  } else if (student.email === "jwashington@stevens.edu") {
+    password = "TAHCI545Wash$2025";
+  } else if (student.email === "cmiller@stevens.edu") {
+    password = "StudentCharlotte$2025";
+  } else if (student.email === "lwilson@stevens.edu") {
+    password = "StudentLiam$2025";
+  } else if (student.email === "btaylor@stevens.edu") {
+    password = "StudentBenjamin$2025";
+  } else {
+    password = `TA${student.firstName}$2025`;
+  }
+
   const studentInfo = await userData.createUser(
     student.firstName,
     student.lastName,
     student.gender,
     student.email,
-    "Password@123",
+    password,
     "student",
     student.birthdate,
     student.major
